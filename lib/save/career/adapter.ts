@@ -22,10 +22,15 @@ const YEAR_DAYS = 365.2425;
 const MIN_AGE = 14;
 const MAX_AGE = 45;
 
-/** Cầu thủ trẻ nhất của một lứa học viện. */
-const YOUNGEST_NEWGEN_AGE = 15.5;
-/** Cầu thủ trẻ nhất trong toàn bảng khi không có lứa học viện để neo. */
-const YOUNGEST_ANY_AGE = 15;
+/**
+ * Tuổi ứng với phân vị 99,9% ngày sinh của toàn bảng.
+ *
+ * ĐO ĐƯỢC, không phải đoán. Xem chú thích của `estimateCurrentDay`.
+ */
+const AGE_AT_P999 = 16.47;
+
+/** Phân vị dùng làm mốc. */
+const ANCHOR_PERCENTILE = 0.999;
 
 /**
  * Ước lượng ngày hiện tại trong game từ chính dữ liệu.
@@ -33,23 +38,43 @@ const YOUNGEST_ANY_AGE = 15;
  * Lịch career chưa giải mã được, nên phải suy ra. Lấy ngày thật thì tuổi sai dần
  * theo số mùa đã chơi — sau năm mùa là lệch năm tuổi.
  *
- * Neo tốt nhất là **lứa học viện**: nhóm này luôn 15–18 tuổi bất kể career đã
- * chạy bao lâu, nên ngày sinh muộn nhất của họ cộng ~15,5 năm cho ra mốc hiện
- * tại khá sát.
+ * ─── VÌ SAO BỎ NHÁNH "NEO THEO LỨA HỌC VIỆN" ────────────────────────────────
  *
- * Không có lứa học viện thì lùi về phân vị 99,9% của toàn bảng. Kém tin cậy hơn
- * vì cầu thủ trẻ nhất của game gốc có thể tới 16–17 tuổi, nhưng vẫn tốt hơn ngày
- * thật. Dùng phân vị chứ không dùng giá trị lớn nhất để một bản ghi rác không
- * kéo lệch cả mốc.
+ * Bản trước ưu tiên neo vào lứa học viện với hằng số 15,5 năm. Nó SAI 1,4 NĂM,
+ * và hệ quả là cột Tuổi cao hơn thực tế một tuổi với gần như toàn bộ cầu thủ.
+ *
+ * Đo được bằng export Live Editor cùng thời điểm với save (career ở mùa 1, đã
+ * đá 12 trận, trận gần nhất 28-10-2025, có sự kiện tương lai 13-12-2025 và
+ * 01-01-2026 — nên "hôm nay" trong career là đầu tháng 11 năm 2025):
+ *
+ *   mốc lứa học viện  →  13-03-2027   lệch +511 ngày
+ *   ngày thật         →  ~05-11-2025
+ *
+ * Hai lý do nhánh đó hỏng:
+ *
+ *   1. Hằng số sai. Cầu thủ học viện trẻ nhất trong save này 14,15 tuổi chứ
+ *      không phải 15,5 — học viện nhận từ 14.
+ *   2. Cỡ mẫu quá nhỏ. Career mùa 1 mới có 20 newgen, nên `max(...)` của nhóm
+ *      đó là một ước lượng rất nhiễu. Phân vị của 21.608 cầu thủ thì không.
+ *
+ * Nên giờ chỉ còn một đường: phân vị 99,9% ngày sinh toàn bảng. Neo này tự
+ * chỉnh theo thời gian vì game liên tục sinh cầu thủ 16 tuổi mới, nên đuôi trẻ
+ * của phân bố luôn bám sát "hiện tại" bất kể career đã chạy bao nhiêu mùa.
+ * Dùng phân vị chứ không dùng giá trị lớn nhất vì bản ghi rác tồn tại thật —
+ * giá trị lớn nhất trong save này ứng với một "cầu thủ" 6 tuổi.
+ *
+ * ─── ĐỘ CHÍNH XÁC ───────────────────────────────────────────────────────────
+ *
+ * Hằng số 16,47 hiệu chuẩn trên MỘT career ở mùa 1, và ngày thật chỉ biết trong
+ * khoảng ba tuần. Nên tuổi có thể lệch 1 với những cầu thủ có sinh nhật rơi
+ * đúng khoảng đó — cỡ vài phần trăm, thay vì gần như toàn bộ như trước.
  */
-function estimateCurrentDay(allBirthDays: number[], newgenBirthDays: number[]): number {
-  if (newgenBirthDays.length >= 5) {
-    return Math.max(...newgenBirthDays) + YOUNGEST_NEWGEN_AGE * YEAR_DAYS;
-  }
+function estimateCurrentDay(allBirthDays: number[]): number {
   if (allBirthDays.length === 0) return Math.floor(Date.now() / DAY_MS);
   const sorted = [...allBirthDays].sort((a, b) => a - b);
-  const p = sorted[Math.floor(sorted.length * 0.999)] ?? sorted[sorted.length - 1];
-  return p + YOUNGEST_ANY_AGE * YEAR_DAYS;
+  const anchor =
+    sorted[Math.floor(sorted.length * ANCHOR_PERCENTILE)] ?? sorted[sorted.length - 1];
+  return anchor + AGE_AT_P999 * YEAR_DAYS;
 }
 
 function ageFrom(birthDay: number, referenceDay: number): number | null {
@@ -95,11 +120,7 @@ export function buildCareer(result: CareerPlayers): SaveCareer | null {
   const birthDays = result.players
     .map((p) => p.birthDay)
     .filter((d): d is number => d !== null);
-  const newgenBirthDays = result.players
-    .filter((p) => result.newgenNames.has(p.playerId))
-    .map((p) => p.birthDay)
-    .filter((d): d is number => d !== null);
-  const referenceDay = estimateCurrentDay(birthDays, newgenBirthDays);
+  const referenceDay = estimateCurrentDay(birthDays);
 
   const all = result.players.map((p) =>
     toSavePlayer(p, result.newgenNames.get(p.playerId), referenceDay),

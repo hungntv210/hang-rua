@@ -388,3 +388,56 @@ khi sửa: 24.174 có tên, 20.067 giữ được CLB gốc.
 Kèm một lỗi hiển thị do chính thay đổi đó sinh ra: cầu thủ có tên mà không có CLB
 nhận chuỗi rỗng, và chuỗi rỗng không kích hoạt `?? "—"` nên ô hiện trắng trơn,
 trông như lỗi giao diện. Đã ép về `null`.
+
+---
+
+## Cập nhật 2026-09-16 (tối) — rà lại bộ export đầy đủ
+
+Bộ 45 bảng đã chép vào `dataset_fc26/Live Editor/`. Trước đó mới xem 4 bảng.
+
+### Lỗi đang chạy trên web: cột Tuổi sai 1 tuổi với gần như mọi cầu thủ
+
+`estimateCurrentDay()` ưu tiên neo vào lứa học viện với hằng số 15,5 năm. Nó cho
+ra **13-03-2027**, trong khi career thật đang ở đầu tháng 11 năm 2025 — **lệch
+511 ngày**, và 100% cầu thủ hiển thị sai tuổi.
+
+Ngày thật xác định được nhờ các bảng career trong export:
+
+| Nguồn | Giá trị | |
+| --- | --- | --- |
+| `playermatchratinghistory.date` | 20251028 | trận gần nhất |
+| `managerinfo.bigwindate` | 20251028 | |
+| `scoutmission.returningdate` | 20251213 | sự kiện **tương lai** |
+| `presignedcontract.completedate` | 20260101 | sự kiện **tương lai** |
+| `managerhistory` | mùa 1, 12 trận | |
+
+Career "hôm nay" nằm giữa 28-10-2025 và 13-12-2025.
+
+**Hai lý do nhánh học viện hỏng:**
+
+1. Hằng số sai — cầu thủ học viện trẻ nhất trong save là 14,15 tuổi, không phải
+   15,5. Học viện nhận từ 14.
+2. Cỡ mẫu quá nhỏ — career mùa 1 mới có 20 newgen, nên `max(...)` của nhóm đó là
+   ước lượng rất nhiễu. Phân vị của 21.608 cầu thủ thì không.
+
+**Sửa:** bỏ hẳn nhánh học viện, chỉ dùng phân vị 99,9% ngày sinh toàn bảng với
+hằng số **16,47 năm** (đo được, không đoán). Neo này tự chỉnh theo thời gian vì
+game liên tục sinh cầu thủ 16 tuổi mới.
+
+Kết quả: phân bố tuổi từ lệch hệ thống thành **trung vị 25** — đúng chuẩn một
+CSDL bóng đá. Newgen hiện 14-16 thay vì 15-17. Khớp ground truth Ren Imada (sinh
+31-07-2011 → 14 tuổi).
+
+Hằng số hiệu chuẩn trên MỘT career mùa 1, ngày thật chỉ biết trong khoảng ba
+tuần, nên vẫn còn lệch 1 tuổi với vài phần trăm cầu thủ có sinh nhật rơi đúng
+khoảng đó — thay vì gần như toàn bộ như trước.
+
+### Những bảng khác: xem rồi, không dùng được
+
+| Bảng | Nội dung | Vì sao không dùng |
+| --- | --- | --- |
+| `career_firstnames` / `lastnames` / `commonnames` | 11.848 + 9.442 + 489 dòng | Cột tên chứa **mã số**, không phải chữ — đây là kho tên để sinh newgen |
+| `career_playercontract` | 45 dòng | Chỉ hai CLB của người chơi, không đủ để giải mã hợp đồng cho mọi cầu thủ |
+| `career_regenplayerattributes` | 66 dòng, có đủ `volleys`/`defensiveawareness`/`gkpositioning` | Chỉ 66 regen; tuyến A đã bác bỏ bằng 21.436 mẫu ở cổng 100% |
+| `career_calendar` | `currdate = 20080101` | Hàng mẫu mặc định, không phải trạng thái thật |
+| `transfers` | 0 byte | Bảng làm game crash; có `transferamount` nhưng không lấy được |
