@@ -72,11 +72,20 @@ export function SaveReaderClient() {
           const nation = db.nation(p.nationalityId);
           if (p.nameSource === "newgen") return { ...p, nation };
           const entry = db.get(p.playerId);
-          if (!entry) return { ...p, nation };
+          if (!entry) {
+            // Không có tên NHƯNG vẫn có thể biết là nội dung ngoài career: suất
+            // huyền thoại chưa có bản quyền tên. Không đánh dấu thì nó hiện ra
+            // "Cầu thủ Sweden, 44 tuổi, chỉ số 91" và trông y hệt lỗi parser.
+            return db.isUltimateTeam(p.playerId)
+              ? { ...p, nation, nameSource: "ultimateTeam" as const }
+              : { ...p, nation };
+          }
           return {
             ...p,
             name: entry.name,
-            nameSource: "database" as const,
+            nameSource: db.isUltimateTeam(p.playerId)
+              ? ("ultimateTeam" as const)
+              : ("database" as const),
             // `|| null` chứ không gán thẳng: từ khi DB gộp theo từng trường, một
             // cầu thủ có thể có tên mà không có CLB (nguồn Live Editor cố ý không
             // góp CLB). Giá trị khi đó là chuỗi rỗng, và chuỗi rỗng KHÔNG kích

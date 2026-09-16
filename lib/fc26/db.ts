@@ -28,16 +28,32 @@ interface Payload {
   nations: string[];
   /** Mã quốc gia → tên. Dùng được cho cả cầu thủ không có trong DB. */
   nationNames: Record<string, string>;
+  /** ID thuộc Ultimate Team, không có trong danh sách career. */
+  utIds?: number[];
 }
 
 export class Fc26Database {
   private readonly index: Map<number, number>;
   private readonly data: Payload;
+  private readonly ut: Set<number>;
 
   private constructor(data: Payload) {
     this.data = data;
     this.index = new Map();
     for (let i = 0; i < data.ids.length; i += 1) this.index.set(data.ids[i], i);
+    this.ut = new Set(data.utIds ?? []);
+  }
+
+  /**
+   * Cầu thủ này là nội dung Ultimate Team, không thuộc danh sách career.
+   *
+   * Bảng cầu thủ trong save chứa TOÀN BỘ roster của game, kể cả icon và hero của
+   * Ultimate Team. Chúng là bản ghi thật, đọc ra đúng — nhưng một người 45 tuổi
+   * chỉ số 91 nằm giữa đội hình career thì trông như lỗi, nhất là vì bảng sắp
+   * theo chỉ số nên họ nằm ngay đầu danh sách. Đánh dấu để người xem hiểu ngay.
+   */
+  isUltimateTeam(playerId: number): boolean {
+    return this.ut.has(playerId);
   }
 
   static fromPayload(data: Payload): Fc26Database {

@@ -187,8 +187,15 @@ export interface SaveCounters {
 export interface SavePlayer {
   playerId: number;
   name: string | null;
-  /** Nguồn của tên, để UI đánh dấu — người xem cần biết cầu thủ nào là newgen. */
-  nameSource: "newgen" | "database" | null;
+  /**
+   * Nguồn của tên, để UI đánh dấu.
+   *
+   * `ultimateTeam` là nội dung Ultimate Team (icon, hero) — có trong roster của
+   * game và vì thế có trong save, nhưng KHÔNG thuộc danh sách career. Phải phân
+   * biệt được, nếu không một huyền thoại 45 tuổi chỉ số 91 sẽ nằm lẫn trong đội
+   * hình mà không ai hiểu vì sao.
+   */
+  nameSource: "newgen" | "database" | "ultimateTeam" | null;
   /**
    * CLB **gốc** theo dataset công khai của EA đầu mùa — KHÔNG phải CLB hiện tại
    * trong career. Save chưa giải mã được trường CLB, nên `lib/save/*` luôn để

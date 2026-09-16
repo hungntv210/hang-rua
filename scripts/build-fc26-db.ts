@@ -21,6 +21,8 @@ import { dirname } from "node:path";
 
 import { readNewgenNames } from "../lib/save/career/newgen-names";
 
+const SPLIT_NEWLINE = new RegExp("\r?\n");
+
 function splitCsvLine(line: string): string[] {
   const out: string[] = [];
   let cur = "";
@@ -59,6 +61,35 @@ if (newgenFlag >= 0) {
   newgenIds = new Set(readNewgenNames(bytes).keys());
   args.splice(newgenFlag, 2);
   console.log(`Loại ${newgenIds.size} cầu thủ newgen đọc từ ${savePath}`);
+}
+
+/**
+ * Nguồn tên cho nội dung Ultimate Team (`cards.csv` trong thư mục cài game).
+ *
+ * VÌ SAO CẦN RIÊNG: bảng cầu thủ trong save chứa TOÀN BỘ roster của game, kể cả
+ * icon và hero của Ultimate Team — thứ không thuộc Career Mode. Đo trên save
+ * thật: 197 bản ghi không có trong danh sách career, và 163 trong số đó là icon.
+ *
+ * Không có nguồn này thì chúng hiện ra dưới dạng "Cầu thủ Sweden — CHƯA CÓ TÊN"
+ * với chỉ số 91, và vì bảng mặc định sắp theo chỉ số nên chúng nằm ngay ĐẦU
+ * danh sách. Trông hệt như parser hỏng, dù dữ liệu đọc hoàn toàn đúng.
+ *
+ * ID chỉ xuất hiện ở nguồn này được đánh dấu riêng để giao diện nói rõ chúng là
+ * nội dung Ultimate Team — đặt tên mà không nói rõ thì vẫn khó hiểu: một cầu thủ
+ * 45 tuổi chỉ số 91 nằm trong đội hình career là chuyện vô lý.
+ */
+const rosterFlag = args.indexOf("--game-roster");
+let rosterPath: string | null = null;
+if (rosterFlag >= 0) {
+  rosterPath = args[rosterFlag + 1] ?? null;
+  args.splice(rosterFlag, 2);
+}
+
+const utFlag = args.indexOf("--ultimate-team");
+let utPath: string | null = null;
+if (utFlag >= 0) {
+  utPath = args[utFlag + 1] ?? null;
+  args.splice(utFlag, 2);
 }
 
 const outPath = args.length > 1 && args[args.length - 1].endsWith(".json")
@@ -174,6 +205,12 @@ interface Entry {
   nation: string;
 }
 const entries = new Map<number, Entry>();
+/**
+ * ID có trong danh sách career (nguồn Live Editor). Mọi ID KHÔNG nằm trong đây
+ * mà vẫn xuất hiện trong save đều là nội dung ngoài career — icon, hero, hoặc
+ * suất huyền thoại chưa có bản quyền tên.
+ */
+const careerIds = new Set<number>();
 const seen = new Set<number>();
 /**
  * Mã quốc gia → tên. Quan trọng hơn vẻ ngoài của nó: mã này dùng chung cho MỌI
@@ -199,6 +236,7 @@ for (const csvPath of csvPaths) {
    * nên nguồn này chỉ được góp TÊN và QUỐC TỊCH, không góp CLB.
    */
   const isLiveEditor = head.some((h) => h.toLowerCase() === "current_teamid");
+  if (isLiveEditor) for (const v of collectIds(lines, I.id)) careerIds.add(v);
   if (isLiveEditor) {
     console.log(`${csvPath}: nguồn Live Editor — chỉ lấy tên và quốc tịch, bỏ CLB/giải`);
     I.club = -1;
@@ -256,6 +294,56 @@ for (const csvPath of csvPaths) {
   );
 }
 
+/**
+ * ID chỉ có ở nguồn Ultimate Team — tức không nằm trong danh sách career.
+ * Xử lý SAU cùng để mọi nguồn career/công khai đều đã có cơ hội nhận ID trước.
+ */
+const utOnly: number[] = [];
+if (utPath) {
+  const lines = readFileSync(utPath, "utf8").split(SPLIT_NEWLINE);
+  const head = splitCsvLine(lines[0]).map((h) => h.trim());
+  const I = columnMap(head);
+  if (I.id < 0 || I.short < 0) {
+    throw new Error(`${utPath}: cần cột playerid và name.`);
+  }
+  let added = 0;
+  for (let i = 1; i < lines.length; i += 1) {
+    if (!lines[i]) continue;
+    const f = splitCsvLine(lines[i]);
+    const id = Number(at(f, I.id));
+    const short = at(f, I.short);
+    if (!Number.isFinite(id) || id <= 0 || !short) continue;
+    if (newgenIds.has(id) || entries.has(id)) continue;
+    entries.set(id, { name: short, fullName: "", club: "", league: "", nation: "" });
+    utOnly.push(id);
+    added += 1;
+  }
+  console.log(`${utPath}: thêm ${added} mục Ultimate Team (icon/hero)`);
+}
+
+/**
+ * Gộp thêm ID có trong roster của game nhưng KHÔNG có trong danh sách career.
+ *
+ * Nhóm `--ultimate-team` mới phủ những mục CÓ TÊN. Còn lại là các suất huyền
+ * thoại chưa có bản quyền tên — chúng hiện ra là "Cầu thủ Sweden, 44 tuổi, chỉ
+ * số 91" và trông y hệt lỗi parser. Đánh dấu chúng không làm chúng có tên, nhưng
+ * làm người xem hiểu vì sao chúng ở đó.
+ */
+if (rosterPath && careerIds.size > 0) {
+  const lines = readFileSync(rosterPath, "utf8").split(SPLIT_NEWLINE);
+  const head = splitCsvLine(lines[0]).map((h) => h.trim());
+  const I = columnMap(head);
+  const seenUt = new Set(utOnly);
+  let added = 0;
+  for (const id of collectIds(lines, I.id)) {
+    if (careerIds.has(id) || seenUt.has(id) || newgenIds.has(id)) continue;
+    seenUt.add(id);
+    utOnly.push(id);
+    added += 1;
+  }
+  console.log(`${rosterPath}: đánh dấu thêm ${added} ID ngoài danh sách career`);
+}
+
 // Giữ đúng thứ tự xuất hiện lần đầu; mảng song song thay vì mảng object.
 const ids = [...entries.keys()];
 const names = ids.map((id) => entries.get(id)!.name);
@@ -277,6 +365,8 @@ const payload = {
   leagues,
   nations,
   nationNames: Object.fromEntries(nationNames),
+  /** ID thuộc Ultimate Team, KHÔNG có trong danh sách career. */
+  utIds: utOnly,
 };
 
 mkdirSync(dirname(outPath), { recursive: true });

@@ -135,7 +135,17 @@ export function PlayerTable({ players }: { players: SavePlayer[] }) {
   }, [players, deferredQuery, sort, onlyNewgen, maxAge]);
 
   const shown = rows.slice(0, visible);
-  const unnamed = useMemo(() => players.filter((p) => p.name === null).length, [players]);
+  // Không tính icon vào đây: chúng đã có nhãn riêng giải thích rồi, gộp vào sẽ
+  // thổi phồng con số và làm lời giải thích bên dưới sai (icon không phải "đội
+  // trẻ và đội dự bị").
+  const unnamed = useMemo(
+    () => players.filter((p) => p.name === null && p.nameSource !== "ultimateTeam").length,
+    [players],
+  );
+  const icons = useMemo(
+    () => players.filter((p) => p.nameSource === "ultimateTeam").length,
+    [players],
+  );
 
   return (
     <div className="space-y-4">
@@ -149,6 +159,16 @@ export function PlayerTable({ players }: { players: SavePlayer[] }) {
         <strong>Riêng cột &ldquo;CLB gốc&rdquo; thì không đọc từ save</strong> — file
         save chưa giải mã được CLB, nên cột này mượn từ dữ liệu công khai của EA đầu
         mùa. Với cầu thủ đã chuyển nhượng trong career, đó là CLB cũ.
+        {icons > 0 ? (
+          <>
+            {" "}
+            <strong>{icons.toLocaleString("vi-VN")} bản ghi mang nhãn &ldquo;icon&rdquo;</strong>{" "}
+            là icon và hero của Ultimate Team. Chúng nằm trong roster của game nên
+            có trong file save, nhưng <strong>không thuộc đội hình career</strong> —
+            vì thế mới có huyền thoại 44 tuổi chỉ số 91 đứng đầu bảng. Suất chưa có
+            bản quyền tên thì để trống tên.
+          </>
+        ) : null}
         {unnamed > 0 ? (
           <>
             {" "}
@@ -253,6 +273,14 @@ export function PlayerTable({ players }: { players: SavePlayer[] }) {
                         {p.nation ? `Cầu thủ ${p.nation}` : `#${p.playerId}`}
                       </span>
                     )}
+                    {p.nameSource === "ultimateTeam" ? (
+                      <span
+                        title="Icon/hero của Ultimate Team — có trong roster của game nên có trong save, nhưng không thuộc đội hình career. Suất chưa có bản quyền tên thì để trống tên."
+                        className="ml-2 rounded-sm border border-mist/40 bg-white/5 px-1.5 py-0.5 font-mono text-[0.65rem] uppercase tracking-wider text-mist"
+                      >
+                        icon
+                      </span>
+                    ) : null}
                     {p.nameSource === "newgen" ? (
                       <span
                         title="Cầu thủ do Career Mode sinh ra — tên lấy từ chính file save"
@@ -261,7 +289,7 @@ export function PlayerTable({ players }: { players: SavePlayer[] }) {
                         newgen
                       </span>
                     ) : null}
-                    {p.name === null ? (
+                    {p.name === null && p.nameSource !== "ultimateTeam" ? (
                       <span
                         title="Không có trong DB nhúng và cũng không phải cầu thủ do career sinh ra"
                         className="ml-2 rounded border border-crimson/30 bg-crimson-wash px-1.5 py-0.5 font-mono text-[0.65rem] uppercase tracking-wider text-crimson"
