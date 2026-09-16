@@ -219,3 +219,83 @@ nó trượt, phần lớn giá trị đã được giao xong.
 | CLB không nằm trong vùng đã khảo sát | Cao | Giới hạn 6 giả thuyết rồi gỡ cột |
 | `GetDBTableFields` không có trong FC 26 | Thấp | Script có nhánh dự phòng dùng danh sách tên field ứng viên |
 | Script Lua treo giữa chừng | Trung bình | Ghi tăng dần, manifest ra đĩa trước |
+
+---
+
+## Cập nhật 2026-09-16 — kết quả từ `base_players.csv`
+
+Người dùng có sẵn `C:\Users\...\FC26\player_presets\base_players.csv`: **dump đầy
+đủ bảng `players` của game**, 22.348 cầu thủ, 149 cột, bao gồm cả ba trường chưa
+giải mã (đều điền 100%). Đây là nguồn thứ tư, và là nguồn **chính thống** — ba
+nguồn trước đều là dataset bên thứ ba.
+
+### Nó KHÔNG thay được export Live Editor
+
+| Thứ cần | `base_players.csv` |
+| --- | --- |
+| Tên cầu thủ | ❌ bốn cột tên rỗng 100% — EA giữ tên ở bảng chuỗi riêng |
+| CLB hiện tại | ❌ không có cột đội; CLB nằm ở bảng quan hệ |
+| Trạng thái cùng thời điểm | ❌ đây là DB **đầu career**, save đã trôi |
+
+Cổng chặn tuyệt đối trượt đúng như với dataset cũ: `finishing` 64,1% (dataset cũ
+62,9%), `reactions` 53,2%, `potential` 40,4%. Xác nhận nó là ảnh chụp đầu career.
+
+File `cards.csv` cùng thư mục có tên thật nhưng là bảng thẻ Ultimate Team: chỉ
+phủ thêm **308** trong 4.228 cầu thủ chưa có tên (80,4% → 81,8%). Không đáng đổi
+kiến trúc.
+
+### Chế độ `--baseline` — dò được offset dù nguồn đã trôi
+
+Thêm vào `probe-fields.ts`. Lập luận: thứ cần tìm là **vị trí bit**, không phải
+giá trị. Một trường 7 bit đặt sai chỗ chỉ trúng ngẫu nhiên ~0,8%. Nếu `finishing`
+ở đúng chỗ đạt 64% thì trường đúng khác cũng phải quanh đó — cao hơn nhiễu tám
+chục lần. Ngưỡng co theo mốc thay vì cố định 95%.
+
+**Phép thử dương tính bắt buộc** trước khi tin bất cứ kết quả âm tính nào:
+
+| Trường đã biết | Bộ dò tìm ra | `schema.ts` |
+| --- | --- | --- |
+| `strength` | bit 701, rộng 7, add 1 → 71,0% | `f(701, 7, 1)` ✅ |
+| `gkdiving` | bit 477, rộng 7, add 1 → 88,6% | `f(477, 7, 1)` ✅ |
+
+Bộ dò tự tìm lại đúng offset đã biết, nên kết quả âm tính là đáng tin.
+
+### Kết quả
+
+| Trường | Kết quả |
+| --- | --- |
+| `volleys` | ❌ không ứng viên nào vượt ngưỡng |
+| `defensiveawareness` | ❌ không ứng viên nào vượt ngưỡng |
+| `gkpositioning` | ❌ không ứng viên nào vượt ngưỡng |
+| `contractvaliduntil` | ⚠️ tốt nhất bit 590 rộng 12 → 35,0%, dưới ngưỡng. Chưa kết luận |
+| **`playerjointeamdate`** | ✅ **bit 1057, rộng 18 → 82,7%**, 1.923 giá trị phân biệt |
+
+**Ba chỉ số coi như đã đóng.** Bốn nguồn độc lập, nguồn thứ tư là DB chính thống
+của game và có phép thử dương tính kèm theo. Kết luận: chúng **không nằm trong
+bản ghi 144 byte**. Không thêm nguồn nào giải quyết được nữa.
+
+**`playerjointeamdate` là trường mới giải mã được.** Trúng ngẫu nhiên của trường
+18 bit là ~0,0004%, nên 82,7% không thể do may. Epoch suy từ chính save ra khoảng
+**1582** — đúng quy ước lịch Gregory của DB FIFA/FC. Các mốc giải ra hợp lý: p25
+2022-11, p50 2024-04, p75 2024-10.
+
+CHƯA đưa vào `schema.ts`: kết quả chế độ `--baseline` là tạm theo đúng quy tắc tự
+đặt. Epoch cần chốt chính xác bằng export cùng thời điểm, nơi cổng chặn tuyệt đối
+chạy được.
+
+### Hai lỗi ngưỡng bắt được khi kiểm
+
+Cả hai đều là ngưỡng viết cứng cho lọt thứ đáng lẽ phải chặn:
+
+1. **`chênh > 25` cho kiểm chéo phân bố** — cho lọt lại đúng ứng viên giả bit 280
+   (chênh 31,2), trong khi chỉ số thủ môn thật chênh 53-55. Đã thay bằng mốc đo
+   từ chính save.
+2. **Phép kiểm thủ môn áp cho mọi trường** — gắn nhãn "hợp với chỉ số thủ môn"
+   cho `playerjointeamdate` (giá trị ~161.000), vì chênh lệch của một trường ngày
+   tháng đương nhiên vượt mọi mốc. Đã chặn: chỉ áp trong dải chỉ số 1-99.
+
+### Ảnh hưởng tới kế hoạch
+
+Tuyến A còn lại **chỉ `contractvaliduntil` và giá trị chuyển nhượng** cần export.
+Ba chỉ số đã đóng. Vẫn cần export Live Editor cho: tên (~4.228 cầu thủ), CLB
+(tuyến B), và xác nhận `playerjointeamdate`.

@@ -241,6 +241,13 @@ function shapeReport(shape: Shape, ref: Shape): string {
   const line =
     `GK ${shape.gkMean.toFixed(1)} / ngoài sân ${shape.outMean.toFixed(1)} ` +
     `(chênh ${shape.gap.toFixed(1)}; mốc thủ môn thật ${ref.gap.toFixed(1)})`;
+  // Phép kiểm này CHỈ có nghĩa với trường nằm trong dải chỉ số 1-99. Không có
+  // chặn này thì một trường ngày tháng (giá trị ~161.000) cũng được gắn nhãn
+  // "hợp với chỉ số thủ môn", vì chênh lệch của nó đương nhiên vượt mọi mốc.
+  const isAttributeRange =
+    shape.gkMean > 0 && shape.gkMean <= 99 && shape.outMean > 0 && shape.outMean <= 99;
+  if (!isAttributeRange) return `${line} → ngoài dải chỉ số, phép kiểm thủ môn không áp dụng`;
+
   // Phải giống chỉ số thủ môn thật ở CẢ hai mặt: biên độ tách VÀ mức giá trị.
   const looksGk =
     shape.gap >= ref.gap * 0.8 && shape.gkMean >= ref.gkMean * 0.8;
@@ -309,7 +316,30 @@ function pairsFor(column: string, ids: number[]): Array<{ record: number; truth:
 }
 
 // ── CỔNG CHẶN THỜI ĐIỂM ─────────────────────────────────────────────────────
-console.log("── Cổng chặn thời điểm ──");
+/**
+ * `--baseline`: chấp nhận nguồn đã trôi, và lấy chính các trường đã biết làm mốc.
+ *
+ * Dùng khi nguồn đối chiếu là DB gốc của game (`base_players.csv`) chứ không
+ * phải export cùng thời điểm. Save đã trôi khỏi trạng thái đầu career, nên
+ * không trường nào khớp 100% — kể cả trường đã biết chắc.
+ *
+ * VÌ SAO VẪN DÒ ĐƯỢC: cái ta cần tìm là VỊ TRÍ BIT, không phải giá trị. Một
+ * trường 7 bit đặt sai chỗ chỉ trúng ngẫu nhiên ~1/128 ≈ 0,8%. Nếu `finishing`
+ * ở đúng chỗ đạt 64% thì `volleys` ở đúng chỗ cũng phải quanh đó — cao hơn nhiễu
+ * tới tám chục lần. Tỉ lệ tín hiệu/nhiễu đó đủ để chỉ ra offset.
+ *
+ * NHƯNG KẾT QUẢ LÀ TẠM. Không được đưa thẳng vào `schema.ts`: phải xác nhận lại
+ * bằng một export cùng thời điểm, nơi cổng chặn tuyệt đối chạy được. Chế độ này
+ * để THU HẸP chỗ cần tìm, không phải để kết luận.
+ */
+const RELATIVE = process.argv.includes("--baseline");
+
+console.log(
+  RELATIVE
+    ? "── Mốc so sánh (chế độ --baseline, nguồn đã trôi) ──"
+    : "── Cổng chặn thời điểm ──",
+);
+const gateRates: number[] = [];
 let gatesRun = 0;
 let gatesPassed = 0;
 for (const gate of KNOWN_GATES) {
@@ -326,10 +356,11 @@ for (const gate of KNOWN_GATES) {
   const s = score(reader, pairs, gate.bit, gate.width);
   gatesRun += 1;
   const rate = s?.rate ?? 0;
+  gateRates.push(rate);
   const ok = rate >= GATE_MIN_RATE;
   if (ok) gatesPassed += 1;
   console.log(
-    `  ${ok ? "đạt   " : "TRƯỢT "}${gate.label.padEnd(12)} ` +
+    `  ${RELATIVE ? "mốc   " : ok ? "đạt   " : "TRƯỢT "}${gate.label.padEnd(12)} ` +
     `${(rate * 100).toFixed(1)}% khớp (bit ${gate.bit}, +${s?.add ?? "?"})`,
   );
 }
@@ -338,26 +369,72 @@ if (gatesRun === 0) {
   console.error("\nKhông chạy được cổng nào — export thiếu mọi cột đã biết. Dừng.");
   process.exit(1);
 }
-if (gatesPassed < gatesRun) {
-  console.error(
-    `\nCỔNG CHẶN TRƯỢT (${gatesPassed}/${gatesRun}). Export và file save KHÔNG cùng một\n` +
-    "thời điểm — hoặc bạn đã chơi tiếp sau khi export, hoặc file save là bản cũ.\n" +
-    "Mọi kết quả dò sau đây sẽ vô nghĩa, nên dừng ở đây.\n\n" +
-    "Cách sửa: vào career, chạy lại script Lua, LƯU GAME NGAY, dùng đúng save đó.",
+/**
+ * Mốc dùng cho chế độ `--baseline`: lấy các chỉ số 7 bit đã biết chắc.
+ *
+ * Không lấy `height`/`weight` vào mốc dù chúng khớp cao hơn (~91%): thể hình gần
+ * như không đổi trong career, nên chúng trôi ít hơn hẳn chỉ số. Lấy chúng làm
+ * mốc cho chỉ số sẽ đặt ngưỡng quá cao và loại nhầm ứng viên đúng.
+ */
+const ATTR_GATE_COUNT = 3;   // finishing, reactions, potential — xem KNOWN_GATES
+const baseline =
+  gateRates.slice(0, ATTR_GATE_COUNT).reduce((a, b) => a + b, 0) /
+  Math.max(1, Math.min(ATTR_GATE_COUNT, gateRates.length));
+
+if (RELATIVE) {
+  if (baseline < 0.3) {
+    console.error(
+      `\nMốc chỉ ${(baseline * 100).toFixed(1)}% — nguồn trôi quá xa so với save.\n` +
+      "Dưới mức này thì tín hiệu của trường chưa biết không tách được khỏi nhiễu.",
+    );
+    process.exit(1);
+  }
+  console.log(
+    `\nMốc chỉ số: ${(baseline * 100).toFixed(1)}%. Trúng ngẫu nhiên của trường 7 bit\n` +
+    `là ~0,8%, nên ứng viên đúng phải nằm quanh mốc chứ không phải quanh 0.\n` +
+    "KẾT QUẢ LÀ TẠM — phải xác nhận lại bằng export cùng thời điểm.\n",
   );
-  process.exit(1);
+} else {
+  if (gatesPassed < gatesRun) {
+    console.error(
+      `\nCỔNG CHẶN TRƯỢT (${gatesPassed}/${gatesRun}). Export và file save KHÔNG cùng một\n` +
+      "thời điểm — hoặc bạn đã chơi tiếp sau khi export, hoặc file save là bản cũ.\n" +
+      "Mọi kết quả dò sau đây sẽ vô nghĩa, nên dừng ở đây.\n\n" +
+      "Cách sửa: vào career, chạy lại script Lua, LƯU GAME NGAY, dùng đúng save đó.\n\n" +
+      "Nếu nguồn đối chiếu CỐ Ý là DB gốc của game (base_players.csv) thì thêm\n" +
+      "`--baseline` để dò theo mốc tương đối — kết quả khi đó là tạm, không chốt.",
+    );
+    process.exit(1);
+  }
+  console.log(`Cổng chặn đạt ${gatesPassed}/${gatesRun}. Dữ liệu cùng thời điểm.\n`);
 }
-console.log(`Cổng chặn đạt ${gatesPassed}/${gatesRun}. Dữ liệu cùng thời điểm.\n`);
 
 // ── DÒ ──────────────────────────────────────────────────────────────────────
-const targets = (process.argv[4]?.split(",") ?? DEFAULT_TARGETS)
-  .map((t) => t.trim().toLowerCase())
-  .filter((t) => truth.columns.includes(t));
+// Bỏ cờ ra khỏi vị trí tham số, nếu không `--baseline` sẽ bị hiểu là tên cột.
+const positional = process.argv.slice(4).filter((a) => !a.startsWith("--"));
+const requested = (positional[0]?.split(",") ?? DEFAULT_TARGETS).map((t) =>
+  t.trim().toLowerCase(),
+);
 
-const skipped = (process.argv[4]?.split(",") ?? DEFAULT_TARGETS)
-  .map((t) => t.trim().toLowerCase())
-  .filter((t) => !truth.columns.includes(t));
+const targets = requested.filter((t) => truth.columns.includes(t));
+const skipped = requested.filter((t) => !truth.columns.includes(t));
 if (skipped.length > 0) console.log(`Bỏ qua (export không có cột): ${skipped.join(", ")}\n`);
+
+/**
+ * Ngưỡng co theo mốc.
+ *
+ * Ở chế độ tuyệt đối, trường đúng phải khớp ~100%, nên ngưỡng thắng 95%. Ở chế
+ * độ `--baseline`, trường đúng chỉ khớp ngang mốc (nguồn đã trôi), nên đòi 95%
+ * là loại sạch mọi ứng viên — kể cả ứng viên đúng.
+ */
+const winRate = RELATIVE ? baseline * 0.85 : 0.95;
+const screenMin = RELATIVE ? Math.min(SCREEN_MIN_RATE, baseline * 0.6) : SCREEN_MIN_RATE;
+if (RELATIVE) {
+  console.log(
+    `Ngưỡng theo mốc: sàng ≥ ${(screenMin * 100).toFixed(1)}%, ` +
+    `báo ĐẠT ≥ ${(winRate * 100).toFixed(1)}%\n`,
+  );
+}
 
 const sample = common.slice(0, SCREEN_SAMPLE);
 
@@ -398,7 +475,7 @@ for (const column of targets) {
   for (let width = 1; width <= maxWidth; width += 1) {
     for (let bit = 0; bit + width <= RECORD_BITS; bit += 1) {
       const s = score(reader, samplePairs, bit, width);
-      if (s && s.rate >= SCREEN_MIN_RATE && s.distinctRaw >= MIN_DISTINCT) survivors.push(s);
+      if (s && s.rate >= screenMin && s.distinctRaw >= MIN_DISTINCT) survivors.push(s);
     }
   }
 
@@ -415,7 +492,7 @@ for (const column of targets) {
   }
 
   for (const s of verified) {
-    const verdict = s.rate >= 0.95 ? "  >>> ĐẠT" : "       ";
+    const verdict = s.rate >= winRate ? "  >>> ĐẠT" : "       ";
     console.log(
       `${verdict} bit ${String(s.bit).padStart(4)} rộng ${String(s.width).padStart(2)} ` +
       `add ${String(s.add).padStart(3)} → ${(s.rate * 100).toFixed(1)}% ` +
@@ -428,6 +505,9 @@ for (const column of targets) {
 }
 
 console.log(
-  "Ứng viên ĐẠT còn phải qua kiểm chéo phân bố trước khi đưa vào schema.ts:\n" +
-  "  npx tsx scripts/probe-shape.ts <save> <csv> <cot> <bit> <width> <add>",
+  RELATIVE
+    ? "Chế độ --baseline: mọi kết quả trên là TẠM. Trước khi đưa vào schema.ts phải\n" +
+      "xác nhận lại bằng export cùng thời điểm, nơi cổng chặn tuyệt đối chạy được."
+    : "Ứng viên ĐẠT phải thoả CẢ HAI: khớp ≥95% VÀ phân bố hợp với ngữ nghĩa của\n" +
+      "trường. Chỉ đạt tỉ lệ khớp thì chưa đủ — xem chú thích ở đầu file.",
 );
