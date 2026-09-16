@@ -299,3 +299,92 @@ Cả hai đều là ngưỡng viết cứng cho lọt thứ đáng lẽ phải c
 Tuyến A còn lại **chỉ `contractvaliduntil` và giá trị chuyển nhượng** cần export.
 Ba chỉ số đã đóng. Vẫn cần export Live Editor cho: tên (~4.228 cầu thủ), CLB
 (tuyến B), và xác nhận `playerjointeamdate`.
+
+---
+
+## Cập nhật 2026-09-16 (chiều) — đã có export Live Editor thật
+
+### Lượt chạy: game crash, nhưng không mất gì
+
+Script chạy tới bảng cuối (`transfers`) thì game thoát hẳn. Thiết kế **ghi ra đĩa
+tăng dần** đã cứu toàn bộ: `fc26_players.csv` (9,5MB), `fc26_teamplayerlinks.csv`
+(1,0MB), `fc26_manifest.csv`, `fc26_teams.csv` và 30+ bảng `career_*` đều đã nằm
+trên đĩa. Chỉ `fc26_transfers.csv` (0 byte) và `fc26_log.txt` là mất.
+
+Người dùng không kịp lưu game. Nhưng save mới nhất (12-08) hoá ra **khớp tuyệt
+đối** với export — họ chưa chơi thêm kể từ đó.
+
+### Cổng chặn thời điểm: 5/5 ở đúng 100%
+
+```
+finishing 100,0%   reactions 100,0%   potential 100,0%
+height    100,0%   weight    100,0%
+```
+
+Đây là ground truth sạch mà toàn bộ bản thiết kế chờ đợi. Đối chiếu: cùng phép đo
+trên dataset công khai chỉ đạt 51-64%.
+
+### Tuyến A — kết luận cuối cùng
+
+| Trường | Kết quả với ground truth 100% sạch |
+| --- | --- |
+| `volleys` | ❌ không ứng viên nào |
+| `defensiveawareness` | ❌ không ứng viên nào |
+| `gkpositioning` | ❌ không ứng viên nào |
+| `contractvaliduntil` | ❌ tốt nhất 50,8%, dưới ngưỡng 95% |
+| `current_teamid` (= GT4) | ❌ không ứng viên nào |
+
+**Ba chỉ số đóng vĩnh viễn.** Phép thử mạnh nhất có thể có đã chạy: ground truth
+từ chính game, cùng thời điểm, cổng chặn 100%, kèm phép thử dương tính. Chúng
+không nằm trong bản ghi 144 byte.
+
+### Tuyến B — tìm ra cấu trúc, nhưng không dùng được
+
+GT1 (header đầu nhóm), GT2 (trong bản ghi đội hình), GT4 (trong bản ghi cầu thủ),
+GT5 (thứ tự nhóm): tất cả ~0%.
+
+**GT6 tìm ra thật.** Sau khi sửa hai lỗi của bản đầu (chỉ xét lần xuất hiện đầu
+tiên; công thức nhiễu vô nghĩa) và thêm **nhóm đối chứng xáo trộn** để đo nhiễu
+thay vì suy luận:
+
+```
+khoảng cách +0:  thật 1457 / đối chứng 23     (vượt nhiễu 63 lần)
+khoảng cách ±14: thật  403 / đối chứng  6     (bước lặp bản ghi)
+```
+
+Có bảng `[u32 playerId][u16 teamId]`, bước 14 byte, ở vùng 8,63-9,35MB. Dải liên
+tục dài nhất đọc ra **608/608 đúng, 0 sai**.
+
+**Nhưng không dùng được, vì hai lý do độc lập:**
+
+1. **Độ phủ 12,7%** — chỉ 2.729/21.437 cầu thủ, 384/818 đội.
+2. **Không định vị được bằng cấu trúc.** Quy tắc thuần cấu trúc (dải ≥8 bản ghi
+   bước 14, mỗi bản ghi có playerId hợp lệ và u16 khác 0) cho **0,2% chính xác**:
+   nó bắt nhầm chính bảng cầu thủ và các vùng khác. Trong 40.302 vị trí có
+   playerId hợp lệ ở vùng đó, chỉ 8,3% có teamId đúng kề sau.
+
+Điểm 2 mới là điểm chết: tôi chỉ **nhận ra** bảng nhờ đã biết đáp án. Save của
+người khác không có đáp án, nên không đọc được. Theo tiêu chí ≥95%: **tuyến B
+thất bại**.
+
+Cột CLB giữ nguyên nhãn "CLB gốc" đã sửa ở commit trước — nó nói đúng thứ nó là,
+nên không rơi vào trường hợp "hiển thị dữ liệu sai" mà quy tắc gỡ cột nhắm tới.
+
+### Tên cầu thủ — thành công
+
+| | Trước | Sau |
+| --- | --- | --- |
+| Save 12-08 | 80,4% | **99,1%** (còn 196) |
+| Save 30-07 | 80,4% | **98,9%** (còn 232) |
+
+Đạt trên CẢ HAI save nên không phải khớp trùng một file. DB từ 20.156 lên 24.174
+cầu thủ.
+
+`build-fc26-db.ts` đổi sang **gộp theo từng trường** thay vì "file đứng trước
+thắng toàn bộ". Nếu không, 21.417 cầu thủ lấy tên từ export Live Editor sẽ mất
+luôn CLB gốc mà dataset công khai vẫn có — mất thông tin không vì lý do gì. Sau
+khi sửa: 24.174 có tên, 20.067 giữ được CLB gốc.
+
+Kèm một lỗi hiển thị do chính thay đổi đó sinh ra: cầu thủ có tên mà không có CLB
+nhận chuỗi rỗng, và chuỗi rỗng không kích hoạt `?? "—"` nên ô hiện trắng trơn,
+trông như lỗi giao diện. Đã ép về `null`.

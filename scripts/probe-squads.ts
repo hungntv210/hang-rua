@@ -338,37 +338,74 @@ for (const off of [7, 9, 11, 5]) {
 // ── Giả thuyết 6: quét toàn file tìm playerId đứng cạnh teamId đúng ─────────
 // Đây là giả thuyết tốn nhất nhưng cũng tổng quát nhất: nếu quan hệ tồn tại ở
 // BẤT KỲ đâu dưới dạng hai số cạnh nhau, nó sẽ lộ ra ở đây.
+/**
+ * Quét MỌI lần xuất hiện, và lấy mức nhiễu từ NHÓM ĐỐI CHỨNG XÁO TRỘN.
+ *
+ * Bản đầu sai hai chỗ. Thứ nhất nó `break` sau lần khớp `playerId` đầu tiên,
+ * mà một playerId xuất hiện ở nhiều bảng khác nhau trong file — lần đầu tiên
+ * gần như chắc chắn không phải bảng đội hình. Thứ hai, "trúng ngẫu nhiên" được
+ * tính bằng `sample/65536`, một công thức không có nghĩa gì.
+ *
+ * Mức nhiễu ở đây không suy ra bằng giấy bút được: teamId là số nhỏ, mà byte
+ * nhỏ thì đầy rẫy trong file. Cách đúng là đo nó: chạy lại y hệt với teamId bị
+ * XÁO TRỘN giữa các cầu thủ. Bất cứ thứ gì thật phải vượt hẳn mức đối chứng đó.
+ */
 {
-  const sample = [...truth.entries()].slice(0, 4000);
-  const byOffset = new Map<number, number>();  // khoảng cách -> số lần trúng
-  for (const [pid, tid] of sample) {
-    for (let o = 0; o + 4 < bytes.length; o += 1) {
-      if ((u32(o) >>> 0) !== pid) continue;
-      for (let d = -16; d <= 20; d += 1) {
+  const sample = [...truth.entries()].slice(0, 6000);
+  const D_MIN = -24;
+  const D_MAX = 24;
+
+  /** Một lượt quét: trả về số lần trúng theo từng khoảng cách. */
+  function sweep(pairs: Array<[number, number]>): Map<number, number> {
+    const want = new Map<number, number>();
+    for (const [pid, tid] of pairs) want.set(pid, tid);
+    const hits = new Map<number, number>();
+
+    for (let o = 0; o + 4 <= bytes.length; o += 1) {
+      const tid = want.get(u32(o) >>> 0);
+      if (tid === undefined) continue;
+      for (let d = D_MIN; d <= D_MAX; d += 1) {
         const q = o + 4 + d;
         if (q < 0 || q + 2 > bytes.length) continue;
-        if (u16(q) === tid) byOffset.set(d, (byOffset.get(d) ?? 0) + 1);
+        if (u16(q) === tid) hits.set(d, (hits.get(d) ?? 0) + 1);
       }
-      break;  // chỉ xét lần xuất hiện đầu tiên của mỗi playerId
     }
+    return hits;
   }
-  const top = [...byOffset.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
-  console.log(
-    "\nGT6 khoảng cách hay gặp giữa playerId và teamId đúng: " +
-    (top.length === 0
-      ? "không có"
-      : top.map(([d, n]) => `${d >= 0 ? "+" : ""}${d} (${n}/${sample.length})`).join(", ")),
-  );
-  console.log(
-    "  Trúng ngẫu nhiên của u16 là ~" +
-    `${((sample.length / 65536) * 100).toFixed(2)}% mỗi khoảng cách — ` +
-    "cao hơn hẳn mức đó mới đáng theo.",
-  );
+
+  const real = sweep(sample);
+
+  // Đối chứng: cùng playerId, nhưng teamId bị tráo sang cầu thủ khác.
+  const tids = sample.map(([, t]) => t);
+  for (let i = tids.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [tids[i], tids[j]] = [tids[j], tids[i]];
+  }
+  const control = sweep(sample.map(([p], i) => [p, tids[i]] as [number, number]));
+
+  const rows = [...real.entries()]
+    .map(([d, n]) => ({ d, n, c: control.get(d) ?? 0 }))
+    .sort((a, b) => b.n - b.c - (a.n - a.c))
+    .slice(0, 6);
+
+  console.log("\nGT6 playerId đứng cạnh teamId đúng — so với đối chứng xáo trộn:");
+  let anySignal = false;
+  for (const { d, n, c } of rows) {
+    // Vượt gấp ba lần nhiễu mới đáng nói; dưới mức đó là trùng do byte nhỏ.
+    const signal = n > c * 3 && n > 50;
+    if (signal) anySignal = true;
+    console.log(
+      `  ${d >= 0 ? "+" : ""}${String(d).padStart(3)}: thật ${String(n).padStart(5)} / ` +
+      `đối chứng ${String(c).padStart(5)}${signal ? "   <<< VƯỢT NHIỄU" : ""}`,
+    );
+  }
+  if (!anySignal) {
+    console.log("  Không khoảng cách nào vượt nhiễu -> GT6 bị bác bỏ.");
+  }
 }
 
 console.log(
-  "\nHết các giả thuyết chạy được tự động. GT3 (bảng ánh xạ thứ hai) và GT4\n" +
-  "(teamId trong bản ghi 144 byte) cần chạy tay:\n" +
-  "  GT4:  npx tsx scripts/probe-fields.ts <save> <fc26_players.csv> current_teamid\n" +
+  "\nGT3 (bảng ánh xạ thứ hai) chưa chạy tự động được.\n" +
+  "GT4 chạy bằng: npx tsx scripts/probe-fields.ts <save> <fc26_players.csv> current_teamid\n" +
   "\nKhông giả thuyết nào đạt ≥95% thì theo spec: GỠ CỘT CLB, dừng tuyến B.",
 );

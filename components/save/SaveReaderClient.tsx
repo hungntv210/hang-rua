@@ -77,8 +77,13 @@ export function SaveReaderClient() {
             ...p,
             name: entry.name,
             nameSource: "database" as const,
-            club: entry.club,
-            league: entry.league,
+            // `|| null` chứ không gán thẳng: từ khi DB gộp theo từng trường, một
+            // cầu thủ có thể có tên mà không có CLB (nguồn Live Editor cố ý không
+            // góp CLB). Giá trị khi đó là chuỗi rỗng, và chuỗi rỗng KHÔNG kích
+            // hoạt `?? "—"` ở bảng — ô hiện ra trắng trơn, trông như lỗi giao diện
+            // thay vì "không có dữ liệu".
+            club: entry.club || null,
+            league: entry.league || null,
             nation: entry.nation || nation,
           };
         }),

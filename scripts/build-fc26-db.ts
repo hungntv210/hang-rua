@@ -99,12 +99,25 @@ function columnMap(head: string[]): Record<string, number> {
 
 const at = (f: string[], i: number): string => (i >= 0 ? (f[i] ?? "").trim() : "");
 
-const ids: number[] = [];
-const names: string[] = [];
-const fullNames: string[] = [];
-const clubs: string[] = [];
-const leagues: string[] = [];
-const nations: string[] = [];
+/**
+ * Gộp THEO TỪNG TRƯỜNG, không phải "file đứng trước thắng toàn bộ".
+ *
+ * Lý do: export Live Editor là nguồn tên tốt nhất nhưng CỐ Ý không góp CLB (CLB
+ * của nó là career-specific). Nếu một file thắng trọn bản ghi thì 21.417 cầu thủ
+ * lấy tên từ đó sẽ mất luôn CLB gốc mà dataset công khai vẫn có — mất thông tin
+ * không vì lý do gì.
+ *
+ * Nên mỗi trường giữ giá trị KHÔNG RỖNG đầu tiên gặp được. Thứ tự file vẫn quyết
+ * định ai thắng, nhưng chỉ trên những trường thực sự có dữ liệu.
+ */
+interface Entry {
+  name: string;
+  fullName: string;
+  club: string;
+  league: string;
+  nation: string;
+}
+const entries = new Map<number, Entry>();
 const seen = new Set<number>();
 /**
  * Mã quốc gia → tên. Quan trọng hơn vẻ ngoài của nó: mã này dùng chung cho MỌI
@@ -151,24 +164,41 @@ for (const csvPath of csvPaths) {
     // Bỏ dòng không có tên: một mục rỗng trong DB tra cứu chỉ làm UI hiện ô trắng
     // thay vì đánh dấu rõ là chưa có tên.
     // File đứng trước thắng, nên xếp nguồn đáng tin nhất lên đầu.
-    if (!Number.isFinite(id) || id <= 0 || !short || seen.has(id)) continue;
+    if (!Number.isFinite(id) || id <= 0 || !short) continue;
     if (newgenIds.has(id)) { droppedNewgen += 1; continue; }
     seen.add(id);
 
     const long = at(f, I.long);
-    ids.push(id);
-    names.push(short);
-    // Tên đầy đủ chỉ giữ khi khác tên ngắn — phần lớn trùng nhau, lưu cả hai là phí.
-    fullNames.push(long === short ? "" : long);
-    clubs.push(at(f, I.club));
-    leagues.push(at(f, I.league));
-    nations.push(nationName);
+    const entry = entries.get(id);
+    const incoming: Entry = {
+      name: short,
+      // Tên đầy đủ chỉ giữ khi khác tên ngắn — phần lớn trùng nhau, lưu cả hai là phí.
+      fullName: long === short ? "" : long,
+      club: at(f, I.club),
+      league: at(f, I.league),
+      nation: nationName,
+    };
+    if (!entry) {
+      entries.set(id, incoming);
+    } else {
+      for (const k of Object.keys(incoming) as Array<keyof Entry>) {
+        if (!entry[k] && incoming[k]) entry[k] = incoming[k];
+      }
+    }
   }
   console.log(
     `${csvPath}: thêm ${seen.size - before} cầu thủ (tổng ${seen.size})` +
       (droppedNewgen > 0 ? `, bỏ ${droppedNewgen} newgen` : ""),
   );
 }
+
+// Giữ đúng thứ tự xuất hiện lần đầu; mảng song song thay vì mảng object.
+const ids = [...entries.keys()];
+const names = ids.map((id) => entries.get(id)!.name);
+const fullNames = ids.map((id) => entries.get(id)!.fullName);
+const clubs = ids.map((id) => entries.get(id)!.club);
+const leagues = ids.map((id) => entries.get(id)!.league);
+const nations = ids.map((id) => entries.get(id)!.nation);
 
 const payload = {
   // Ghi đúng file đã dùng thay vì một chuỗi cố định — nguồn sẽ đổi khi có
