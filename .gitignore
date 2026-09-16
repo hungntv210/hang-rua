@@ -23,3 +23,8 @@ next-env.d.ts
 
 # Cau hinh Claude Code rieng tung may, khong chia se qua repo.
 .claude/settings.local.json
+
+# Vercel CLI tu them `.vercel` va `.env*` vao day khi chay `vercel link`.
+# `.vercel` da co o tren roi, con `.env*` thi QUA RONG: no khop luon
+# `.env.local.example` — file huong dan bien moi truong ma minh CO Y commit.
+# Giu nguyen `.env*.local` o tren la du: chi chan file that, khong chan mau.
