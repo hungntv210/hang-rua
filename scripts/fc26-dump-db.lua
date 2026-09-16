@@ -335,8 +335,27 @@ end
   `teamplayerlinks` là ground truth DUY NHẤT cho việc dò CLB, nên không được
   phép mất nó chỉ vì một hàm API vắng mặt.
 ]]
+--[[
+  CHI dung cho bang thuc su can.
+
+  `pcall` KHONG cuu duoc duong nay. `GetFirstRecord`/`GetRecordFieldValue` la ham
+  C++ cua Live Editor; duyet mot bang khong co du lieu nap trong Career Mode thi
+  no dereference con tro rac va GIET THANG tien trinh game — khong loi Lua nao
+  duoc nem ra de pcall bat.
+
+  Da xay ra that: bang `transfers` co trong schema (4 cot) nhung GetDBTableRows
+  tra nil, nhanh nay nhay vao, va game thoat han giua chung.
+
+  Nen danh sach nay phai ngan va chi gom thu khong the thieu.
+]]
+local CURSOR_FALLBACK_OK = {
+  teamplayerlinks = true,   -- ground truth DUY NHAT de do CLB
+  teams = true,
+}
+
 local function dumpByCursor(tname, cols)
   if not cols then return nil end
+  if not CURSOR_FALLBACK_OK[tname] then return nil end
   local t = try(function() return LE.db:GetTable(tname) end)
   if not t then return nil end
 
@@ -364,11 +383,40 @@ local function dumpByCursor(tname, cols)
   return n
 end
 
+-- Xep bang thiet yeu len dau. Neu crash o bang nao do phia sau thi nhung thu
+-- khong the thieu da nam tren dia roi.
+local auxOrder = {}
+do
+  local ESSENTIAL = { "teamplayerlinks", "teams", "leagues", "leagueteamlinks", "nations" }
+  local added = {}
+  for i = 1, #ESSENTIAL do
+    for j = 1, #tableNames do
+      if tableNames[j] == ESSENTIAL[i] then
+        auxOrder[#auxOrder + 1] = ESSENTIAL[i]
+        added[ESSENTIAL[i]] = true
+      end
+    end
+  end
+  for i = 1, #tableNames do
+    if not added[tableNames[i]] then auxOrder[#auxOrder + 1] = tableNames[i] end
+  end
+end
+
 do
   local dumped = 0
-  for i = 1, #tableNames do
-    local tname = tableNames[i]
+  for i = 1, #auxOrder do
+    local tname = auxOrder[i]
     if tname ~= "players" and wantAux(tname) then
+      -- Ghi ten bang SAP xu ly ra dia truoc khi dung toi no. Crash o tang C++
+      -- khong de lai vet gi trong log Lua, nen day la cach duy nhat biet duoc
+      -- bang nao giet tien trinh.
+      local mark = openOut("fc26_progress.txt")
+      if mark then
+        mark:write("dang xu ly: " .. tname .. "\n")
+        mark:flush()
+        mark:close()
+      end
+
       local rows = try(GetDBTableRows, tname)
       if (not rows or #rows == 0) then
         -- Thử lại bằng con trỏ trước khi kết luận là không đọc được.
