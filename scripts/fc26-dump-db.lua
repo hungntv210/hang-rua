@@ -87,23 +87,85 @@ local function csv(value)
   return s
 end
 
+local report = {}
+local function note(line)
+  report[#report + 1] = line
+  LOGGER:LogInfo(line)
+end
+
+--[[
+  Tìm thư mục ghi được, THỬ THẬT chứ không giả định.
+
+  Bản trước dùng thẳng biến toàn cục `desktop_path`, thừa kế từ script cũ mà
+  chưa bao giờ kiểm chứng. Trong bản Live Editor của người dùng nó là `nil`, và
+  chuỗi hậu quả rất khó lần ra:
+
+    - `string.format("%s", nil)` KHÔNG ném lỗi, nó cho ra chuỗi "nil"
+    - nên mọi file được ghi vào thư mục tên `nil\` (không tồn tại)
+    - `io.open` thất bại lặng lẽ, bọc trong pcall nên không ai biết
+    - cả lượt quét chạy xong mà không ghi được byte nào
+    - mãi tới dòng nối chuỗi cuối cùng mới nổ, vì `..` thì không ép kiểu nil
+
+  Nên ở đây phải THỬ GHI THẬT một file nháp vào từng ứng viên. Chỉ có ghi được
+  thật mới chứng minh được là ghi được.
+]]
+local OUT_DIR = nil
+do
+  local candidates = {}
+  local function add(dir)
+    if type(dir) == "string" and #dir > 0 then candidates[#candidates + 1] = dir end
+  end
+
+  add(rawget(_G, "desktop_path"))
+  local home = try(os.getenv, "USERPROFILE")
+  if home then
+    add(home .. "\\Desktop")
+    add(home .. "\\Documents")
+    add(home)
+  end
+  add(try(os.getenv, "TEMP"))
+  add(".")  -- thư mục hiện hành của tiến trình game
+
+  for i = 1, #candidates do
+    local dir = candidates[i]
+    local probe = dir .. "\\fc26_write_test.tmp"
+    local f = try(io.open, probe, "w+")
+    if f then
+      try(function() f:write("ok") end)
+      try(function() f:close() end)
+      try(os.remove, probe)
+      OUT_DIR = dir
+      note("Thu muc ghi duoc: " .. dir)
+      break
+    end
+    LOGGER:LogInfo("Khong ghi duoc vao: " .. dir)
+  end
+end
+
+if not OUT_DIR then
+  -- Dừng NGAY, trước lượt quét chậm. Quét xong rồi mới phát hiện không ghi được
+  -- là mất trắng một lần khởi động game — đúng chuyện đã xảy ra lần trước.
+  MessageBox(
+    "Dump FC 26 DB - KHONG GHI DUOC FILE",
+    "Khong tim duoc thu muc nao ghi duoc, nen dung luon truoc khi quet.\n\n" ..
+    "Hay mo file .lua nay, tim dong `add(\".\")` va them mot dong ngay TRUOC no:\n" ..
+    "    add(\"D:\\\\fc26out\")\n\n" ..
+    "(thu muc do phai TON TAI san), roi chay lai."
+  )
+  return
+end
+
 local function outPath(name)
-  return string.format("%s\\%s", desktop_path, name)
+  return OUT_DIR .. "\\" .. name
 end
 
 --- Mở file để ghi, trả về handle hoặc nil.
 local function openOut(name)
   local f = try(io.open, outPath(name), "w+")
   if not f then
-    LOGGER:LogInfo("KHONG MO DUOC FILE: " .. outPath(name))
+    note("KHONG MO DUOC FILE: " .. outPath(name))
   end
   return f
-end
-
-local report = {}
-local function note(line)
-  report[#report + 1] = line
-  LOGGER:LogInfo(line)
 end
 
 ---------------------------------------------------------------------------
@@ -262,13 +324,62 @@ local function wantAux(name)
   return false
 end
 
+--[[
+  Đường lui khi `GetDBTableRows` không dùng được.
+
+  Lượt chạy trước báo "GD3 transfers: khong doc duoc" cho MỌI bảng phụ, trong
+  khi `GetDBTablesNames()` rõ ràng chạy được (nó trả về `transfers`, cái tên
+  không có trong danh sách dự phòng của script). Nên nhiều khả năng bản Live
+  Editor này không có `GetDBTableRows`, chỉ có API con trỏ.
+
+  `teamplayerlinks` là ground truth DUY NHẤT cho việc dò CLB, nên không được
+  phép mất nó chỉ vì một hàm API vắng mặt.
+]]
+local function dumpByCursor(tname, cols)
+  if not cols then return nil end
+  local t = try(function() return LE.db:GetTable(tname) end)
+  if not t then return nil end
+
+  local out = openOut("fc26_" .. tname .. ".csv")
+  if not out then return nil end
+  out:write(table.concat(cols, ",") .. "\n")
+
+  local n = 0
+  local record = try(function() return t:GetFirstRecord() end)
+  while type(record) == "number" and record > 0 and n < MAX_AUX_ROWS do
+    local line = {}
+    for c = 1, #cols do
+      line[#line + 1] = csv(try(function()
+        return t:GetRecordFieldValue(record, cols[c])
+      end))
+    end
+    out:write(table.concat(line, ",") .. "\n")
+    n = n + 1
+    if n % FLUSH_EVERY == 0 then out:flush() end
+    record = try(function() return t:GetNextValidRecord() end)
+  end
+
+  out:flush()
+  out:close()
+  return n
+end
+
 do
   local dumped = 0
   for i = 1, #tableNames do
     local tname = tableNames[i]
     if tname ~= "players" and wantAux(tname) then
       local rows = try(GetDBTableRows, tname)
-      if rows and #rows > 0 then
+      if (not rows or #rows == 0) then
+        -- Thử lại bằng con trỏ trước khi kết luận là không đọc được.
+        local n = dumpByCursor(tname, schema[tname])
+        if n and n > 0 then
+          dumped = dumped + 1
+          note(string.format("GD3 %s: %d dong, %d cot (qua con tro)", tname, n, #schema[tname]))
+        else
+          note(string.format("GD3 %s: khong doc duoc (ca hai cach)", tname))
+        end
+      elseif rows and #rows > 0 then
         -- Cột lấy từ manifest; nếu thiếu thì suy ra từ chính hàng đầu tiên.
         local cols = schema[tname]
         if not cols then
@@ -299,8 +410,6 @@ do
           note(string.format("GD3 %s: %d dong, %d cot%s", tname, n, #cols,
             #rows > MAX_AUX_ROWS and " (DA CAT BOT)" or ""))
         end
-      else
-        note(string.format("GD3 %s: khong doc duoc", tname))
       end
     end
   end
@@ -311,9 +420,27 @@ end
 -- Báo cáo
 ---------------------------------------------------------------------------
 
-local msg = "Xong. Cac file nam o:\n" .. desktop_path .. "\n\n"
-  .. table.concat(report, "\n")
-  .. "\n\n>>> BAY GIO LUU GAME NGAY <<<\n"
-  .. "Roi chep cac file fc26_*.csv vao dataset_fc26/"
+-- Ghi báo cáo ra FILE trước, rồi mới hiện hộp thoại.
+--
+-- Lượt chạy trước chết ở chính đoạn nối chuỗi này, sau khi đã quét xong mọi
+-- thứ. Nếu báo cáo nằm trên đĩa trước thì dù hộp thoại có nổ, người chạy vẫn
+-- cầm được kết quả và không phải khởi động lại game.
+do
+  local log = openOut("fc26_log.txt")
+  if log then
+    log:write(table.concat(report, "\n"))
+    log:write("\n")
+    log:flush()
+    log:close()
+  end
+end
 
-MessageBox("Dump FC 26 DB", msg)
+-- `OUT_DIR` chắc chắn là chuỗi ở đây: script đã dừng từ trước nếu không tìm
+-- được thư mục ghi được. Không có sự đảm bảo đó thì `..` sẽ ném lỗi với nil.
+MessageBox(
+  "Dump FC 26 DB",
+  "Xong. Cac file nam o:\n" .. OUT_DIR .. "\n\n"
+    .. table.concat(report, "\n")
+    .. "\n\n>>> BAY GIO LUU GAME NGAY <<<\n"
+    .. "Roi chep cac file fc26_*.csv vao dataset_fc26/"
+)
