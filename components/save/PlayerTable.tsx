@@ -145,6 +145,10 @@ export function PlayerTable({ players }: { players: SavePlayer[] }) {
         nên trang dựng lại từ 31 chỉ số thành phần, sai số ±1 ở{" "}
         {(OVR_ACCURACY.withinOne * 100).toFixed(1)}% trường hợp. Tiềm năng, ngày sinh,
         thể hình, vị trí và quốc tịch thì đọc thẳng, không suy đoán.
+        {" "}
+        <strong>Riêng cột &ldquo;CLB gốc&rdquo; thì không đọc từ save</strong> — file
+        save chưa giải mã được CLB, nên cột này mượn từ dữ liệu công khai của EA đầu
+        mùa. Với cầu thủ đã chuyển nhượng trong career, đó là CLB cũ.
         {unnamed > 0 ? (
           <>
             {" "}
@@ -164,7 +168,7 @@ export function PlayerTable({ players }: { players: SavePlayer[] }) {
             setQuery(e.target.value);
             setVisible(PAGE);
           }}
-          placeholder="Tìm theo tên, CLB, quốc tịch, vị trí hoặc ID…"
+          placeholder="Tìm theo tên, CLB gốc, quốc tịch, vị trí hoặc ID…"
           className="focus-ring min-w-[16rem] flex-1 rounded-sm border border-grid bg-void-soft px-3 py-2 text-sm text-ghost placeholder:text-mist-dim"
         />
         <div className="flex flex-wrap gap-2">
@@ -217,7 +221,11 @@ export function PlayerTable({ players }: { players: SavePlayer[] }) {
           <thead className="text-left opacity-70">
             <tr>
               <th className="py-2 pr-3">Cầu thủ</th>
-              <th className="py-2 pr-3">CLB</th>
+              <th className="py-2 pr-3">
+                <span title="CLB theo dữ liệu công khai của EA đầu mùa — không phải CLB hiện tại trong career">
+                  CLB gốc
+                </span>
+              </th>
               <th className="py-2 pr-3">Quốc tịch</th>
               <th className="py-2 pr-3">VT</th>
               <th className="py-2 pr-3 text-right">Tuổi</th>

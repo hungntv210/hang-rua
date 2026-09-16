@@ -12,6 +12,11 @@ import { SaveStringList } from "@/components/save/SaveStringList";
 import { SaveUnknownList } from "@/components/save/SaveUnknownList";
 import { TabBar, TabPanel, type TabItem } from "@/components/TabBar";
 import { loadFc26Database } from "@/lib/fc26/db";
+import {
+  diagnosticsToJson,
+  playersToCsv,
+  playersToJson,
+} from "@/lib/save/career/export";
 import { formatBytes, formatCount } from "@/lib/save/format";
 import { FILE_LIMITS } from "@/lib/save/heuristics";
 import type { SaveDocument, SavePlayer, WorkerResponse } from "@/lib/save/types";
@@ -224,7 +229,7 @@ function SaveResult({
           group="save-reader"
           ariaLabel="Các lớp dữ liệu trong file save"
         />
-        <ExportButtons doc={doc} />
+        <ExportButtons doc={doc} players={players} />
       </div>
 
       <TabPanel tabKey={tab}>
@@ -253,47 +258,81 @@ function SaveResult({
 }
 
 /**
- * Hai mức xuất khác nhau vì kích thước chênh nhau hàng trăm lần: bản tóm tắt
- * vài trăm KB để đọc và chia sẻ, bản đầy đủ có thể hàng trăm MB nếu save nhiều
- * field. Gộp thành một nút sẽ khiến người dùng vô tình tải bản khổng lồ.
+ * Ba bản xuất, mỗi bản một lý do tồn tại rõ ràng và không chồng lên nhau.
+ *
+ * Bản trước có hai nút, "tóm tắt" và "đầy đủ", và cả hai đều hỏng theo cùng một
+ * cách: chúng chỉ nhận `doc`, trong khi tên cầu thủ được ghép vào state `players`
+ * riêng ở component cha. Nên "đầy đủ" xuất ra 21.000 cầu thủ `name: null`, còn
+ * "tóm tắt" thì không có danh sách cầu thủ nào cả — tức là thứ chính của trang
+ * không xuất ra được bằng cách nào.
+ *
+ * Giờ `players` là tham số bắt buộc, và CSV đứng trước JSON vì phần lớn người
+ * dùng trang này muốn mở bằng Excel chứ không muốn đọc JSON.
  */
-function ExportButtons({ doc }: { doc: SaveDocument }) {
-  function download(data: unknown, suffix: string) {
+function ExportButtons({
+  doc,
+  players,
+}: {
+  doc: SaveDocument;
+  players: SavePlayer[] | null;
+}) {
+  function download(text: string, suffix: string, mime: string) {
     const base = doc.meta.fileName.replace(/[^\w.-]+/g, "_") || "save";
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
-    });
+    const blob = new Blob([text], { type: mime });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${base}.${suffix}.json`;
+    link.download = `${base}.${suffix}`;
     link.click();
-    URL.revokeObjectURL(url);
+    // Thu hồi ở nhịp sau: Safari đọc blob bất đồng bộ sau `click()`, thu hồi
+    // ngay trong cùng nhịp thì file tải về rỗng.
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   }
+
+  const count = players?.length ?? 0;
 
   return (
     <div className="flex flex-wrap gap-2">
+      {players && count > 0 ? (
+        <>
+          <button
+            type="button"
+            onClick={() =>
+              download(playersToCsv(players), "cau-thu.csv", "text/csv;charset=utf-8")
+            }
+            className="tab"
+            title="Mở được bằng Excel hoặc Google Sheets"
+          >
+            Cầu thủ (CSV, {formatCount(count)})
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              download(
+                JSON.stringify(playersToJson(doc, players), null, 2),
+                "cau-thu.json",
+                "application/json",
+              )
+            }
+            className="tab"
+          >
+            Cầu thủ (JSON)
+          </button>
+        </>
+      ) : null}
       <button
         type="button"
         onClick={() =>
           download(
-            {
-              meta: doc.meta,
-              counters: doc.counters,
-              issues: doc.issues,
-              fieldStats: doc.fieldStats,
-              unknownRegions: doc.unknownRegions,
-              looseStrings: doc.looseStrings,
-            },
-            "tom-tat",
+            JSON.stringify(diagnosticsToJson(doc), null, 2),
+            "chan-doan.json",
+            "application/json",
           )
         }
         className="tab"
+        title="Mọi thứ trừ danh sách cầu thủ — để gửi kèm khi báo lỗi đọc file"
       >
-        Tải JSON tóm tắt
-      </button>
-      <button type="button" onClick={() => download(doc, "day-du")} className="tab">
-        Tải JSON đầy đủ ({formatCount(doc.counters.fieldCount)} field)
+        Chẩn đoán (JSON)
       </button>
     </div>
   );

@@ -87,10 +87,36 @@ thread ranh nen tab khong dung hinh.
 
 ```bash
 npx tsx scripts/probe-save.ts                  # tu kiem tren fixture
+npx tsx scripts/check-export.ts                # tu kiem phan xuat CSV/JSON
+node scripts/check-lua-dump.mjs                # tu kiem script Lua (VM gia lap)
 npx tsx scripts/probe-save.ts <duong-dan-save> # do file that
 npx tsx scripts/hex-probe.ts <file> str "PlayerID"
 npx tsx scripts/hex-probe.ts <file> at 9046300 420
 ```
+
+### Giai ma bang ground truth tu Live Editor
+
+Xem `docs/superpowers/specs/2026-09-16-live-editor-decode-design.md`.
+
+`scripts/fc26-dump-db.lua` chay trong game bang FC 26 Live Editor, tu liet ke
+schema roi dump toan bo DB ra CSV. No duoc thiet ke de chay DUNG MOT LAN, nen
+giai doan manifest ghi ra dia TRUOC giai doan quet cham: co treo giua chung thi
+van con schema, khong mat luot khoi dong game.
+
+QUAN TRONG: export va file save phai CUNG MOT THOI DIEM. Vao career -> chay
+script -> LUU GAME NGAY -> dung dung save do. `probe-fields.ts` co cong chan do
+lai cac truong da biet chac; khong dat 98% thi no dung, vi moi ket luan sau do
+se vo nghia.
+
+```bash
+npx tsx scripts/probe-fields.ts <save> dataset_fc26/fc26_players.csv
+npx tsx scripts/probe-squads.ts <save> [dataset_fc26/fc26_teamplayerlinks.csv]
+npx tsx scripts/build-fc26-db.ts --newgen-from <save> <csv...> public/fc26/players.json
+```
+
+Co `--newgen-from` vi export chup career cua MOT nguoi: newgen trong do mang ID
+ma career nguoi khac gan cho cau thu hoan toan khac, nen khong duoc nuong vao DB
+dung chung.
 
 ### Cau truc file - da xac minh tren save that
 

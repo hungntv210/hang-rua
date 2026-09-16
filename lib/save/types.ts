@@ -189,7 +189,17 @@ export interface SavePlayer {
   name: string | null;
   /** Nguồn của tên, để UI đánh dấu — người xem cần biết cầu thủ nào là newgen. */
   nameSource: "newgen" | "database" | null;
+  /**
+   * CLB **gốc** theo dataset công khai của EA đầu mùa — KHÔNG phải CLB hiện tại
+   * trong career. Save chưa giải mã được trường CLB, nên `lib/save/*` luôn để
+   * `null` ở đây và `SaveReaderClient` mới ghép từ DB nhúng vào.
+   *
+   * Hệ quả phải nói rõ ở mọi chỗ hiển thị: với cầu thủ đã chuyển nhượng trong
+   * career, giá trị này SAI. Cột trên bảng vì thế đặt tên là "CLB gốc" chứ không
+   * phải "CLB" — ô sai mà trông như đúng thì tệ hơn ô trống.
+   */
   club: string | null;
+  /** Giải của `club`. Cùng cảnh báo như trên. */
   league: string | null;
   nation: string | null;
   position: string;

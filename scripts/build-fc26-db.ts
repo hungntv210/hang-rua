@@ -19,6 +19,8 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 
+import { readNewgenNames } from "../lib/save/career/newgen-names";
+
 function splitCsvLine(line: string): string[] {
   const out: string[] = [];
   let cur = "";
@@ -33,6 +35,32 @@ function splitCsvLine(line: string): string[] {
 }
 
 const args = process.argv.slice(2);
+
+/**
+ * Loại cầu thủ do career sinh ra khỏi DB dùng chung.
+ *
+ * VÌ SAO BẮT BUỘC khi nguồn là export từ Live Editor: export đó chụp career của
+ * MỘT người. Newgen trong career ấy mang ID mà career của người khác gán cho một
+ * cầu thủ hoàn toàn khác. Nướng chúng vào `players.json` — file mọi người dùng
+ * chung — là gieo tên sai cho tất cả những ai không phải chủ file export.
+ *
+ * Tên newgen vẫn hiện bình thường với chủ save, vì nó đọc thẳng từ chính save đó.
+ */
+const newgenFlag = args.indexOf("--newgen-from");
+let newgenIds = new Set<number>();
+if (newgenFlag >= 0) {
+  const savePath = args[newgenFlag + 1];
+  if (!savePath) {
+    console.error("--newgen-from cần đường dẫn tới file save.");
+    process.exit(1);
+  }
+  const buf = readFileSync(savePath);
+  const bytes = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+  newgenIds = new Set(readNewgenNames(bytes).keys());
+  args.splice(newgenFlag, 2);
+  console.log(`Loại ${newgenIds.size} cầu thủ newgen đọc từ ${savePath}`);
+}
+
 const outPath = args.length > 1 && args[args.length - 1].endsWith(".json")
   ? (args.pop() as string)
   : "public/fc26/players.json";
@@ -50,7 +78,7 @@ if (csvPaths.length === 0) {
  * script ném lỗi khó hiểu ngay ở nguồn hợp lệ, nên ở đây chỉ cột định danh và
  * cột tên là bắt buộc — mọi cột khác thiếu thì bỏ trống.
  */
-function columnMap(head: string[]) {
+function columnMap(head: string[]): Record<string, number> {
   const find = (...names: string[]): number => {
     for (const n of names) {
       const i = head.findIndex((h) => h.toLowerCase() === n.toLowerCase());
@@ -59,9 +87,9 @@ function columnMap(head: string[]) {
     return -1;
   };
   return {
-    id: find("player_id", "ID", "playerid"),
-    short: find("short_name", "Name", "name"),
-    long: find("long_name", "Name", "name"),
+    id: find("player_id", "ID", "playerid_key", "playerid"),
+    short: find("short_name", "Name", "player_name", "name"),
+    long: find("long_name", "Name", "player_name", "name"),
     club: find("club_name", "Team", "team", "teamname"),
     league: find("league_name", "League", "league"),
     nation: find("nationality_name", "Nation", "nation"),
@@ -96,7 +124,20 @@ for (const csvPath of csvPaths) {
     );
   }
 
+  /**
+   * Export từ Live Editor có cột `current_teamid` — CLB HIỆN TẠI trong career
+   * của người chạy script. Nó đúng với career đó và sai với mọi career khác,
+   * nên nguồn này chỉ được góp TÊN và QUỐC TỊCH, không góp CLB.
+   */
+  const isLiveEditor = head.some((h) => h.toLowerCase() === "current_teamid");
+  if (isLiveEditor) {
+    console.log(`${csvPath}: nguồn Live Editor — chỉ lấy tên và quốc tịch, bỏ CLB/giải`);
+    I.club = -1;
+    I.league = -1;
+  }
+
   const before = seen.size;
+  let droppedNewgen = 0;
   for (let i = 1; i < lines.length; i += 1) {
     if (!lines[i]) continue;
     const f = splitCsvLine(lines[i]);
@@ -111,6 +152,7 @@ for (const csvPath of csvPaths) {
     // thay vì đánh dấu rõ là chưa có tên.
     // File đứng trước thắng, nên xếp nguồn đáng tin nhất lên đầu.
     if (!Number.isFinite(id) || id <= 0 || !short || seen.has(id)) continue;
+    if (newgenIds.has(id)) { droppedNewgen += 1; continue; }
     seen.add(id);
 
     const long = at(f, I.long);
@@ -122,7 +164,10 @@ for (const csvPath of csvPaths) {
     leagues.push(at(f, I.league));
     nations.push(nationName);
   }
-  console.log(`${csvPath}: thêm ${seen.size - before} cầu thủ (tổng ${seen.size})`);
+  console.log(
+    `${csvPath}: thêm ${seen.size - before} cầu thủ (tổng ${seen.size})` +
+      (droppedNewgen > 0 ? `, bỏ ${droppedNewgen} newgen` : ""),
+  );
 }
 
 const payload = {

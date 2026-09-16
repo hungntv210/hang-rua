@@ -59,7 +59,7 @@ export const DOB_EPOCH = "1941-08-25";
 /**
  * 31 chỉ số chi tiết. Tất cả rộng 7 bit và lưu 0-based (cộng 1).
  *
- * Thiếu ba chỉ số chưa dò ra: `volleys`, `marking_awareness`, `gk_positioning`.
+ * Thiếu ba chỉ số chưa dò ra: `volleys`, `defAwareness`, `gkPositioning`.
  * Chúng không chặn việc tính overall — mô hình vẫn đạt lệch ≤1 ở 99,7% — nhưng
  * là lý do nhóm thủ môn kém chính xác nhất.
  */
