@@ -1,0 +1,7 @@
+{
+  "recommendations": [
+    // Goi y ten class Tailwind + xem gia tri mau/spacing khi hover. Project nay
+    // dung Tailwind cho toan bo giao dien nen extension nay dang gia nhat.
+    "bradlc.vscode-tailwindcss"
+  ]
+}

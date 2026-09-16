@@ -1,0 +1,26 @@
+{
+  // Dung TypeScript trong node_modules cua project (5.5.3) thay vi ban di kem
+  // VS Code, de loi bao trong editor giong het `npm run build`.
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // Import goi y se dung dang "@/lib/config" thay vi "../../lib/config".
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+
+  // Trinh kiem tra CSS cua VS Code khong biet @tailwind / @apply nen bao loi gia
+  // trong app/globals.css.
+  "css.lint.unknownAtRules": "ignore",
+
+  // .next duoc sinh lai moi lan build, dung de no lam nhieu ket qua tim kiem
+  // va lam nang bo theo doi file.
+  "search.exclude": {
+    "**/.next": true,
+    "**/node_modules": true
+  },
+  "files.watcherExclude": {
+    "**/.next/**": true,
+    "**/node_modules/**": true
+  },
+
+  "files.eol": "\n"
+}

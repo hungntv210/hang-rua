@@ -1,0 +1,256 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+
+  /* CÁC MỐC STICKY
+     Dưới lg có HAI thanh dính chồng lên nhau: thanh hamburger (Sidebar.tsx) ở
+     trên, thanh điều hướng Football (app/football/layout.tsx) ở dưới. Nếu cả
+     hai cùng đặt top-0 thì thanh dưới chui xuống dưới thanh trên và bị che.
+
+     Để ba biến này luôn đúng mà không phải đo lại mỗi lần đổi nội dung, CẢ HAI
+     thanh đều được đặt chiều cao CỐ ĐỊNH `h-16` (64px) — đừng để chiều cao tự
+     giãn theo nội dung bên trong.
+
+     --topbar-h : thanh hamburger, CHỈ tồn tại dưới breakpoint lg
+     --nav-h    : thanh điều hướng của module Football
+     --header-h : tổng hai thanh — mốc cho các phần tử sticky bên trong */
+  --topbar-h: 64px;
+  --nav-h: 64px;
+  --header-h: calc(var(--topbar-h) + var(--nav-h));
+}
+
+@media (min-width: 1024px) {
+  :root {
+    /* Từ lg trở lên thanh hamburger bị ẩn, sidebar hiện cố định bên trái. */
+    --topbar-h: 0px;
+    --header-h: var(--nav-h);
+  }
+}
+
+body {
+  @apply bg-void text-ghost antialiased;
+  /* Lưới toạ độ rất mờ trên nền — cùng ngôn ngữ với khung HUD, nhưng nhạt tới
+     mức không bao giờ cạnh tranh với chữ. */
+  background-image:
+    linear-gradient(to right, rgba(46, 107, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(46, 107, 255, 0.035) 1px, transparent 1px);
+  background-size: 72px 72px;
+  background-attachment: fixed;
+}
+
+@layer components {
+  /* Mặt phẳng nổi trên nền đêm. Viền sáng mảnh làm việc chính; nền đặc và
+     phẳng để bảng số liệu bên trong luôn đọc được. */
+  .plate {
+    @apply rounded-sm border border-grid bg-abyss shadow-panel transition-all duration-200;
+  }
+
+  .plate-interactive {
+    @apply hover:-translate-y-px hover:border-electric/60 hover:bg-abyss-200 hover:shadow-panel-lift;
+  }
+
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-electric-bright focus-visible:ring-offset-2 focus-visible:ring-offset-void;
+  }
+
+  .tab {
+    @apply focus-ring relative inline-flex min-h-[40px] items-center whitespace-nowrap rounded-sm border border-grid bg-abyss px-3.5 py-2 font-mono text-xs uppercase tracking-[0.08em] text-mist transition-all duration-200 hover:border-electric/50 hover:bg-abyss-300 hover:text-ghost;
+  }
+
+  /* Tab đang chọn: nền đặc + một vạch sáng ở cạnh trên, giống đèn báo trên
+     bảng điều khiển. Không dùng quầng sáng lan ra vì tab nằm ngay trên bảng. */
+  .tab-active {
+    @apply border-electric bg-electric-wash text-ghost hover:border-electric hover:bg-electric-wash hover:text-ghost;
+  }
+
+  .tab-active::before {
+    content: "";
+    @apply absolute inset-x-2 -top-px h-px bg-electric-bright;
+  }
+
+  /* Nút hành động chính. Tách khỏi `.tab` vì hai thứ khác nghĩa: tab là "đang
+     xem cái nào", nút là "bấm để làm gì". Trước đây nút mượn `.tab-active` nên
+     bị dính luôn vạch chỉ báo tab — đọc sai nghĩa trên một nút đứng riêng. */
+  .btn-primary {
+    @apply focus-ring inline-flex min-h-[42px] items-center justify-center gap-2 rounded-sm border border-electric bg-electric px-5 py-2 font-mono text-xs font-medium uppercase tracking-[0.1em] text-void transition-all duration-200 hover:bg-electric-bright hover:shadow-glow;
+  }
+
+  .section-title {
+    @apply font-display text-2xl font-semibold tracking-tight text-ghost;
+  }
+
+  /* Nhãn nhỏ in hoa cho phần phụ — dùng font mono, chữ của bảng điều khiển. */
+  .eyebrow {
+    @apply font-mono text-[10px] font-medium uppercase tracking-[0.22em] text-mist-dim;
+  }
+
+  /* Chữ Nhật カメの巣穴 dùng font hệ thống của máy người dùng. */
+  .brand-jp {
+    @apply font-jp tracking-[0.22em];
+  }
+
+  /* Phụ đề tiếng Nhật đặt dọc theo lề — chi tiết lấy từ cách xếp chữ tategaki. */
+  .brand-jp-vertical {
+    @apply font-jp;
+    writing-mode: vertical-rl;
+    letter-spacing: 0.24em;
+  }
+
+  /* Ngoặc góc HUD. Dùng cho khung viewport và cho ảnh hero. */
+  .hud-corner {
+    @apply pointer-events-none absolute h-5 w-5 border-electric/70;
+  }
+
+  /*
+   * Kính mờ — CHỈ cho phần khung: sidebar, thanh nav dính, panel hero, drawer,
+   * vùng thả file.
+   *
+   * KHÔNG áp lên bảng dữ liệu. `backdrop-filter` buộc trình duyệt vẽ lại vùng
+   * phía sau mỗi khung hình; đặt nó sau một bảng 21.000 dòng đang cuộn là lỗi
+   * hiệu năng có thật, không phải lo xa. Đó cũng là lý do thứ hai: nền mờ sau
+   * cột số làm chữ nhoè đúng lúc người dùng đang dò số liệu.
+   */
+  .glass {
+    @apply border border-grid/80 bg-abyss/65 backdrop-blur-xl;
+  }
+
+  .glass-strong {
+    @apply border border-electric/25 bg-void-soft/80 backdrop-blur-2xl;
+  }
+
+  /*
+   * Viền phát sáng hai màu — cyan sang magenta, như hai biển hiệu neon chồng
+   * nhau. Dùng cho phần tử được nhấn mạnh, không dùng đại trà.
+   */
+  .neon-edge {
+    @apply relative;
+  }
+
+  .neon-edge::after {
+    content: "";
+    @apply pointer-events-none absolute -inset-px rounded-[inherit] opacity-0 transition-opacity duration-300;
+    background: linear-gradient(
+      135deg,
+      theme("colors.electric.DEFAULT"),
+      transparent 40%,
+      transparent 60%,
+      theme("colors.sakura.DEFAULT")
+    );
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    padding: 1px;
+  }
+
+  .neon-edge:hover::after,
+  .neon-edge:focus-visible::after {
+    @apply opacity-100;
+  }
+
+  /*
+   * Mực thư pháp phát sáng.
+   *
+   * Chuyển sắc trắng-xanh sang cyan mô tả lại cách chữ カメ xuất hiện trong
+   * banner: nét bút xanh có quầng sáng trên nền đêm, không phải mực đen.
+   *
+   * `background-clip: text` khiến `color` tính ra là `transparent`, nên script
+   * đo tương phản tự động sẽ BỎ QUA phần tử này. Vì vậy hai điểm cuối của
+   * gradient phải tự chúng đạt chuẩn trên nền — đã kiểm tay: #C9D6F5 và #67E8F9
+   * đều trên 10:1.
+   */
+  .brush-ink {
+    background-image: linear-gradient(
+      100deg,
+      theme("colors.ghost") 0%,
+      theme("colors.electric.bright") 55%,
+      theme("colors.electric.DEFAULT") 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    /* Quầng sáng mảnh. Đặt bằng drop-shadow chứ không phải text-shadow để nó
+       bám theo hình nét bút thay vì theo hộp chữ. */
+    filter: drop-shadow(0 0 18px rgb(34 211 238 / 0.35));
+  }
+
+  /*
+   * Nét quét bút tự vẽ khi vào trang, như đang được viết ra.
+   *
+   * TRẠNG THÁI NGHỈ PHẢI LÀ ĐÃ VẼ XONG (`dashoffset: 0`), còn animation chạy
+   * từ 320 về 0. Bản đầu làm ngược lại — nghỉ ở 320 (vô hình) và dựa vào
+   * animation để hiện ra — nên bất cứ lý do gì khiến animation không chạy đều
+   * làm nét bút biến mất vĩnh viễn. Hiệu ứng là thứ thêm vào, không bao giờ
+   * được là điều kiện để nội dung tồn tại.
+   */
+  .brush-stroke {
+    color: theme("colors.electric.DEFAULT");
+    stroke-dasharray: 320;
+    stroke-dashoffset: 0;
+    animation: brush-draw 900ms cubic-bezier(0.22, 1, 0.36, 1) 260ms both;
+    filter: drop-shadow(0 0 10px rgb(34 211 238 / 0.55));
+  }
+
+  /*
+   * Khối chờ dữ liệu. Một vệt sáng quét qua thay cho `animate-pulse` mặc định.
+   *
+   * Nhấp nháy độ mờ nói "có gì đó đang chờ"; vệt quét nói "dữ liệu đang được
+   * đọc" — đúng việc trang đang làm, và cùng ngôn ngữ với vệt quét lúc chuyển
+   * trang. Hướng quét trái-sang-phải trùng hướng mắt đọc bảng.
+   */
+  .skeleton {
+    @apply relative overflow-hidden bg-abyss-300;
+  }
+
+  .skeleton::after {
+    content: "";
+    @apply absolute inset-0 -translate-x-full;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      theme("colors.electric.DEFAULT / 12%"),
+      transparent
+    );
+    animation: skeleton-sweep 1.4s ease-in-out infinite;
+  }
+
+  /* Vạch chia có nhịp — thay cho đường kẻ trơn, mượn từ thước đo trên banner. */
+  .rule-ticks {
+    background-image: repeating-linear-gradient(
+      to right,
+      theme("colors.grid.bright") 0 1px,
+      transparent 1px 8px
+    );
+    @apply h-px w-full;
+  }
+}
+
+@keyframes skeleton-sweep {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Nét bút chạy từ trái sang phải. Easing dốc ở đầu rồi chậm dần — giống lực tay
+   khi quét một nét, không phải tốc độ đều của máy. */
+@keyframes brush-draw {
+  from {
+    stroke-dashoffset: 320;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
