@@ -99,6 +99,62 @@ function columnMap(head: string[]): Record<string, number> {
 
 const at = (f: string[], i: number): string => (i >= 0 ? (f[i] ?? "").trim() : "");
 
+function collectIds(lines: string[], idCol: number): number[] {
+  const out: number[] = [];
+  for (let i = 1; i < lines.length; i += 1) {
+    if (!lines[i]) continue;
+    const v = Number(at(splitCsvLine(lines[i]), idCol));
+    if (Number.isFinite(v) && v > 0) out.push(v);
+  }
+  return out.sort((a, b) => a - b);
+}
+
+/**
+ * Ngưỡng ID mà từ đó trở lên là cầu thủ do career sinh ra — DÒ TỪ DỮ LIỆU.
+ *
+ * VÌ SAO KHÔNG DÙNG BẢNG TÊN NEWGEN TRONG SAVE: đã thử, và nó thiếu. Bảng đó
+ * liệt kê 20 newgen, nhưng career thực tế đã sinh 55 cầu thủ — số còn lại là
+ * cầu thủ học viện có ID cùng dải mà bảng tên không nhắc tới. Hậu quả: 35 cầu
+ * thủ của career lọt vào `players.json`, tức file mọi người dùng chung. Đúng
+ * cái bẫy mà thiết kế này được lập ra để chặn, và nó vẫn lọt.
+ *
+ * VÌ SAO KHÔNG VIẾT CỨNG 460000: đó là dải của FC 26. Bản game sau đổi dải là
+ * bộ lọc câm lặng ngừng hoạt động, và không ai biết cho tới khi dữ liệu đã lên
+ * production.
+ *
+ * Cách dò: cầu thủ có sẵn của game và cầu thủ career sinh ra nằm ở hai cụm ID
+ * cách nhau rất xa. Đo trên export thật: khoảng trống lớn nhất là
+ * 279.948 → 460.000, và **không một ID nào** phía trên nó có mặt trong ba
+ * dataset công khai, trong khi phía dưới thì 17.399/21.382 có.
+ *
+ * Hai ràng buộc để không cắt nhầm một dải ID thưa bình thường:
+ *   - khoảng trống phải thật lớn (`MIN_GAP`)
+ *   - phần bị cắt phải nhỏ (`MAX_TAIL_RATIO`) — career sinh vài chục cầu thủ,
+ *     không phải vài nghìn
+ */
+const MIN_GAP = 50_000;
+const MAX_TAIL_RATIO = 0.05;
+
+function careerGeneratedFloor(sortedIds: number[]): number {
+  if (sortedIds.length < 100) return Number.POSITIVE_INFINITY;
+
+  let gapAt = -1;
+  let gapSize = 0;
+  for (let i = 1; i < sortedIds.length; i += 1) {
+    const d = sortedIds[i] - sortedIds[i - 1];
+    if (d > gapSize) {
+      gapSize = d;
+      gapAt = i;
+    }
+  }
+  if (gapAt < 0 || gapSize < MIN_GAP) return Number.POSITIVE_INFINITY;
+
+  const tail = sortedIds.length - gapAt;
+  if (tail / sortedIds.length > MAX_TAIL_RATIO) return Number.POSITIVE_INFINITY;
+
+  return sortedIds[gapAt];
+}
+
 /**
  * Gộp THEO TỪNG TRƯỜNG, không phải "file đứng trước thắng toàn bộ".
  *
@@ -149,6 +205,14 @@ for (const csvPath of csvPaths) {
     I.league = -1;
   }
 
+  // Dải ID do career sinh ra, dò từ chính file. Xem `careerGeneratedFloor`.
+  const generatedFloor = isLiveEditor
+    ? careerGeneratedFloor(collectIds(lines, I.id))
+    : Number.POSITIVE_INFINITY;
+  if (Number.isFinite(generatedFloor)) {
+    console.log(`${csvPath}: coi ID >= ${generatedFloor} là do career sinh ra, sẽ loại`);
+  }
+
   const before = seen.size;
   let droppedNewgen = 0;
   for (let i = 1; i < lines.length; i += 1) {
@@ -165,7 +229,7 @@ for (const csvPath of csvPaths) {
     // thay vì đánh dấu rõ là chưa có tên.
     // File đứng trước thắng, nên xếp nguồn đáng tin nhất lên đầu.
     if (!Number.isFinite(id) || id <= 0 || !short) continue;
-    if (newgenIds.has(id)) { droppedNewgen += 1; continue; }
+    if (newgenIds.has(id) || id >= generatedFloor) { droppedNewgen += 1; continue; }
     seen.add(id);
 
     const long = at(f, I.long);
