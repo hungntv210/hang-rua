@@ -195,7 +195,7 @@ export interface SavePlayer {
    * biệt được, nếu không một huyền thoại 45 tuổi chỉ số 91 sẽ nằm lẫn trong đội
    * hình mà không ai hiểu vì sao.
    */
-  nameSource: "newgen" | "database" | "ultimateTeam" | null;
+  nameSource: "newgen" | "database" | "namePool" | "ultimateTeam" | null;
   /**
    * CLB **gốc** theo dataset công khai của EA đầu mùa — KHÔNG phải CLB hiện tại
    * trong career. Save chưa giải mã được trường CLB, nên `lib/save/*` luôn để
@@ -223,6 +223,16 @@ export interface SavePlayer {
   internationalReputation: number | null;
   /** Mã quốc gia; tên tra qua DB nhúng, dùng được cả khi không có tên cầu thủ. */
   nationalityId: number | null;
+  /**
+   * Chỉ số trỏ vào kho tên của game — đọc thẳng từ save, 100% chính xác.
+   *
+   * Đây là cách duy nhất lấy được tên cầu thủ do career sinh ra: save không lưu
+   * chuỗi tên cho phần lớn nhóm này. Tra sang chữ ở `lib/fc26/names.ts`.
+   */
+  firstNameId: number | null;
+  lastNameId: number | null;
+  /** Khác 0 thì tên hiển thị là tên thường dùng, không phải "tên + họ". */
+  commonNameId: number | null;
   /**
    * 31 chỉ số chi tiết, thứ tự theo `ATTRIBUTE_ORDER`.
    *

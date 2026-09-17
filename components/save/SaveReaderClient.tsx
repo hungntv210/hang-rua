@@ -14,6 +14,7 @@ import { SaveUnknownList } from "@/components/save/SaveUnknownList";
 import { TabBar, TabPanel, type TabItem } from "@/components/TabBar";
 import { loadFc26Database } from "@/lib/fc26/db";
 import { loadFc26Formations, type Lineup } from "@/lib/fc26/formations";
+import { loadFc26Names } from "@/lib/fc26/names";
 import {
   diagnosticsToJson,
   playersToCsv,
@@ -55,6 +56,7 @@ export function SaveReaderClient() {
   // tải xong trước cả khi thả xong file, nên bảng không phải chờ thêm nhịp nào.
   useEffect(() => {
     void loadFc26Database();
+    void loadFc26Names();
   }, []);
 
   // Ghép tên cầu thủ có sẵn từ DB nhúng. Việc này nằm ở client chứ không trong
@@ -67,7 +69,7 @@ export function SaveReaderClient() {
     }
     let alive = true;
     setPlayers(career.players);
-    void loadFc26Database().then((db) => {
+    void Promise.all([loadFc26Database(), loadFc26Names()]).then(([db, names]) => {
       if (!alive || !db) return;
       setPlayers(
         career.players.map((p) => {
@@ -77,9 +79,19 @@ export function SaveReaderClient() {
           if (p.nameSource === "newgen") return { ...p, nation };
           const entry = db.get(p.playerId);
           if (!entry) {
-            // Không có tên NHƯNG vẫn có thể biết là nội dung ngoài career: suất
-            // huyền thoại chưa có bản quyền tên. Không đánh dấu thì nó hiện ra
-            // "Cầu thủ Sweden, 44 tuổi, chỉ số 91" và trông y hệt lỗi parser.
+            /*
+             * Không có trong DB thì tra KHO TÊN bằng chỉ số đọc từ save.
+             *
+             * Đây là cách duy nhất lấy được tên cầu thủ do career sinh ra: save
+             * chỉ lưu chuỗi tên cho 22/55 nhóm này, còn lại thì tên không có
+             * trong file dưới dạng chữ. Đo trên career thật: 55/55 giải được.
+             */
+            const fromPool = names?.resolve(p.firstNameId, p.lastNameId, p.commonNameId);
+            if (fromPool) {
+              return { ...p, nation, name: fromPool, nameSource: "namePool" as const };
+            }
+            // Không đánh dấu icon thì suất huyền thoại chưa có bản quyền tên hiện
+            // ra "Cầu thủ Sweden, 44 tuổi, chỉ số 91" và trông y hệt lỗi parser.
             return db.isUltimateTeam(p.playerId)
               ? { ...p, nation, nameSource: "ultimateTeam" as const }
               : { ...p, nation };

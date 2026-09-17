@@ -109,6 +109,9 @@ export function toSavePlayer(
     weakFoot: raw.weakFoot,
     internationalReputation: raw.internationalReputation,
     nationalityId: raw.nationalityId,
+    firstNameId: raw.firstNameId,
+    lastNameId: raw.lastNameId,
+    commonNameId: raw.commonNameId,
     // Trường khuyết thành 0 để mảng luôn đúng độ dài; UI hiểu 0 là chưa đọc được.
     attributes: ATTRIBUTE_ORDER.map((name) => raw.attributes[name] ?? 0),
   };

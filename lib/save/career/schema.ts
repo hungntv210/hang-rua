@@ -48,6 +48,22 @@ export const CORE_FIELDS = {
   internationalReputation: f(906, 3, 1),
   skillMoves: f(929, 3, 1),
   weakFoot: f(1104, 3, 1),
+
+  /*
+   * Chỉ số trỏ vào KHO TÊN của game, không phải chuỗi.
+   *
+   * Đây là lời giải cho bài toán tên cầu thủ do career sinh ra. Save chỉ lưu
+   * chuỗi tên cho một phần regen (22/55, toàn dải ID cao); với 33 người còn lại
+   * thì tên KHÔNG có trong file dưới dạng chữ — đo được: chỉ 14/33 có họ xuất
+   * hiện ở bất kỳ đâu, và 0 trong số đó có playerId trong phạm vi ±512 byte.
+   *
+   * Game không lưu chữ mà lưu chỉ số; chữ nằm trong kho tên của bản cài. Ba
+   * trường này đọc 100% (21.436/21.436) với cổng chặn thời điểm 5/5.
+   */
+  firstNameId: f(200, 16),
+  lastNameId: f(216, 16),
+  /** Khác 0 thì tên hiển thị là tên thường dùng, không phải "tên + họ". */
+  commonNameId: f(248, 16),
 } as const;
 
 /**

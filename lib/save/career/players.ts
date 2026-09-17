@@ -28,6 +28,9 @@ export interface RawPlayer {
   internationalReputation: number | null;
   skillMoves: number | null;
   weakFoot: number | null;
+  firstNameId: number | null;
+  lastNameId: number | null;
+  commonNameId: number | null;
   attributes: Record<AttributeName, number | null>;
   /** Overall tính từ chỉ số. `null` khi thiếu chỉ số nên không tính được. */
   overall: number | null;
@@ -94,6 +97,9 @@ export function decodePlayer(reader: BitRecordReader, index: number): RawPlayer 
     internationalReputation,
     skillMoves: read(reader, index, CORE_FIELDS.skillMoves),
     weakFoot: read(reader, index, CORE_FIELDS.weakFoot),
+    firstNameId: read(reader, index, CORE_FIELDS.firstNameId),
+    lastNameId: read(reader, index, CORE_FIELDS.lastNameId),
+    commonNameId: read(reader, index, CORE_FIELDS.commonNameId),
     attributes,
     overall: computeOverall(attributes, internationalReputation, positionCode),
   };
