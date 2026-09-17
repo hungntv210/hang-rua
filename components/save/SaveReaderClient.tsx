@@ -50,6 +50,7 @@ export function SaveReaderClient() {
   const [tab, setTab] = useState<Tab>("lineup");
   const [players, setPlayers] = useState<SavePlayer[] | null>(null);
   const [lineup, setLineup] = useState<Lineup | null>(null);
+  const [iconCount, setIconCount] = useState(0);
   const workerRef = useRef<Worker | null>(null);
 
   // Tải DB tên ngay khi trang mở, song song với việc người dùng chọn file: 1,5MB
@@ -71,8 +72,24 @@ export function SaveReaderClient() {
     setPlayers(career.players);
     void Promise.all([loadFc26Database(), loadFc26Names()]).then(([db, names]) => {
       if (!alive || !db) return;
+      /*
+       * Bỏ nội dung Ultimate Team khỏi danh sách.
+       *
+       * Icon và hero có trong roster của game nên có trong save, nhưng không
+       * thuộc career. Trước đây chúng được gắn nhãn và vẫn hiển thị; nhưng vì
+       * bảng sắp theo chỉ số nên một loạt huyền thoại 44 tuổi chỉ số 91 vẫn nằm
+       * ngay đầu danh sách, che mất cầu thủ thật. Bỏ hẳn, và BÁO SỐ LƯỢNG —
+       * danh sách hụt vài nghìn người mà không nói gì thì trông như parser sót.
+       */
+      let icons = 0;
       setPlayers(
-        career.players.map((p) => {
+        career.players
+          .filter((p) => {
+            if (!db.isUltimateTeam(p.playerId)) return true;
+            icons += 1;
+            return false;
+          })
+          .map((p) => {
           // Quốc tịch tra được cho MỌI cầu thủ vì mã quốc gia đọc thẳng từ save.
           // Với nhóm không có tên, đây là mẩu nhận dạng duy nhất còn lại.
           const nation = db.nation(p.nationalityId);
@@ -90,18 +107,12 @@ export function SaveReaderClient() {
             if (fromPool) {
               return { ...p, nation, name: fromPool, nameSource: "namePool" as const };
             }
-            // Không đánh dấu icon thì suất huyền thoại chưa có bản quyền tên hiện
-            // ra "Cầu thủ Sweden, 44 tuổi, chỉ số 91" và trông y hệt lỗi parser.
-            return db.isUltimateTeam(p.playerId)
-              ? { ...p, nation, nameSource: "ultimateTeam" as const }
-              : { ...p, nation };
+            return { ...p, nation };
           }
           return {
             ...p,
             name: entry.name,
-            nameSource: db.isUltimateTeam(p.playerId)
-              ? ("ultimateTeam" as const)
-              : ("database" as const),
+            nameSource: "database" as const,
             // `|| null` chứ không gán thẳng: từ khi DB gộp theo từng trường, một
             // cầu thủ có thể có tên mà không có CLB (nguồn Live Editor cố ý không
             // góp CLB). Giá trị khi đó là chuỗi rỗng, và chuỗi rỗng KHÔNG kích
@@ -113,6 +124,7 @@ export function SaveReaderClient() {
           };
         }),
       );
+      setIconCount(icons);
     });
     return () => {
       alive = false;
@@ -244,7 +256,14 @@ export function SaveReaderClient() {
       ) : null}
 
       {doc ? (
-        <SaveResult doc={doc} tab={tab} onTab={setTab} players={players} lineup={lineup} />
+        <SaveResult
+          doc={doc}
+          tab={tab}
+          onTab={setTab}
+          players={players}
+          lineup={lineup}
+          iconCount={iconCount}
+        />
       ) : null}
     </div>
   );
@@ -256,12 +275,14 @@ function SaveResult({
   onTab,
   players,
   lineup,
+  iconCount,
 }: {
   doc: SaveDocument;
   tab: Tab;
   onTab: (tab: Tab) => void;
   players: SavePlayer[] | null;
   lineup: Lineup | null;
+  iconCount: number;
 }) {
   return (
     <div className="space-y-6">
@@ -309,7 +330,10 @@ function SaveResult({
       ) : null}
       {tab === "players" ? (
         players && players.length > 0 ? (
-          <PlayerTable players={players} />
+          <PlayerTable
+            players={players}
+            skipped={{ icons: iconCount, women: doc.career?.womenCount ?? 0 }}
+          />
         ) : (
           <Notice tone="error" title="Không đọc được danh sách cầu thủ">
             Không định vị được bảng cầu thủ trong file này. File có thể thuộc phiên

@@ -98,7 +98,21 @@ function growth(p: SavePlayer): number {
   return p.potential - p.overall;
 }
 
-export function PlayerTable({ players }: { players: SavePlayer[] }) {
+/** Nhóm bản ghi đã bỏ qua — báo số lượng thay vì im lặng cắt bớt. */
+export interface SkippedGroups {
+  /** Icon và hero Ultimate Team: có trong roster game, không thuộc career. */
+  icons: number;
+  /** Cầu thủ nữ: save chứa cả hai nhánh, career chỉ ở một nhánh. */
+  women: number;
+}
+
+export function PlayerTable({
+  players,
+  skipped,
+}: {
+  players: SavePlayer[];
+  skipped?: SkippedGroups;
+}) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("potential");
   const [onlyNewgen, setOnlyNewgen] = useState(false);
@@ -135,17 +149,8 @@ export function PlayerTable({ players }: { players: SavePlayer[] }) {
   }, [players, deferredQuery, sort, onlyNewgen, maxAge]);
 
   const shown = rows.slice(0, visible);
-  // Không tính icon vào đây: chúng đã có nhãn riêng giải thích rồi, gộp vào sẽ
-  // thổi phồng con số và làm lời giải thích bên dưới sai (icon không phải "đội
-  // trẻ và đội dự bị").
-  const unnamed = useMemo(
-    () => players.filter((p) => p.name === null && p.nameSource !== "ultimateTeam").length,
-    [players],
-  );
-  const icons = useMemo(
-    () => players.filter((p) => p.nameSource === "ultimateTeam").length,
-    [players],
-  );
+  const unnamed = useMemo(() => players.filter((p) => p.name === null).length, [players]);
+  const dropped = (skipped?.icons ?? 0) + (skipped?.women ?? 0);
 
   return (
     <div className="space-y-4">
@@ -159,14 +164,19 @@ export function PlayerTable({ players }: { players: SavePlayer[] }) {
         <strong>Riêng cột &ldquo;CLB gốc&rdquo; thì không đọc từ save</strong> — file
         save chưa giải mã được CLB, nên cột này mượn từ dữ liệu công khai của EA đầu
         mùa. Với cầu thủ đã chuyển nhượng trong career, đó là CLB cũ.
-        {icons > 0 ? (
+        {dropped > 0 ? (
           <>
             {" "}
-            <strong>{icons.toLocaleString("vi-VN")} bản ghi mang nhãn &ldquo;icon&rdquo;</strong>{" "}
-            là icon và hero của Ultimate Team. Chúng nằm trong roster của game nên
-            có trong file save, nhưng <strong>không thuộc đội hình career</strong> —
-            vì thế mới có huyền thoại 44 tuổi chỉ số 91 đứng đầu bảng. Suất chưa có
-            bản quyền tên thì để trống tên.
+            <strong>Đã bỏ qua {dropped.toLocaleString("vi-VN")} bản ghi</strong> không
+            thuộc phạm vi career nam:{" "}
+            {skipped?.women ? `${skipped.women.toLocaleString("vi-VN")} cầu thủ nữ` : ""}
+            {skipped?.women && skipped?.icons ? " và " : ""}
+            {skipped?.icons
+              ? `${skipped.icons.toLocaleString("vi-VN")} icon/hero Ultimate Team`
+              : ""}
+            . Save chứa toàn bộ roster của game, gồm cả nhánh bóng đá nữ và nội dung
+            Ultimate Team — đó là lý do trước đây có huyền thoại 44 tuổi chỉ số 91
+            đứng đầu bảng.
           </>
         ) : null}
         {unnamed > 0 ? (
@@ -273,14 +283,6 @@ export function PlayerTable({ players }: { players: SavePlayer[] }) {
                         {p.nation ? `Cầu thủ ${p.nation}` : `#${p.playerId}`}
                       </span>
                     )}
-                    {p.nameSource === "ultimateTeam" ? (
-                      <span
-                        title="Icon/hero của Ultimate Team — có trong roster của game nên có trong save, nhưng không thuộc đội hình career. Suất chưa có bản quyền tên thì để trống tên."
-                        className="ml-2 rounded-sm border border-mist/40 bg-white/5 px-1.5 py-0.5 font-mono text-[0.65rem] uppercase tracking-wider text-mist"
-                      >
-                        icon
-                      </span>
-                    ) : null}
                     {p.nameSource === "newgen" ? (
                       <span
                         title="Cầu thủ do Career Mode sinh ra — tên lấy từ chính file save"
@@ -289,7 +291,7 @@ export function PlayerTable({ players }: { players: SavePlayer[] }) {
                         newgen
                       </span>
                     ) : null}
-                    {p.name === null && p.nameSource !== "ultimateTeam" ? (
+                    {p.name === null ? (
                       <span
                         title="Không có trong DB nhúng và cũng không phải cầu thủ do career sinh ra"
                         className="ml-2 rounded border border-crimson/30 bg-crimson-wash px-1.5 py-0.5 font-mono text-[0.65rem] uppercase tracking-wider text-crimson"

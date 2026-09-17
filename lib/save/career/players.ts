@@ -31,6 +31,8 @@ export interface RawPlayer {
   firstNameId: number | null;
   lastNameId: number | null;
   commonNameId: number | null;
+  /** 0 = nam, 1 = nữ. */
+  gender: number | null;
   attributes: Record<AttributeName, number | null>;
   /** Overall tính từ chỉ số. `null` khi thiếu chỉ số nên không tính được. */
   overall: number | null;
@@ -100,6 +102,7 @@ export function decodePlayer(reader: BitRecordReader, index: number): RawPlayer 
     firstNameId: read(reader, index, CORE_FIELDS.firstNameId),
     lastNameId: read(reader, index, CORE_FIELDS.lastNameId),
     commonNameId: read(reader, index, CORE_FIELDS.commonNameId),
+    gender: read(reader, index, CORE_FIELDS.gender),
     attributes,
     overall: computeOverall(attributes, internationalReputation, positionCode),
   };

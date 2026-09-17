@@ -46,7 +46,7 @@ const base: SavePlayer = {
   playerId: 1, name: null, nameSource: null, club: null, league: null, nation: null,
   position: "CM", overall: 70, potential: 80, birthDate: "2000-01-01", age: 26,
   heightCm: 180, weightKg: 75, skillMoves: 3, weakFoot: 3, internationalReputation: 1,
-  nationalityId: 45, firstNameId: 1476, lastNameId: 33183, commonNameId: 0,
+  nationalityId: 45, firstNameId: 1476, lastNameId: 33183, commonNameId: 0, gender: 0,
   attributes: ATTRIBUTE_ORDER.map((_, i) => 50 + (i % 40)),
 };
 

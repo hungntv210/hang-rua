@@ -64,6 +64,17 @@ export const CORE_FIELDS = {
   lastNameId: f(216, 16),
   /** Khác 0 thì tên hiển thị là tên thường dùng, không phải "tên + họ". */
   commonNameId: f(248, 16),
+
+  /**
+   * 0 = nam, 1 = nữ. Một bit, khớp 100,00% (21.436/21.436).
+   *
+   * Dò riêng chứ không qua `probe-fields.ts`: bộ dò đó từ chối mọi trường dưới 8
+   * giá trị phân biệt, vì đó là bộ chặn bẫy `0 === 0` từng tạo ra một kết quả
+   * "khớp 100%" hoàn toàn giả. Với trường nhị phân thì bằng chứng phải là thứ
+   * khác: ngoài tỉ lệ khớp, tỉ lệ bit bật trên toàn bảng (9,4%) phải trùng tỉ lệ
+   * nữ trong ground truth (9,5%). Chỉ một bit trong 1.152 bit thoả cả hai.
+   */
+  gender: f(872, 1),
 } as const;
 
 /**

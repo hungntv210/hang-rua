@@ -112,6 +112,7 @@ export function toSavePlayer(
     firstNameId: raw.firstNameId,
     lastNameId: raw.lastNameId,
     commonNameId: raw.commonNameId,
+    gender: raw.gender,
     // Trường khuyết thành 0 để mảng luôn đúng độ dài; UI hiểu 0 là chưa đọc được.
     attributes: ATTRIBUTE_ORDER.map((name) => raw.attributes[name] ?? 0),
   };
@@ -132,7 +133,17 @@ export function buildCareer(result: CareerPlayers): SaveCareer | null {
   // Bản ghi ngoài dải tuổi thi đấu không phải cầu thủ — đã thấy "cầu thủ" 65
   // tuổi chỉ số 94 lọt vào. Loại hẳn thay vì hiển thị: một dòng vô lý làm hỏng
   // lòng tin vào cả bảng.
-  const players = all.filter((p) => p.age !== null && p.age >= MIN_AGE && p.age <= MAX_AGE);
+  const inRange = all.filter((p) => p.age !== null && p.age >= MIN_AGE && p.age <= MAX_AGE);
+
+  /*
+   * Bỏ cầu thủ nữ khỏi danh sách.
+   *
+   * Save chứa toàn bộ roster của game, gồm cả bóng đá nữ — 2.036 trên 21.437.
+   * Career của người dùng chỉ ở một nhánh, nên nhánh kia là nhiễu thuần tuý.
+   * Số lượng bỏ qua được báo ra chứ không im lặng cắt: danh sách hụt hai nghìn
+   * người mà không nói gì thì trông như parser sót.
+   */
+  const players = inRange.filter((p) => p.gender !== 1);
 
   return {
     players,
@@ -140,7 +151,8 @@ export function buildCareer(result: CareerPlayers): SaveCareer | null {
     tableCount: result.table.count,
     tableOffset: result.table.base,
     newgenCount: result.newgenNames.size,
-    droppedCount: all.length - players.length,
+    droppedCount: all.length - inRange.length,
+    womenCount: inRange.length - players.length,
     truncated: result.truncated,
   };
 }

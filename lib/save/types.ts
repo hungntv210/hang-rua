@@ -233,6 +233,8 @@ export interface SavePlayer {
   lastNameId: number | null;
   /** Khác 0 thì tên hiển thị là tên thường dùng, không phải "tên + họ". */
   commonNameId: number | null;
+  /** 0 = nam, 1 = nữ. Đọc thẳng từ save (bit 872). */
+  gender: number | null;
   /**
    * 31 chỉ số chi tiết, thứ tự theo `ATTRIBUTE_ORDER`.
    *
@@ -257,6 +259,8 @@ export interface SaveCareer {
   newgenCount: number;
   /** Bản ghi bị loại vì tuổi ngoài dải thi đấu — không phải cầu thủ. */
   droppedCount: number;
+  /** Cầu thủ nữ đã bỏ qua. Báo số lượng chứ không im lặng cắt bớt. */
+  womenCount: number;
   truncated: boolean;
 }
 
