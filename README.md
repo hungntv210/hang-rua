@@ -336,3 +336,24 @@ lib/
   format.ts                # ngay gio, trang thai tran
   types.ts                 # kieu Fd* va kieu noi bo
 ```
+
+## Deploy len Vercel
+
+Repo PHAI de public, hoac phai cap quyen cho Vercel GitHub App doc repo nay
+(github.com/settings/installations -> Vercel -> Repository access).
+
+Neu khong, moi ban deploy tu ban thu HAI tro di se tra `readyState: BLOCKED`.
+Trieu chung rat de chan doan nham:
+
+  - ban deploy DAU TIEN cua moi project van chay binh thuong, vi CLI tai thang
+    file len chu khong can doc GitHub
+  - tu ban thu hai, project da gan repo nen Vercel phai tu clone -> bi chan
+  - `errorCode` va `errorStep` deu TRONG, vi no bi chan TRUOC buoc build
+  - dashboard khong hien canh bao nao, han muc van con nguyen
+
+Da mat vai gio vi hai chan doan sai truoc khi tim ra: tuong la sai tai khoan
+Vercel (thuc ra ca hai project nam chung mot team), roi tuong la gioi han mot
+ban deploy moi project. Phep thu tach duoc bien: copy y nguyen ma nguon sang
+thu muc KHONG co `.git` roi deploy hai lan -> ca hai deu READY, trong khi
+project co gan git van BLOCKED.
+
