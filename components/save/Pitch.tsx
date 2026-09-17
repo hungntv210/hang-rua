@@ -171,10 +171,20 @@ export function Pitch({ lineup, players }: Props) {
           const gk = positionName(slot.positionCode) === "GK";
           const alts = alternativesFor(i);
           const isOpen = open === i;
+          /*
+           * Ô có cầu thủ KHÔNG nằm trong save.
+           *
+           * Bảng đội hình dựng sẵn lấy từ một career, nên vài đội có cầu thủ do
+           * career đó sinh ra chiếm suất đá chính — đo được: Croatia 2 suất,
+           * Norway 1. Save của người khác không có những cầu thủ ấy, và nếu cứ
+           * vẽ thì ô đó hiện `#460028`, một người không tồn tại trong file họ
+           * tải lên. Vẽ ô trống có nhãn thì trung thực; vẽ áo có số thì là bịa.
+           */
+          const missing = !p;
           // Không có tên thì dùng `#id` chứ không phải "Cầu thủ <quốc tịch>":
           // "Cầu thủ Trinidad and Tobago" dài 27 ký tự, đủ để đẩy hai ô cạnh nhau
           // chồng lên nhau. Quốc tịch đầy đủ vẫn còn ở bảng cầu thủ.
-          const label = shortName(p?.name ?? null, `#${slot.playerId}`);
+          const label = missing ? "không có trong save" : shortName(p?.name ?? null, `#${slot.playerId}`);
 
           return (
             <div
@@ -199,14 +209,22 @@ export function Pitch({ lineup, players }: Props) {
                   alts.length ? `, ${alts.length} cầu thủ dự bị cùng vị trí` : ""
                 }`}
               >
-                <span className="block aspect-[48/44] w-[68%] transition-transform duration-150">
-                  <Shirt number={slot.jersey} gk={gk} />
+                <span
+                  className={`block aspect-[48/44] w-[68%] transition-transform duration-150 ${
+                    missing ? "opacity-30 grayscale" : ""
+                  }`}
+                >
+                  <Shirt number={missing ? 0 : slot.jersey} gk={gk} />
                 </span>
                 {/* Tên và chỉ số CÙNG một dòng. Tách hai dòng làm mỗi ô cao thêm
                     ~14px, đủ để nhãn thủ môn chạm nhãn hai trung vệ — game xếp thủ
                     môn ở y=0,02 còn trung vệ ở 0,15 nên khoảng đó vốn đã rất hẹp. */}
                 <span className="flex max-w-full items-baseline gap-1 rounded-sm bg-void/70 px-1 backdrop-blur-sm">
-                  <span className="truncate text-[10px] font-medium leading-tight text-white sm:text-[11px]">
+                  <span
+                    className={`truncate text-[10px] font-medium leading-tight sm:text-[11px] ${
+                      missing ? "text-mist-dim" : "text-white"
+                    }`}
+                  >
                     {label}
                   </span>
                   {p?.overall != null ? (
