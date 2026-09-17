@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Notice } from "@/components/Notice";
+import { Pitch } from "@/components/save/Pitch";
 import { PlayerTable } from "@/components/save/PlayerTable";
 import { SaveDropZone } from "@/components/save/SaveDropZone";
 import { SaveFieldTable } from "@/components/save/SaveFieldTable";
@@ -12,6 +13,7 @@ import { SaveStringList } from "@/components/save/SaveStringList";
 import { SaveUnknownList } from "@/components/save/SaveUnknownList";
 import { TabBar, TabPanel, type TabItem } from "@/components/TabBar";
 import { loadFc26Database } from "@/lib/fc26/db";
+import { loadFc26Formations, type Lineup } from "@/lib/fc26/formations";
 import {
   diagnosticsToJson,
   playersToCsv,
@@ -21,9 +23,10 @@ import { formatBytes, formatCount } from "@/lib/save/format";
 import { FILE_LIMITS } from "@/lib/save/heuristics";
 import type { SaveDocument, SavePlayer, WorkerResponse } from "@/lib/save/types";
 
-type Tab = "players" | "fields" | "names" | "strings" | "unknown";
+type Tab = "lineup" | "players" | "fields" | "names" | "strings" | "unknown";
 
 const TABS: TabItem<Tab>[] = [
+  { id: "lineup", label: "Đội hình", labelJp: "布陣" },
   { id: "players", label: "Cầu thủ", labelJp: "選手" },
   { id: "fields", label: "Field" },
   { id: "names", label: "Tên field" },
@@ -43,8 +46,9 @@ export function SaveReaderClient() {
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [largeFileNotice, setLargeFileNotice] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>("players");
+  const [tab, setTab] = useState<Tab>("lineup");
   const [players, setPlayers] = useState<SavePlayer[] | null>(null);
+  const [lineup, setLineup] = useState<Lineup | null>(null);
   const workerRef = useRef<Worker | null>(null);
 
   // Tải DB tên ngay khi trang mở, song song với việc người dùng chọn file: 1,5MB
@@ -103,6 +107,34 @@ export function SaveReaderClient() {
     };
   }, [doc]);
 
+  /**
+   * Đối chiếu đội hình đọc từ save với bảng sơ đồ đã dựng sẵn.
+   *
+   * Tách khỏi effect ghép tên vì hai việc độc lập: mất bảng sơ đồ thì vẫn còn
+   * bảng cầu thủ, và ngược lại.
+   */
+  useEffect(() => {
+    const squads = doc?.career?.squads;
+    if (!squads || squads.length === 0) {
+      setLineup(null);
+      return;
+    }
+    let alive = true;
+    void loadFc26Formations().then((table) => {
+      if (!alive || !table) return;
+      // Nhiều khối đội hình trong save; lấy khối khớp được nhiều suất nhất.
+      let best: Lineup | null = null;
+      for (const squad of squads) {
+        const m = table.match(squad);
+        if (m && (!best || m.matched > best.matched)) best = m;
+      }
+      setLineup(best);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [doc]);
+
   // Dọn worker khi rời trang: worker sống độc lập với React, không tự chết theo
   // component.
   useEffect(() => {
@@ -127,7 +159,7 @@ export function SaveReaderClient() {
       setDoc(null);
       setError(null);
       setProgress(0);
-      setTab("players");
+      setTab("lineup");
       setLargeFileNotice(
         file.size > FILE_LIMITS.warnBytes
           ? `File ${formatBytes(file.size)} khá lớn — lượt quét có thể mất vài giây và ngốn vài trăm MB RAM của tab.`
@@ -199,7 +231,9 @@ export function SaveReaderClient() {
         </Notice>
       ) : null}
 
-      {doc ? <SaveResult doc={doc} tab={tab} onTab={setTab} players={players} /> : null}
+      {doc ? (
+        <SaveResult doc={doc} tab={tab} onTab={setTab} players={players} lineup={lineup} />
+      ) : null}
     </div>
   );
 }
@@ -209,11 +243,13 @@ function SaveResult({
   tab,
   onTab,
   players,
+  lineup,
 }: {
   doc: SaveDocument;
   tab: Tab;
   onTab: (tab: Tab) => void;
   players: SavePlayer[] | null;
+  lineup: Lineup | null;
 }) {
   return (
     <div className="space-y-6">
@@ -247,6 +283,18 @@ function SaveResult({
       </div>
 
       <TabPanel tabKey={tab}>
+      {tab === "lineup" ? (
+        lineup && players ? (
+          <Pitch lineup={lineup} players={players} />
+        ) : (
+          <Notice title="Chưa dựng được sơ đồ đội hình">
+            Không tìm được đội hình nào trong file này khớp với bảng đội hình đã
+            biết. Sơ đồ chỉ được vẽ khi đội hình đọc từ save chứa đủ cầu thủ của
+            một đội cụ thể — vẽ bừa sẽ là hiển thị đội hình của career khác. Bảng
+            cầu thủ ở tab bên cạnh vẫn đầy đủ.
+          </Notice>
+        )
+      ) : null}
       {tab === "players" ? (
         players && players.length > 0 ? (
           <PlayerTable players={players} />

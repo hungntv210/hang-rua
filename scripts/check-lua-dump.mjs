@@ -154,9 +154,12 @@ function GetDBTableRows(name)
   elseif name == "teams" then
     return { wrap({ teamid = 115486, teamname = "Arsenal, The" }) }
   elseif name == "players" then
-    return { wrap({ playerid = 158023, overallrating = 90, potential = 90 }),
-             wrap({ playerid = 460021, overallrating = 66, potential = 94 }),
-             wrap({ playerid = 999, overallrating = 70.0, potential = 75.0 }) }
+    -- CHUOI chu khong phai number. GetDBTableRows that tra ve kieu nay, va mot
+    -- phep kiem type(x) == "number" se truot IM LANG: luot chay ra 21.437
+    -- dong voi 0 ten ma khong co dong log loi nao.
+    return { wrap({ playerid = "158023", overallrating = "90", potential = "90" }),
+             wrap({ playerid = "460021", overallrating = "66", potential = "94" }),
+             wrap({ playerid = "999", overallrating = "70", potential = "75" }) }
   end
   return nil
 end
@@ -296,6 +299,10 @@ check(
   "cm_teamsheets giữ đủ cột",
   (a.files["fc26_cm_teamsheets.csv"] ?? "").includes("sourceformationid"),
 );
+// Lỗi đã xảy ra thật: GetDBTableRows trả ô dạng CHUỖI, phép kiểm kiểu trượt im
+// lặng, và cả lượt chạy ra 21.437 dòng với 0 tên.
+check("tra được tên dù giá trị ô là CHUỖI", players.includes("Lionel Messi"));
+check("tra được mã đội dù giá trị ô là CHUỖI", /,115486,/.test(players));
 
 // ── 6. desktop_path nil ─────────────────────────────────────────────────────
 console.log("\n6. desktop_path = nil — lỗi từng làm mất một lượt chạy");

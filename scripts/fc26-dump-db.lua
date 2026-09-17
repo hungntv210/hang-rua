@@ -346,12 +346,18 @@ for i = 1, #order do
           local line = {}
 
           if isPlayers then
-            local pid = cellValue(row["playerid"])
+            -- `tonumber` chu KHONG phai `type(pid) == "number"`.
+            --
+            -- GetDBTableRows tra gia tri o duoi dang KHONG phai number (khac
+            -- GetRecordFieldValue cua API con tro). Phep kiem kieu vi the truot
+            -- IM LANG, va ca khoi tra ten bi bo qua: mot luot chay ra 21.437
+            -- dong voi 0 ten va current_teamid = -1 o moi dong, ma khong co mot
+            -- dong log loi nao.
+            local pid = tonumber(cellValue(row["playerid"]))
             local name, teamid, teamname = "", -1, ""
-            if type(pid) == "number" and pid > 0 then
+            if pid and pid > 0 then
               name = try(GetPlayerName, pid) or ""
-              teamid = try(GetTeamIdFromPlayerId, pid)
-              if type(teamid) ~= "number" then teamid = -1 end
+              teamid = tonumber(try(GetTeamIdFromPlayerId, pid)) or -1
               if teamid > 0 then
                 if teamNameCache[teamid] == nil then
                   teamNameCache[teamid] = try(GetTeamName, teamid) or ""

@@ -9,6 +9,7 @@ import { BitRecordReader } from "../bitreader";
 import { isValidRecordAt, locatePlayerTable } from "./locate";
 import { readNewgenNames, type NewgenName } from "./newgen-names";
 import { decodeAllPlayers, type RawPlayer } from "./players";
+import { findSquads } from "./squad";
 
 /** Trần bản ghi. Vượt thì cắt và bật cờ `truncated` — không im lặng bỏ qua. */
 export const MAX_PLAYERS = 100_000;
@@ -17,6 +18,13 @@ export interface CareerPlayers {
   players: RawPlayer[];
   newgenNames: Map<number, NewgenName>;
   table: { base: number; count: number; keyQuality: number } | null;
+  /**
+   * Danh sách cầu thủ của từng CLB, đọc từ khối `[u32 count][u32 playerId]`.
+   *
+   * Đọc ở ĐÂY chứ không ở tầng UI vì nó cần byte thô, mà `SaveDocument` trả về
+   * cho main thread thì cố ý không giữ tham chiếu tới buffer vài chục MB.
+   */
+  squads: number[][];
   truncated: boolean;
   issues: string[];
 }
@@ -31,6 +39,7 @@ export function readCareerPlayers(buffer: ArrayBuffer): CareerPlayers {
       players: [],
       newgenNames: new Map(),
       table: null,
+      squads: [],
       truncated: false,
       issues: [
         "Không định vị được bảng cầu thủ. File có thể thuộc phiên bản FC khác " +
@@ -59,9 +68,14 @@ export function readCareerPlayers(buffer: ArrayBuffer): CareerPlayers {
   );
   const newgenNames = readNewgenNames(bytes);
 
+  const validIds = new Set<number>();
+  for (const p of players) if (p.playerId > 0) validIds.add(p.playerId);
+  const squads = findSquads(bytes, validIds).map((s) => s.playerIds);
+
   return {
     players,
     newgenNames,
+    squads,
     table: { base: table.base, count: table.count, keyQuality: table.keyQuality },
     truncated,
     issues,

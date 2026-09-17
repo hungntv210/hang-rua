@@ -234,6 +234,13 @@ export interface SavePlayer {
 
 export interface SaveCareer {
   players: SavePlayer[];
+  /**
+   * Danh sách cầu thủ của từng CLB tìm được trong save.
+   *
+   * Tầng này KHÔNG biết đội nào là của người chơi — đó là việc của
+   * `lib/fc26/formations.ts`, nơi đối chiếu với bảng đội hình đã biết.
+   */
+  squads: number[][];
   /** Số bản ghi trong bảng, kể cả ô trống. */
   tableCount: number;
   tableOffset: number;

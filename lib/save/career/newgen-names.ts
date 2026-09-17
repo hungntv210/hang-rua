@@ -99,9 +99,9 @@ export interface NewgenName {
 const MIN_CONSECUTIVE = 4;
 
 /** Tìm bảng bằng bố cục chứ không bằng offset: một dãy bản ghi hợp lệ liền nhau. */
-function findAnchor(bytes: Uint8Array): number {
+function findAnchor(bytes: Uint8Array, from = 0): number {
   const limit = bytes.length - REC * MIN_CONSECUTIVE;
-  for (let i = 0; i < limit; i += 1) {
+  for (let i = from; i < limit; i += 1) {
     const c = bytes[i];
     const isAlpha = (c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a);
     if (!isAlpha) continue;
@@ -114,25 +114,48 @@ function findAnchor(bytes: Uint8Array): number {
   return -1;
 }
 
+/**
+ * Đọc MỌI bảng tên newgen trong file, không chỉ bảng đầu tiên.
+ *
+ * Bản trước dừng ở khối đầu tìm được và trả về 20 mục, trong khi career đã sinh
+ * 55 cầu thủ. Ba trong số 35 cầu thủ bị bỏ sót nằm ngay trong đội hình xuất
+ * phát, nên sơ đồ đội hình hiện ra với ba ô trống tên — trông hệt như lỗi.
+ *
+ * Tên của họ VẪN nằm trong save, chỉ ở một khối khác (đo được: quanh 7,1MB,
+ * ngoài khối đầu). Nên việc cần làm không phải giải mã thêm cấu trúc mới mà là
+ * bỏ giả định "chỉ có một bảng".
+ */
 export function readNewgenNames(bytes: Uint8Array): Map<number, NewgenName> {
   const out = new Map<number, NewgenName>();
-  const anchor = findAnchor(bytes);
-  if (anchor < 0) return out;
+  let cursor = 0;
 
-  let first = anchor;
-  while (looksLikeRecord(bytes, first - REC)) first -= REC;
+  while (out.size < MAX_RECORDS) {
+    const anchor = findAnchor(bytes, cursor);
+    if (anchor < 0) break;
 
-  for (let k = 0; k < MAX_RECORDS; k += 1) {
-    const keyOffset = first + k * REC;
-    if (!looksLikeRecord(bytes, keyOffset)) break;
+    // Lùi về bản ghi đầu của khối: `findAnchor` dừng ở bản ghi nào cũng được.
+    let first = anchor;
+    while (looksLikeRecord(bytes, first - REC)) first -= REC;
 
-    const id = readKey(bytes, keyOffset) as number;
-    const base = keyOffset - NEWGEN_NAME_SLOTS * SLOT;
-    const slots: string[] = [];
-    for (let s = 0; s < NEWGEN_NAME_SLOTS; s += 1) slots.push(readSlot(bytes, base + s * SLOT));
+    let k = 0;
+    for (; k < MAX_RECORDS; k += 1) {
+      const keyOffset = first + k * REC;
+      if (!looksLikeRecord(bytes, keyOffset)) break;
 
-    const full = [slots[0], slots[2]].filter(Boolean).join(" ") || slots[3];
-    if (full) out.set(id, { playerId: id, first: slots[0], last: slots[2], full });
+      const id = readKey(bytes, keyOffset) as number;
+      const base = keyOffset - NEWGEN_NAME_SLOTS * SLOT;
+      const slots: string[] = [];
+      for (let s = 0; s < NEWGEN_NAME_SLOTS; s += 1) slots.push(readSlot(bytes, base + s * SLOT));
+
+      const full = [slots[0], slots[2]].filter(Boolean).join(" ") || slots[3];
+      // Khối đứng trước thắng: bảng đầu là bảng chính, khối sau chỉ bù phần thiếu.
+      if (full && !out.has(id)) out.set(id, { playerId: id, first: slots[0], last: slots[2], full });
+    }
+
+    // Tiếp tục ngay sau khối vừa đọc. Không nhích tiến thì vòng lặp treo.
+    const next = first + Math.max(k, 1) * REC;
+    cursor = next > cursor ? next : cursor + 1;
   }
+
   return out;
 }

@@ -133,6 +133,7 @@ export function buildCareer(result: CareerPlayers): SaveCareer | null {
 
   return {
     players,
+    squads: result.squads,
     tableCount: result.table.count,
     tableOffset: result.table.base,
     newgenCount: result.newgenNames.size,
