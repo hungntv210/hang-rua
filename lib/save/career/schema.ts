@@ -66,6 +66,39 @@ export const CORE_FIELDS = {
   commonNameId: f(248, 16),
 
   /**
+   * Năm hết hạn hợp đồng. Khớp 100,0000% (21.436/21.436), 11 giá trị 2025-2035.
+   *
+   * ─── VÌ SAO HAI LƯỢT DÒ TRƯỚC TRƯỢT ───────────────────────────────────────
+   *
+   * Trường này nằm trong một khối 14 bit ở bit 582, và 8 bit thấp thuộc về thứ
+   * khác. Dò cả khối 14 bit rồi so với cột năm chỉ ra 76,2%; dò bit 590 với bề
+   * rộng 12 (ăn lẹm sang bit của trường kế bên) ra 35,0%; dò thô toàn dải ra
+   * 50,8%. Cả ba đều bị ghi lại là "dưới ngưỡng" rồi bỏ.
+   *
+   * Thứ chỉ ra câu trả lời là PHẦN TRƯỢT chứ không phải phần khớp: 100% số
+   * trượt lệch đúng ±1 năm và dồn ở ranh giới năm — chữ ký của sai thang, không
+   * phải của trường sai. Khớp tuyến tính cho `raw ≈ 256,02 × năm`, và 256 = 2^8
+   * nói thẳng phải bỏ 8 bit thấp. Còn đúng 6 bit.
+   *
+   * Bài học đáng giữ hơn cả con số: khi tỉ lệ khớp nằm giữa "ngẫu nhiên" và
+   * "đạt ngưỡng", đó là một phép đo về QUAN HỆ hai đại lượng, không phải một
+   * thất bại. Đo quan hệ ấy trước khi mở rộng phạm vi tìm kiếm.
+   */
+  contractUntil: f(590, 6, 1984),
+
+  /**
+   * Ngày gia nhập CLB hiện tại, tính bằng ngày từ epoch DB. Khớp 100,00%.
+   *
+   * Lượt dò đầu chỉ đạt 82,7% vì chạy ở chế độ `--baseline` với nguồn đối chiếu
+   * lệch thời điểm, nên chưa được đưa vào đây. Đo lại với export Live Editor
+   * cùng thời điểm và cổng chặn 5/5 ở 100%: trùng khít, lệch 0.
+   *
+   * Epoch của DB suy ra chính xác từ ngày sinh — cùng một ngày đo bằng hai gốc,
+   * hiệu là hằng số, và hằng số đó là 131.072 = 2^17 trên 100,00% mẫu.
+   */
+  joinedTeamDay: f(1057, 18, -(131_072 + 10_356)),
+
+  /**
    * 0 = nam, 1 = nữ. Một bit, khớp 100,00% (21.436/21.436).
    *
    * Dò riêng chứ không qua `probe-fields.ts`: bộ dò đó từ chối mọi trường dưới 8

@@ -62,6 +62,16 @@ export const PROVENANCE = {
   nation: "Tra từ mã quốc gia đọc thẳng trong save — có cho cả cầu thủ chưa có tên.",
   birthDate: "Đọc thẳng từ save.",
   age: "Tính từ ngày sinh và mốc thời gian ước lượng của career.",
+  contractUntil:
+    "Đọc thẳng từ save, khớp 100% với dữ liệu game. CHỈ có năm — trường trong " +
+    "save rộng 6 bit và chỉ chứa năm. FC đặt hạn vào 30/06 nhưng đó là quy ước " +
+    "của game, không phải thứ đọc được, nên cột này không bịa ra ngày.",
+  joinedDate: "Ngày gia nhập CLB hiện tại. Đọc thẳng từ save, khớp 100%.",
+  valueEstimate:
+    "ƯỚC TÍNH, KHÔNG đọc từ save — game không lưu giá trị chuyển nhượng ở bất " +
+    "kỳ bảng nào, nó dựng lúc chạy rồi vứt. Tính từ CS, TN và tuổi; đúng bậc độ " +
+    "lớn và đúng thứ tự giữa các cầu thủ, không đúng tới từng triệu. Thừa hưởng " +
+    "cả sai số ±1 của CS.",
 } as const;
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -85,6 +95,9 @@ const CSV_HEADERS = [
   "Vị trí",
   "Tuổi",
   "Ngày sinh",
+  "Hết hợp đồng",
+  "Gia nhập",
+  "Giá trị ước tính (EUR)",
   "CS (tính)",
   "TN",
   "Tăng trưởng",
@@ -106,7 +119,13 @@ const CSV_HEADERS = [
  * người dùng của trang này.
  */
 export function playersToCsv(players: SavePlayer[]): string {
-  const lines = [CSV_HEADERS.join(",")];
+  // Tiêu đề cũng phải qua `csvCell`, không phải chỉ dữ liệu.
+  //
+  // Trước đây hàng này nối thẳng bằng `join(",")`. Chạy đúng suốt vì không tiêu
+  // đề nào có ký tự đặc biệt — tức là một lỗi nằm sẵn chờ người thêm cột. Nó nổ
+  // ngay lần thêm cột đầu tiên có dấu phẩy trong tên, và nổ ở chỗ khó đọc ra
+  // nguyên nhân: hàng tiêu đề thừa một cột so với mọi hàng dữ liệu.
+  const lines = [CSV_HEADERS.map(csvCell).join(",")];
 
   for (const p of players) {
     const grow = p.overall !== null && p.potential !== null ? p.potential - p.overall : null;
@@ -120,6 +139,9 @@ export function playersToCsv(players: SavePlayer[]): string {
       p.position,
       p.age,
       p.birthDate,
+      p.contractUntil,
+      p.joinedDate,
+      p.valueEstimate,
       p.overall,
       p.potential,
       grow,

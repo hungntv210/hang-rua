@@ -9,6 +9,7 @@
  * vậy `lib/save/*` không cần biết tới `fetch` và vẫn chạy được bằng Node.
  */
 
+import { estimateValue } from "../../fc26/value";
 import type { SaveCareer, SavePlayer } from "../types";
 import type { CareerPlayers } from "./index";
 import type { NewgenName } from "./newgen-names";
@@ -21,6 +22,10 @@ const YEAR_DAYS = 365.2425;
 /** Ngoài dải này thì bản ghi không phải cầu thủ đang thi đấu. */
 const MIN_AGE = 14;
 const MAX_AGE = 45;
+
+/** Ngày gia nhập hợp lệ: từ 1990 tới 2050, quy về ngày Unix. */
+const JOINED_MIN_DAY = Math.floor(Date.UTC(1990, 0, 1) / DAY_MS);
+const JOINED_MAX_DAY = Math.floor(Date.UTC(2050, 0, 1) / DAY_MS);
 
 /**
  * Tuổi ứng với phân vị 99,9% ngày sinh của toàn bảng.
@@ -90,6 +95,7 @@ export function toSavePlayer(
 ): SavePlayer {
   const birthDate =
     raw.birthDay === null ? null : new Date(raw.birthDay * DAY_MS).toISOString().slice(0, 10);
+  const age = raw.birthDay === null ? null : ageFrom(raw.birthDay, referenceDay);
 
   return {
     playerId: raw.playerId,
@@ -102,7 +108,7 @@ export function toSavePlayer(
     overall: raw.overall,
     potential: raw.potential,
     birthDate,
-    age: raw.birthDay === null ? null : ageFrom(raw.birthDay, referenceDay),
+    age,
     heightCm: raw.heightCm,
     weightKg: raw.weightKg,
     skillMoves: raw.skillMoves,
@@ -113,6 +119,20 @@ export function toSavePlayer(
     lastNameId: raw.lastNameId,
     commonNameId: raw.commonNameId,
     gender: raw.gender,
+    contractUntil: raw.contractUntil,
+    /*
+     * Ngày gia nhập chỉ nhận trong dải hợp lý.
+     *
+     * Trường 18 bit nên ô trống hoặc bản ghi hỏng vẫn cho ra một con số, và con
+     * số ấy giải ra thành năm 1582 hay 2300. Chặn ở đây thay vì ở UI: một ngày
+     * vô lý lọt tới bảng thì người xem mất lòng tin vào cả cột.
+     */
+    joinedDate:
+      raw.joinedDay === null || raw.joinedDay < JOINED_MIN_DAY || raw.joinedDay > JOINED_MAX_DAY
+        ? null
+        : new Date(raw.joinedDay * DAY_MS).toISOString().slice(0, 10),
+    // TÍNH, không đọc. Xem `lib/fc26/value.ts`.
+    valueEstimate: estimateValue(raw.overall, raw.potential, age),
     // Trường khuyết thành 0 để mảng luôn đúng độ dài; UI hiểu 0 là chưa đọc được.
     attributes: ATTRIBUTE_ORDER.map((name) => raw.attributes[name] ?? 0),
   };

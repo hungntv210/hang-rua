@@ -33,6 +33,10 @@ export interface RawPlayer {
   commonNameId: number | null;
   /** 0 = nam, 1 = nữ. */
   gender: number | null;
+  /** Năm hết hạn hợp đồng, đọc thẳng từ save. */
+  contractUntil: number | null;
+  /** Ngày gia nhập CLB hiện tại, số ngày kể từ epoch Unix. */
+  joinedDay: number | null;
   attributes: Record<AttributeName, number | null>;
   /** Overall tính từ chỉ số. `null` khi thiếu chỉ số nên không tính được. */
   overall: number | null;
@@ -103,6 +107,8 @@ export function decodePlayer(reader: BitRecordReader, index: number): RawPlayer 
     lastNameId: read(reader, index, CORE_FIELDS.lastNameId),
     commonNameId: read(reader, index, CORE_FIELDS.commonNameId),
     gender: read(reader, index, CORE_FIELDS.gender),
+    contractUntil: read(reader, index, CORE_FIELDS.contractUntil),
+    joinedDay: read(reader, index, CORE_FIELDS.joinedTeamDay),
     attributes,
     overall: computeOverall(attributes, internationalReputation, positionCode),
   };

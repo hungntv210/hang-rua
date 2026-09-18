@@ -47,6 +47,7 @@ const base: SavePlayer = {
   position: "CM", overall: 70, potential: 80, birthDate: "2000-01-01", age: 26,
   heightCm: 180, weightKg: 75, skillMoves: 3, weakFoot: 3, internationalReputation: 1,
   nationalityId: 45, firstNameId: 1476, lastNameId: 33183, commonNameId: 0, gender: 0,
+  contractUntil: 2028, joinedDate: "2024-07-01", valueEstimate: 4_200_000,
   attributes: ATTRIBUTE_ORDER.map((_, i) => 50 + (i % 40)),
 };
 
@@ -72,7 +73,7 @@ const lines = csv.split("\r\n").filter(Boolean);
 check("có BOM UTF-8", csv.charCodeAt(0) === 0xfeff);
 
 const header = cells(lines[0].replace(/^\uFEFF/, ""));
-check("đủ cột", header.length === 17 + ATTRIBUTE_ORDER.length, `${header.length} cột`);
+check("đủ cột", header.length === 20 + ATTRIBUTE_ORDER.length, `${header.length} cột`);
 
 const lech = lines.slice(1).filter((l) => cells(l).length !== header.length).length;
 check("mọi dòng khớp header", lech === 0, `${lech} dòng lệch`);
@@ -83,7 +84,21 @@ check(
 );
 
 const thieu = cells(lines[3]);
-check("chỉ số không đọc được để ô trống, không phải 0", thieu[9] === "" && thieu[17] === "");
+// Tra cột theo TÊN, không theo số thứ tự viết cứng. Bản trước dùng số 9 và 17;
+// khi thêm ba cột vào giữa, phép kiểm vẫn chạy nhưng soi nhầm cột — nó báo hỏng
+// vì lý do không liên quan tới thứ nó kiểm.
+const at = (ten: string) => {
+  const i = header.indexOf(ten);
+  if (i < 0) throw new Error(`CSV thiếu cột "${ten}"`);
+  return thieu[i];
+};
+// Cột chỉ số đầu tiên neo theo cột cuối cùng của phần thông tin chung, nên thêm
+// cột ở giữa không làm phép kiểm soi nhầm chỗ.
+const chiSoDau = header[header.indexOf("Danh tiếng") + 1];
+check(
+  "chỉ số không đọc được để ô trống, không phải 0",
+  at("CS (tính)") === "" && at(chiSoDau) === "",
+);
 
 console.log("\nJSON");
 const json = playersToJson(doc, players) as {

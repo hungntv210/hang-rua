@@ -236,6 +236,24 @@ export interface SavePlayer {
   /** 0 = nam, 1 = nữ. Đọc thẳng từ save (bit 872). */
   gender: number | null;
   /**
+   * Năm hết hạn hợp đồng — ĐỌC THẲNG từ save, khớp 100% với dữ liệu game.
+   *
+   * Chỉ có năm chứ không có ngày: trường trong save rộng đúng 6 bit và chỉ chứa
+   * năm. FC đặt hạn vào 30/06, nhưng đó là quy ước của game chứ không phải thứ
+   * đọc được, nên tầng này không bịa ra ngày.
+   */
+  contractUntil: number | null;
+  /** Ngày gia nhập CLB hiện tại, dạng ISO `YYYY-MM-DD`. Đọc thẳng từ save. */
+  joinedDate: string | null;
+  /**
+   * Giá trị chuyển nhượng ƯỚC TÍNH, đơn vị euro.
+   *
+   * Khác mọi trường trên: đây không phải số đọc được. Game không lưu giá trị
+   * chuyển nhượng ở bất kỳ bảng nào — nó dựng lúc chạy rồi vứt. Xem
+   * `lib/fc26/value.ts`. Mọi chỗ hiển thị phải đánh dấu rõ là ước tính.
+   */
+  valueEstimate: number | null;
+  /**
    * 31 chỉ số chi tiết, thứ tự theo `ATTRIBUTE_ORDER`.
    *
    * Mảng số chứ không phải object: 21.000 cầu thủ × 31 khoá lặp lại là hàng
