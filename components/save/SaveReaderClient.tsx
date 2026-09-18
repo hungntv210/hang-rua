@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Notice } from "@/components/Notice";
-import { Pitch } from "@/components/save/Pitch";
 import { PlayerTable } from "@/components/save/PlayerTable";
 import { SaveDropZone } from "@/components/save/SaveDropZone";
 import { SaveFieldTable } from "@/components/save/SaveFieldTable";
@@ -11,6 +10,7 @@ import { SaveNameList } from "@/components/save/SaveNameList";
 import { SaveStats } from "@/components/save/SaveStats";
 import { SaveStringList } from "@/components/save/SaveStringList";
 import { SaveUnknownList } from "@/components/save/SaveUnknownList";
+import { SquadHub } from "@/components/save/SquadHub";
 import { TabBar, TabPanel, type TabItem } from "@/components/TabBar";
 import { loadFc26Database } from "@/lib/fc26/db";
 import { loadFc26Formations, type Lineup } from "@/lib/fc26/formations";
@@ -318,7 +318,7 @@ function SaveResult({
       <TabPanel tabKey={tab}>
       {tab === "lineup" ? (
         lineup && players ? (
-          <Pitch lineup={lineup} players={players} />
+          <SquadHub lineup={lineup} players={players} />
         ) : (
           <Notice title="Chưa dựng được sơ đồ đội hình">
             Không tìm được đội hình nào trong file này khớp với bảng đội hình đã

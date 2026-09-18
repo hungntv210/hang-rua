@@ -29,7 +29,10 @@ export default function SaveReaderPage() {
           tự mô tả tìm thấy bên trong file.
         </p>
         <p className="max-w-3xl text-sm text-mist">
-          <strong>Chỉ số, tiềm năng, ngày sinh, thể hình đọc thẳng từ save.</strong>{" "}
+          <strong>
+            Chỉ số, tiềm năng, ngày sinh, thể hình, hạn hợp đồng và ngày gia nhập
+            đọc thẳng từ save.
+          </strong>{" "}
           Chỉ số tổng là ngoại lệ: file không lưu nó, nên trang tính lại từ 31 chỉ
           số thành phần và có sai số ±1. Tên cầu thủ có sẵn lấy từ một cơ sở dữ
           liệu FC 26 nhúng theo <code>playerId</code>; tên cầu thủ do career sinh
@@ -41,9 +44,13 @@ export default function SaveReaderPage() {
           cùng số sao kỹ năng, chân không thuận và danh tiếng.
         </p>
         <p className="max-w-3xl text-sm text-mist">
-          Chưa đọc được: <em>CLB hiện tại trong career</em>, giá trị chuyển nhượng
-          và hợp đồng. Cột CLB hiện là CLB gốc từ cơ sở dữ liệu nên chưa phản ánh
-          chuyển nhượng đã diễn ra trong career. Khoảng một phần năm cầu thủ chưa
+          Chưa đọc được: <em>CLB hiện tại trong career</em> và <em>lương</em>. Cột
+          CLB hiện là CLB gốc từ cơ sở dữ liệu nên chưa phản ánh chuyển nhượng đã
+          diễn ra trong career; còn lương thì chỉ nằm trong một bảng 45 dòng của
+          riêng hai đội bạn cầm, quá nhỏ để định vị được trong file 15MB.{" "}
+          <em>Giá trị chuyển nhượng</em> là trường hợp khác hẳn: game không lưu nó
+          ở bất kỳ đâu — nó dựng lúc chạy rồi vứt — nên trang ước tính từ chỉ số,
+          tiềm năng và tuổi, và đánh dấu rõ là ước tính. Khoảng một phần năm cầu thủ chưa
           có tên — chủ yếu là đội trẻ và đội dự bị, nhóm không trang thống kê nào
           liệt kê vì họ không thi đấu ở giải nào; chỉ số của họ vẫn đọc được đầy đủ
           và họ được nhận dạng qua quốc tịch, vị trí và tuổi. Các tab còn lại bày

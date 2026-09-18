@@ -53,6 +53,14 @@ export interface Lineup {
   slots: LineupSlot[];
   /** Cầu thủ trong đội hình nhưng không đá chính. */
   benchIds: number[];
+  /**
+   * TOÀN BỘ cầu thủ của đội, đọc từ save.
+   *
+   * Khác `benchIds`: chỗ kia lấy từ bảng dự bị của team sheet dựng sẵn, nên chỉ
+   * có 7-12 người. Bảng cầu thủ theo nhóm vị trí cần cả đội, kể cả người không
+   * nằm trong danh sách đăng ký trận nào.
+   */
+  squadIds: number[];
   /** Số áo tra theo playerId, cho cả đá chính lẫn dự bị. */
   jerseyOf: Map<number, number>;
   /** Bao nhiêu trong 11 suất khớp — hiển thị cho người xem tự đánh giá. */
@@ -117,6 +125,7 @@ export class Fc26Formations {
       // Chỉ giữ người thực sự có trong save: team sheet có thể liệt kê cầu thủ
       // đã rời đội, và hiện họ ra thì sai.
       benchIds: bench.filter((pid) => squad.has(pid)),
+      squadIds,
       jerseyOf,
       matched: best.matched,
     };

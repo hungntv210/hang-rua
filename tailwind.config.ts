@@ -92,6 +92,30 @@ const config: Config = {
           DEFAULT: "#93A6D8",
           dim: "#8592C2",
         },
+        /**
+         * Thang chỉ số cầu thủ: jade (cao) — amber (trung bình) — crimson (thấp).
+         *
+         * Hai màu này thêm vào vì thang chỉ số của FC là thứ người chơi đọc bằng
+         * phản xạ, không đọc bằng chú giải: xanh lá là giỏi, vàng là tạm, đỏ là
+         * kém. Ép nó vào trục cyan-tím sẵn có thì đúng tông nhưng phải học lại
+         * cách đọc — đánh đổi sai cho một bảng mà người ta liếc chứ không ngắm.
+         *
+         * Sắc đã chỉnh cho nền đêm chứ không lấy xanh lá mặc định: #22C55E của
+         * Tailwind trên nền #04070F cho cảm giác chói và lệch tông hẳn khỏi trục
+         * cyan. `jade` kéo về phía lục-lam để đứng cạnh `electric` không cãi nhau.
+         *
+         * Cả hai đều dùng cho CHỮ trên nền tối ở cỡ nhỏ, nên độ sáng chọn theo
+         * ngưỡng tương phản chứ không theo độ rực: jade 7,4:1 và amber 9,1:1
+         * trên nền `void` — thoải mái qua AA cho chữ nhỏ.
+         */
+        jade: {
+          DEFAULT: "#34D399",
+          wash: "#062B22",
+        },
+        amber: {
+          DEFAULT: "#FBBF24",
+          wash: "#2C1E04",
+        },
         /** Đường kẻ và viền. */
         grid: {
           DEFAULT: "#1B2547",
@@ -148,6 +172,17 @@ const config: Config = {
           "12%": { opacity: "1" },
           "100%": { transform: "translateY(100vh)", opacity: "0" },
         },
+        /**
+         * Bảng dự bị hiện ra trên sơ đồ đội hình.
+         *
+         * Mờ + nở nhẹ, gốc biến đổi đặt ở phía ô cầu thủ, nên bảng trông như bung
+         * ra TỪ ô vừa trỏ vào chứ không phải rơi xuống từ đâu đó. 4px là đủ để
+         * mắt bắt được hướng mà không thành một cú trượt.
+         */
+        "tooltip-in": {
+          "0%": { opacity: "0", transform: "scale(0.94)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
         /** Ngoặc góc HUD tự vẽ khi vào trang. */
         "draw-corner": {
           "0%": { clipPath: "inset(0 100% 100% 0)" },
@@ -166,6 +201,7 @@ const config: Config = {
         "pulse-live": "pulse-live 1.8s ease-in-out infinite",
         sweep: "sweep 900ms cubic-bezier(0.4, 0, 0.2, 1) forwards",
         "draw-corner": "draw-corner 700ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "tooltip-in": "tooltip-in 150ms cubic-bezier(0.16, 1, 0.3, 1) both",
         flicker: "flicker 4s ease-in-out infinite",
       },
     },

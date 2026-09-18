@@ -82,6 +82,14 @@ body {
     @apply font-display text-2xl font-semibold tracking-tight text-ghost;
   }
 
+  /* Ô tiêu đề bảng số liệu.
+     Nền ĐẶC, không trong suốt: hàng này dính ở đỉnh khung cuộn, nên nền trong
+     suốt sẽ để nội dung chạy xuyên qua khi cuộn. Đây là lỗi chỉ lộ ra lúc
+     người dùng cuộn, tức là sau khi ảnh chụp màn hình đã được duyệt. */
+  .th-cell {
+    @apply whitespace-nowrap px-2 py-1.5 font-mono text-[10px] font-medium uppercase tracking-[0.12em];
+  }
+
   /* Nhãn nhỏ in hoa cho phần phụ — dùng font mono, chữ của bảng điều khiển. */
   .eyebrow {
     @apply font-mono text-[10px] font-medium uppercase tracking-[0.22em] text-mist-dim;
