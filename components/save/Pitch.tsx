@@ -7,10 +7,12 @@ import {
   StatBadge,
   displayName,
   familyOf,
+  initialsOf,
   shortName,
   surnameOf,
 } from "@/components/save/squad-shared";
-import type { Lineup } from "@/lib/fc26/formations";
+import { FIT_LABEL } from "@/lib/fc26/lineup";
+import type { Lineup } from "@/lib/fc26/lineup";
 import { positionName } from "@/lib/save/career/schema";
 import type { SavePlayer } from "@/lib/save/types";
 
@@ -31,6 +33,13 @@ import type { SavePlayer } from "@/lib/save/types";
  * nền đêm tông cyan/magenta sẽ đọc như một ảnh dán vào chứ không phải một phần
  * của trang. Nên giữ BỐ CỤC của ảnh mẫu — sọc sân, ảnh đại diện, tên in hoa,
  * dòng chỉ số — còn sắc độ thì lấy từ bảng màu sẵn có của dự án.
+ *
+ * ─── ĐÂY LÀ ĐỘI HÌNH GỢI Ý ──────────────────────────────────────────────────
+ *
+ * Save không lưu được ai đá ô nào (xem `lib/fc26/lineup.ts`), nên 11 người ở đây
+ * do trang xếp ra từ vị trí sở trường và chỉ số. Component này phải nói ra điều
+ * đó ở chỗ người xem nhìn thấy, không giấu xuống chú thích cuối trang: một đội
+ * hình gợi ý trông y hệt đội hình thật là thứ tệ hơn cả không hiển thị gì.
  */
 
 interface Props {
@@ -138,13 +147,12 @@ export function Pitch({ lineup, players }: Props) {
         const alts = alternativesFor(i);
         const isOpen = open === i;
         /*
-         * Ô có cầu thủ KHÔNG nằm trong save.
+         * Ô không tra được cầu thủ.
          *
-         * Bảng đội hình dựng sẵn lấy từ một career, nên vài đội có cầu thủ do
-         * career đó sinh ra chiếm suất đá chính — đo được: Croatia 2 suất,
-         * Norway 1. Save của người khác không có những cầu thủ ấy, và nếu cứ vẽ
-         * thì ô đó hiện `#460028`, một người không tồn tại trong file họ tải
-         * lên. Vẽ ô trống có nhãn thì trung thực; vẽ áo có số thì là bịa.
+         * Hiếm hơn hẳn trước đây: 11 người giờ đều lấy từ khối đội hình đọc
+         * trong save, nên ai cũng có thật. Nhưng danh sách truyền vào đây đã lọc
+         * bỏ nội dung Ultimate Team, nên một icon lọt vào đội hình vẫn tra
+         * không ra. Vẽ ô trống có nhãn thì trung thực; vẽ một cái tên thì là bịa.
          */
         const missing = !p;
         const label = missing ? "trống" : shortName(p.name, `#${slot.playerId}`).toUpperCase();
@@ -193,12 +201,28 @@ export function Pitch({ lineup, players }: Props) {
                 alts.length ? `, ${alts.length} cầu thủ cùng vị trí đang không đá chính` : ""
               }`}
             >
-              <span className={missing ? "opacity-30 grayscale" : ""}>
+              {/* Viền quanh ảnh đại diện nói lên mức hợp vị trí.
+                  Cần thiết vì đây là đội hình GỢI Ý: khi trang phải đẩy một tiền
+                  vệ ra đá hậu vệ biên vì đội không còn ai khác, người xem phải
+                  thấy điều đó ngay trên sân — nếu không họ sẽ đọc cách xếp này
+                  như một lựa chọn chiến thuật có chủ đích. */}
+              <span
+                title={FIT_LABEL[slot.fit]}
+                className={`rounded-full ${
+                  missing
+                    ? "opacity-30 grayscale"
+                    : slot.fit === "out"
+                      ? "ring-2 ring-crimson/70"
+                      : slot.fit === "group"
+                        ? "ring-2 ring-amber/60"
+                        : ""
+                }`}
+              >
                 <span className="sm:hidden">
-                  <PlayerAvatar jersey={missing ? null : slot.jersey} gk={gk} size={28} />
+                  <PlayerAvatar initials={missing ? null : initialsOf(p.name)} gk={gk} size={28} />
                 </span>
                 <span className="hidden sm:block">
-                  <PlayerAvatar jersey={missing ? null : slot.jersey} gk={gk} size={34} />
+                  <PlayerAvatar initials={missing ? null : initialsOf(p.name)} gk={gk} size={34} />
                 </span>
               </span>
 
@@ -289,7 +313,7 @@ export function Pitch({ lineup, players }: Props) {
                     {alts.slice(0, 6).map((alt) => (
                       <li key={alt.playerId} className="flex items-center gap-1.5 text-[11px]">
                         <PlayerAvatar
-                          jersey={lineup.jerseyOf.get(alt.playerId) ?? null}
+                          initials={initialsOf(alt.name)}
                           gk={alt.position === "GK"}
                           size={18}
                         />

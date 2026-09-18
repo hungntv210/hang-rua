@@ -4,8 +4,8 @@ import { useMemo } from "react";
 
 import { Pitch } from "@/components/save/Pitch";
 import { SquadList } from "@/components/save/SquadList";
-import { PlayerAvatar, StatBadge, displayName } from "@/components/save/squad-shared";
-import type { Lineup } from "@/lib/fc26/formations";
+import { PlayerAvatar, StatBadge, displayName, initialsOf } from "@/components/save/squad-shared";
+import type { Lineup } from "@/lib/fc26/lineup";
 import type { SavePlayer } from "@/lib/save/types";
 
 /**
@@ -53,10 +53,12 @@ export function SquadHub({ lineup, players }: Props) {
   );
 
   /**
-   * Băng ghế dự bị ĐĂNG KÝ, khác với "toàn đội trừ đội hình chính".
+   * Cả đội trừ 11 người được xếp đá chính.
    *
-   * Danh sách này đọc từ bảng đội hình của game nên nó là danh sách đăng ký
-   * thật, thường 7-12 người. Có thể rỗng, và rỗng thì nói rõ là rỗng.
+   * KHÔNG phải danh sách đăng ký trận. Bản trước lấy băng ghế từ bảng team sheet
+   * nướng sẵn nên nó đúng là danh sách đăng ký — nhưng của một career tại một
+   * thời điểm, không phải của save đang mở. Save không lưu được ai ngồi ghế dự
+   * bị, nên chỗ này giờ nói đúng thứ nó biết: những người còn lại của đội.
    */
   const bench = useMemo(
     () =>
@@ -75,7 +77,7 @@ export function SquadHub({ lineup, players }: Props) {
           {lineup.formationName}
         </h2>
         <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-mist-dim">
-          {squad.length} cầu thủ · khớp {lineup.matched}/11 suất đá chính
+          {squad.length} cầu thủ đọc từ save · đội hình gợi ý
         </span>
       </div>
 
@@ -87,10 +89,10 @@ export function SquadHub({ lineup, players }: Props) {
           <section>
             <div className="mb-2 flex items-baseline gap-2">
               <h3 className="font-display text-sm font-semibold tracking-wide text-ghost">
-                Dự bị
+                Còn lại trong đội
               </h3>
               <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-mist-dim">
-                Substitute · {bench.length}
+                Rest of squad · {bench.length}
               </span>
             </div>
 
@@ -99,11 +101,7 @@ export function SquadHub({ lineup, players }: Props) {
                  Khung rỗng trong ảnh mẫu không nói được vì sao nó rỗng, và người
                  xem sẽ đọc nó thành lỗi của trang. */
               <p className="rounded-sm border border-dashed border-grid px-3 py-5 text-center text-xs leading-relaxed text-mist-dim">
-                Đội hình trong save không kèm danh sách dự bị đăng ký.
-                <br />
-                Cả đội vẫn nằm ở bảng bên{" "}
-                <span className="xl:hidden">dưới</span>
-                <span className="hidden xl:inline">phải</span>.
+                Đội chỉ có đúng 11 cầu thủ trong save, không còn ai ngoài đội hình.
               </p>
             ) : (
               <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
@@ -113,7 +111,7 @@ export function SquadHub({ lineup, players }: Props) {
                     className="flex items-center gap-2 rounded-sm border border-grid bg-abyss/60 px-2 py-1.5"
                   >
                     <PlayerAvatar
-                      jersey={lineup.jerseyOf.get(p.playerId) ?? null}
+                      initials={initialsOf(p.name)}
                       gk={p.position === "GK"}
                       size={24}
                     />
@@ -131,17 +129,22 @@ export function SquadHub({ lineup, players }: Props) {
 
         {/* KHỐI PHẢI ───────────────────────────────────────────────────── */}
         <div className="min-w-0 space-y-4">
-          <SquadList squad={squad} starterIds={starterIds} jerseyOf={lineup.jerseyOf} />
+          <SquadList squad={squad} starterIds={starterIds} />
 
           <p className="text-xs leading-relaxed text-mist">
-            Đội hình, số áo, tuổi, vị trí và <strong>hạn hợp đồng</strong> đọc thẳng
-            từ file save của bạn; toạ độ từng vị trí lấy từ bảng sơ đồ của game.{" "}
-            <strong>Cột &ldquo;Giá trị&rdquo; là ước tính</strong> — game không lưu
-            giá trị chuyển nhượng ở bất kỳ đâu, nó dựng lúc chạy rồi vứt, nên con số
-            này tính từ CS, TN và tuổi. Đúng bậc độ lớn và đúng thứ tự giữa các cầu
-            thủ, không đúng tới từng triệu. <strong>CS cũng là số tính</strong>, sai
-            số ±1. Di chuột — hoặc chạm trên điện thoại — vào một vị trí trên sân để
-            xem ai khác đá được vị trí đó.
+            <strong>Danh sách đội, tuổi, vị trí sở trường và hạn hợp đồng đọc thẳng
+            từ file save của bạn</strong> — đổi save thì chúng đổi theo.{" "}
+            <strong>Riêng 11 suất đá chính thì không:</strong> save không lưu được
+            ai đá ô nào, nên trang tự xếp từ vị trí sở trường và chỉ số, rồi chọn
+            sơ đồ mà đội này xếp được mạnh nhất. Đó là một gợi ý, không phải đội
+            hình bạn đã xếp trong game. Vòng cam quanh ảnh đại diện nghĩa là người
+            đó đang đá lệch tuyến, vòng đỏ là trái vị trí hẳn.{" "}
+            <strong>Cột &ldquo;Giá trị&rdquo; cũng là ước tính</strong> — game
+            không lưu giá trị chuyển nhượng ở bất kỳ đâu, nên con số này tính từ
+            CS, TN và tuổi: đúng bậc độ lớn và đúng thứ tự giữa các cầu thủ, không
+            đúng tới từng triệu. <strong>CS cũng là số tính</strong>, sai số ±1. Di
+            chuột — hoặc chạm trên điện thoại — vào một vị trí trên sân để xem ai
+            khác đá được vị trí đó.
           </p>
         </div>
       </div>

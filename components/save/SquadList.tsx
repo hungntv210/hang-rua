@@ -10,6 +10,7 @@ import {
   contractLabel,
   displayName,
   groupOf,
+  initialsOf,
   type PositionGroup,
 } from "@/components/save/squad-shared";
 import { formatMoney } from "@/lib/fc26/value";
@@ -24,6 +25,9 @@ import type { SavePlayer } from "@/lib/save/types";
  * chuyện đó mà không phá cấu trúc bảng; bốn `<table>` riêng thì làm được, và
  * mỗi cái vẫn là một bảng thật với `<thead>` — nên trình đọc màn hình đọc được
  * tên cột, và chọn-sao-chép ra Excel vẫn giữ nguyên hàng cột.
+ *
+ * Cột số áo đã bị bỏ: số áo không đọc được từ save (nó thuộc về cặp cầu thủ-đội
+ * chứ không thuộc về cầu thủ). Ảnh đại diện mang chữ cái đầu tên thay vào đó.
  *
  * ─── VÌ SAO CÓ CỜ MÀ KHÔNG PHẢI HÌNH CỜ ─────────────────────────────────────
  *
@@ -63,12 +67,11 @@ function nationCode(nation: string | null): string {
 interface Props {
   /** Toàn bộ cầu thủ của đội — không chỉ đội hình xuất phát. */
   squad: SavePlayer[];
-  /** Ai đang đá chính, để đánh dấu. */
+  /** Ai được xếp đá chính trong đội hình GỢI Ý, để đánh dấu. */
   starterIds: Set<number>;
-  jerseyOf: Map<number, number>;
 }
 
-export function SquadList({ squad, starterIds, jerseyOf }: Props) {
+export function SquadList({ squad, starterIds }: Props) {
   const groups = useMemo(() => {
     const m = new Map<PositionGroup, SavePlayer[]>();
     for (const g of GROUP_ORDER) m.set(g, []);
@@ -141,7 +144,7 @@ export function SquadList({ squad, starterIds, jerseyOf }: Props) {
                           <td className="px-2 py-1.5">
                             <div className="flex items-center gap-2">
                               <PlayerAvatar
-                                jersey={jerseyOf.get(p.playerId) ?? null}
+                                initials={initialsOf(p.name)}
                                 gk={p.position === "GK"}
                                 size={26}
                               />
@@ -159,7 +162,7 @@ export function SquadList({ squad, starterIds, jerseyOf }: Props) {
                                       trái, đây chỉ cần nối hai bên lại với nhau. */}
                                   {starter ? (
                                     <span
-                                      title="Đang đá chính"
+                                      title="Được xếp đá chính trong đội hình gợi ý"
                                       className="shrink-0 rounded-[2px] bg-electric-wash px-1 font-mono text-[9px] uppercase tracking-wide text-electric"
                                     >
                                       XP

@@ -8,7 +8,19 @@ import type { SavePlayer } from "@/lib/save/types";
  * Để chung một file vì chúng phải thống nhất tuyệt đối: một cầu thủ 84 điểm
  * phải ra đúng một màu ở cả hai chỗ. Tách ra hai file là cách chắc chắn để về
  * sau ngưỡng ở hai nơi lệch nhau mà không ai biết.
+ *
+ * Bảng vị trí thì KHÔNG ở đây mà ở `lib/fc26/positions.ts`: bộ dựng đội hình
+ * cũng cần nó, và một bảng vị trí nằm trong component thì tầng `lib` không dùng
+ * lại được.
  */
+
+export {
+  GROUP_LABEL,
+  GROUP_ORDER,
+  familyOf,
+  groupOf,
+  type PositionGroup,
+} from "@/lib/fc26/positions";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Thang màu chỉ số
@@ -75,21 +87,36 @@ export function StatBadge({
 // ────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Hai chữ cái đầu của tên. `null` khi không có tên — KHÔNG bịa ra chữ từ ID.
+ */
+export function initialsOf(name: string | null): string | null {
+  if (!name) return null;
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return null;
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
+/**
  * Ảnh đại diện cầu thủ.
  *
  * Trang KHÔNG có ảnh mặt cầu thủ và sẽ không có: save không chứa ảnh, còn kéo
  * ảnh từ nguồn ngoài thì vừa sai bản quyền vừa hỏng ngay khi nguồn đổi đường
- * dẫn. Nên đây là bóng người kèm số áo — cùng thứ mà chính ảnh mẫu hiển thị cho
- * phần lớn cầu thủ, và số áo còn nói được nhiều hơn một khuôn mặt chung chung.
+ * dẫn. Nên đây là bóng người kèm chữ cái đầu tên.
+ *
+ * Trước đây chỗ này hiện SỐ ÁO. Số áo đã bị bỏ vì nó không đọc được từ save —
+ * nó thuộc về cặp (cầu thủ, đội) chứ không thuộc về cầu thủ, và dò trong bản ghi
+ * 144 byte với 24 mẫu ở cổng 100% không ra trường nào. Số áo cũ lấy từ một ảnh
+ * chụp nướng sẵn, tức là đúng với đúng một career tại đúng một thời điểm.
  *
  * Thủ môn đổi màu theo đúng quy ước của mọi sơ đồ đội hình.
  */
 export function PlayerAvatar({
-  jersey,
+  initials,
   gk = false,
   size = 28,
 }: {
-  jersey: number | null;
+  initials: string | null;
   gk?: boolean;
   size?: number;
 }) {
@@ -101,72 +128,23 @@ export function PlayerAvatar({
       style={{ width: size, height: size }}
       aria-hidden
     >
-      <svg viewBox="0 0 24 24" className="absolute inset-0 h-full w-full opacity-30">
+      <svg viewBox="0 0 24 24" className="absolute inset-0 h-full w-full opacity-25">
         <circle cx="12" cy="8.5" r="4" className="fill-mist" />
         <path d="M3.5 24c0-5 3.8-8.5 8.5-8.5s8.5 3.5 8.5 8.5z" className="fill-mist" />
       </svg>
-      {jersey && jersey > 0 ? (
+      {initials ? (
         <span
-          className={`relative font-mono font-bold leading-none ${gk ? "text-ghost" : "text-white"}`}
-          style={{ fontSize: Math.max(9, Math.round(size * 0.4)) }}
+          className={`relative font-mono font-bold leading-none tracking-tight ${
+            gk ? "text-ghost" : "text-white"
+          }`}
+          style={{ fontSize: Math.max(8, Math.round(size * 0.36)) }}
         >
-          {jersey}
+          {initials}
         </span>
       ) : null}
     </span>
   );
 }
-
-// ────────────────────────────────────────────────────────────────────────────
-// Nhóm vị trí
-// ────────────────────────────────────────────────────────────────────────────
-
-export type PositionGroup = "GK" | "DF" | "MF" | "FW";
-
-const GROUP_OF: Record<string, PositionGroup> = {
-  GK: "GK",
-  SW: "DF", RB: "DF", RWB: "DF", CB: "DF", RCB: "DF", LCB: "DF", LB: "DF", LWB: "DF",
-  CDM: "MF", RDM: "MF", LDM: "MF", CM: "MF", RCM: "MF", LCM: "MF",
-  RM: "MF", LM: "MF", CAM: "MF", RAM: "MF", LAM: "MF",
-  RW: "FW", LW: "FW", RF: "FW", CF: "FW", LF: "FW", ST: "FW", RS: "FW", LS: "FW",
-};
-
-/** Vị trí lạ rơi vào tiền vệ — nhóm rộng nhất, sai ở đó ít gây hiểu nhầm nhất. */
-export const groupOf = (position: string): PositionGroup => GROUP_OF[position] ?? "MF";
-
-export const GROUP_LABEL: Record<PositionGroup, { vi: string; en: string }> = {
-  GK: { vi: "Thủ môn", en: "Goalkeepers" },
-  DF: { vi: "Hậu vệ", en: "Defenders" },
-  MF: { vi: "Tiền vệ", en: "Midfielders" },
-  FW: { vi: "Tiền đạo", en: "Attackers" },
-};
-
-export const GROUP_ORDER: PositionGroup[] = ["GK", "DF", "MF", "FW"];
-
-/**
- * Cầu thủ dự bị nào thay được cho một ô trên sân.
- *
- * Bảng này nói về VỊ TRÍ SỞ TRƯỜNG đọc từ save, không phải về ô trên sơ đồ: một
- * ô `RCB` cần người sở trường CB, không cần người có đúng chữ "RCB".
- */
-const SLOT_FAMILY: Record<string, string[]> = {
-  GK: ["GK"],
-  SW: ["CB", "SW", "RCB", "LCB"],
-  RWB: ["RB", "RWB"], RB: ["RB", "RWB"],
-  RCB: ["CB", "RCB", "LCB", "SW"], CB: ["CB", "RCB", "LCB", "SW"], LCB: ["CB", "RCB", "LCB", "SW"],
-  LB: ["LB", "LWB"], LWB: ["LB", "LWB"],
-  RDM: ["CDM", "RDM", "LDM", "CM"], CDM: ["CDM", "RDM", "LDM", "CM"], LDM: ["CDM", "RDM", "LDM", "CM"],
-  RM: ["RM", "RW"], LM: ["LM", "LW"],
-  RCM: ["CM", "RCM", "LCM", "CDM", "CAM"], CM: ["CM", "RCM", "LCM", "CDM", "CAM"],
-  LCM: ["CM", "RCM", "LCM", "CDM", "CAM"],
-  RAM: ["CAM", "RAM", "LAM"], CAM: ["CAM", "RAM", "LAM", "CM"], LAM: ["CAM", "RAM", "LAM"],
-  RF: ["RF", "RW", "ST"], CF: ["CF", "ST"], LF: ["LF", "LW", "ST"],
-  RW: ["RW", "RM", "RF"], LW: ["LW", "LM", "LF"],
-  RS: ["ST", "CF", "RS", "LS"], ST: ["ST", "CF", "RS", "LS"], LS: ["ST", "CF", "RS", "LS"],
-};
-
-export const familyOf = (slotPosition: string): string[] =>
-  SLOT_FAMILY[slotPosition] ?? [slotPosition];
 
 // ────────────────────────────────────────────────────────────────────────────
 // Trình bày
@@ -175,7 +153,7 @@ export const familyOf = (slotPosition: string): string[] =>
 /**
  * Tên hiển thị gọn trên sân.
  *
- * Ô tên rộng đúng 88px và chữ in hoa đậm 11px, tức khoảng 12-14 ký tự. Đo trên
+ * Ô tên rộng đúng 96px và chữ in hoa đậm 11px, tức khoảng 12-14 ký tự. Đo trên
  * đội hình thật: ngưỡng cũ (viết tắt khi dài quá 14) vẫn để lọt 4/11 cái tên bị
  * cắt mất đuôi — "AYYOUB BOUADDI" cần 103px, "M. LEWIS-SKELLY" cần 102px.
  *

@@ -186,11 +186,25 @@ for (const r of readCsv("fc26_default_teamsheets.csv")) {
 const usedFormations = new Set(sheets.map((s) => s.formation));
 const kept = formations.filter((f) => usedFormations.has(f.id));
 
+/*
+ * CHỈ ghi hình học sơ đồ. Bảng team sheet KHÔNG được ghi ra nữa.
+ *
+ * Bảng đội hình xuất phát của 815 đội từng nằm trong file này và trang phát lại
+ * nó. Nhưng nó là ảnh chụp một career tại một thời điểm, không phải hằng số theo
+ * phiên bản game: người chơi xếp lại đội hình thì trang vẫn hiện trạng thái cũ,
+ * và save từ trước ngày chụp thì không khớp đội nào nên không hiện gì. Đo trên
+ * ba save của cùng một người: 0/11, 11/11, 11/11.
+ *
+ * Vẫn phải TÍNH ra `sheets` ở trên, vì chúng là thứ cho biết sơ đồ nào thực sự
+ * có đội dùng — 871 sơ đồ trong bảng gốc mà chỉ vài chục được dùng thật. Tính
+ * xong thì vứt.
+ *
+ * Đội hình giờ dựng từ chính save: `lib/fc26/lineup.ts`.
+ */
 const payload = {
   source: dir,
   builtAt: new Date().toISOString().slice(0, 10),
   formations: kept.map((f) => ({ id: f.id, name: f.name, pos: f.pos, off: f.off })),
-  sheets: sheets.map((s) => [s.team, s.formation, s.xi, s.bench, s.jersey]),
 };
 
 mkdirSync(dirname(outPath), { recursive: true });

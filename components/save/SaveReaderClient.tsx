@@ -13,7 +13,8 @@ import { SaveUnknownList } from "@/components/save/SaveUnknownList";
 import { SquadHub } from "@/components/save/SquadHub";
 import { TabBar, TabPanel, type TabItem } from "@/components/TabBar";
 import { loadFc26Database } from "@/lib/fc26/db";
-import { loadFc26Formations, type Lineup } from "@/lib/fc26/formations";
+import { loadFc26Formations } from "@/lib/fc26/formations";
+import { buildLineup, pickSquad, type Lineup } from "@/lib/fc26/lineup";
 import { loadFc26Names } from "@/lib/fc26/names";
 import {
   diagnosticsToJson,
@@ -138,22 +139,31 @@ export function SaveReaderClient() {
    * bảng cầu thủ, và ngược lại.
    */
   useEffect(() => {
-    const squads = doc?.career?.squads;
-    if (!squads || squads.length === 0) {
+    const career = doc?.career;
+    if (!career || career.squads.length === 0) {
       setLineup(null);
       return;
     }
     let alive = true;
-    void loadFc26Formations().then((table) => {
-      if (!alive || !table) return;
-      // Nhiều khối đội hình trong save; lấy khối khớp được nhiều suất nhất.
-      let best: Lineup | null = null;
-      for (const squad of squads) {
-        const m = table.match(squad);
-        if (m && (!best || m.matched > best.matched)) best = m;
-      }
-      setLineup(best);
-    });
+    void Promise.all([loadFc26Formations(), import("@/lib/save/career/schema")]).then(
+      ([table, schema]) => {
+        if (!alive || !table) return;
+        // Cần chỉ số và vị trí sở trường của MỌI cầu thủ đọc được, không chỉ
+        // của đội — `pickSquad` phải nhận ra khối nào là một đội bóng thật.
+        const byId = new Map(
+          career.players.map((p) => [
+            p.playerId,
+            { playerId: p.playerId, position: p.position, overall: p.overall },
+          ]),
+        );
+        const squad = pickSquad(career.squads, byId);
+        if (!squad) {
+          setLineup(null);
+          return;
+        }
+        setLineup(buildLineup(squad, byId, table.shapes, schema.positionName));
+      },
+    );
     return () => {
       alive = false;
     };
@@ -321,9 +331,10 @@ function SaveResult({
           <SquadHub lineup={lineup} players={players} />
         ) : (
           <Notice title="Chưa dựng được sơ đồ đội hình">
-            Không tìm được đội hình nào trong file này khớp với bảng đội hình đã
-            biết. Sơ đồ chỉ được vẽ khi đội hình đọc từ save chứa đủ cầu thủ của
-            một đội cụ thể — vẽ bừa sẽ là hiển thị đội hình của career khác. Bảng
+            Không tìm thấy khối đội hình nào trong file này trông như một đội bóng
+            thật — cần ít nhất 16 cầu thủ và hai thủ môn. Save chứa nhiều khối
+            danh sách cầu thủ, trong đó có cả danh sách theo dõi chuyển nhượng, và
+            vẽ một danh sách theo dõi thành sơ đồ đội hình thì sai hẳn nghĩa. Bảng
             cầu thủ ở tab bên cạnh vẫn đầy đủ.
           </Notice>
         )
