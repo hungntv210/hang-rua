@@ -46,13 +46,18 @@ export function SaveStats({ doc }: { doc: SaveDocument }) {
         />
       </div>
 
+      {/* `min-w-0` trên từng hàng là bắt buộc, không phải thừa.
+          Ô lưới và ô flex có kích thước tối thiểu tự động bằng min-content, nên
+          một tên file dài đẩy cả hàng rộng ra và `truncate` không bao giờ có cơ
+          hội chạy. Đo ở 375px: hàng rộng 491px trong một khung 343px, và cả
+          TRANG cuộn ngang theo. Lỗi chỉ hiện trên màn hình hẹp. */}
       <dl className="plate grid gap-x-6 gap-y-2 p-3 text-sm sm:grid-cols-2 sm:p-4">
-        <div className="flex justify-between gap-4">
-          <dt className="text-mist">Tên file</dt>
-          <dd className="truncate font-mono text-xs text-ghost">{meta.fileName}</dd>
+        <div className="flex min-w-0 justify-between gap-4">
+          <dt className="shrink-0 text-mist">Tên file</dt>
+          <dd className="min-w-0 truncate font-mono text-xs text-ghost">{meta.fileName}</dd>
         </div>
-        <div className="flex justify-between gap-4">
-          <dt className="text-mist">Magic</dt>
+        <div className="flex min-w-0 justify-between gap-4">
+          <dt className="shrink-0 text-mist">Magic</dt>
           <dd className="font-mono text-xs text-ghost">
             {meta.magic || "—"}{" "}
             <span className={meta.isFbchunks ? "text-electric" : "text-crimson"}>
@@ -60,8 +65,8 @@ export function SaveStats({ doc }: { doc: SaveDocument }) {
             </span>
           </dd>
         </div>
-        <div className="flex justify-between gap-4">
-          <dt className="text-mist">Tag cmBNRY</dt>
+        <div className="flex min-w-0 justify-between gap-4">
+          <dt className="shrink-0 text-mist">Tag cmBNRY</dt>
           <dd className="font-mono text-xs text-ghost">
             {meta.cmBnryOffset === null ? (
               <span className="text-crimson">không tìm thấy</span>
@@ -70,9 +75,9 @@ export function SaveStats({ doc }: { doc: SaveDocument }) {
             )}
           </dd>
         </div>
-        <div className="flex justify-between gap-4">
-          <dt className="text-mist">Header words</dt>
-          <dd className="truncate font-mono text-xs text-ghost">
+        <div className="flex min-w-0 justify-between gap-4">
+          <dt className="shrink-0 text-mist">Header words</dt>
+          <dd className="min-w-0 truncate font-mono text-xs text-ghost">
             {meta.headerWords.join(" · ") || "—"}
           </dd>
         </div>
