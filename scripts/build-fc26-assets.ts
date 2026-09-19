@@ -13,7 +13,7 @@
  *
  * Một lệnh, một nguồn, mọi asset sinh cùng lúc.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { readCsv, num } from "./csv";
@@ -77,3 +77,132 @@ function buildNames() {
 }
 
 buildNames();
+
+// ── Thế giới: CLB, giải, số áo, quốc gia, id gốc ────────────────────────────
+/*
+ * Mã hoá delta cho danh sách id tăng dần.
+ *
+ * 21.437 id dạng thô tốn ~150KB trong JSON; delta của chúng hầu hết là số một
+ * hai chữ số, còn ~70KB. Tra cứu vẫn O(1) vì phía đọc dựng Set một lần.
+ */
+function delta(ids: number[]): number[] {
+  const sorted = [...new Set(ids)].sort((a, b) => a - b);
+  const out: number[] = [];
+  let prev = 0;
+  for (const id of sorted) {
+    out.push(id - prev);
+    prev = id;
+  }
+  return out;
+}
+
+function buildWorld() {
+  // Tên đội. Tên giữ chỗ dạng `*TeamName_Abbr15_115486` là CLB do người chơi
+  // tự tạo — không thuộc dữ liệu gốc, và hiện ra thì vô nghĩa.
+  const teamName = new Map<number, string>();
+  for (const r of readCsv(base("teams"))) {
+    const id = num(r.teamid);
+    const name = r.teamname ?? "";
+    if (id > 0 && name && !name.startsWith("*")) teamName.set(id, name);
+  }
+
+  /*
+   * Giải TRONG NƯỚC, để phân biệt CLB với đội tuyển quốc gia.
+   *
+   * `teamplayerlinks` nối cầu thủ với CẢ HAI, nên tra "CLB của người này" mà
+   * lấy đội đầu tiên gặp được sẽ ra "Brazil" thay vì "Real Madrid" khá thường
+   * xuyên. Dataset công khai trước đây không có cách nào phân biệt; bảng gốc
+   * thì có, ở cột `isinternationalleague`.
+   */
+  const leagueNames = new Map<number, string>();
+  const domesticLeagues = new Set<number>();
+  for (const r of readCsv(base("leagues"))) {
+    const id = num(r.leagueid);
+    if (id < 0) continue;
+    if (r.leaguename) leagueNames.set(id, r.leaguename);
+    if (num(r.isinternationalleague) !== 1) domesticLeagues.add(id);
+  }
+
+  const leagueOfTeam = new Map<number, number>();
+  for (const r of readCsv(base("leagueteamlinks"))) {
+    const team = num(r.teamid);
+    const league = num(r.leagueid);
+    if (team > 0 && domesticLeagues.has(league)) leagueOfTeam.set(team, league);
+  }
+
+  // Số áo theo cặp (cầu thủ, đội) — số áo không nằm trong bản ghi cầu thủ vì
+  // nó thuộc về cặp, không thuộc về người.
+  const byTeam = new Map<number, number[]>();
+  let links = 0;
+  let noJersey = 0;
+  for (const r of readCsv(base("teamplayerlinks"))) {
+    const pid = num(r.playerid);
+    const team = num(r.teamid);
+    const jersey = num(r.jerseynumber);
+    if (pid <= 0 || team <= 0) continue;
+    links += 1;
+    if (jersey <= 0) {
+      noJersey += 1;
+      continue;
+    }
+    const list = byTeam.get(team);
+    if (list) list.push(pid, jersey);
+    else byTeam.set(team, [pid, jersey]);
+  }
+
+  const nationNames = new Map<number, string>();
+  for (const r of readCsv(base("nations"))) {
+    const id = num(r.nationid);
+    if (id >= 0 && r.nationname) nationNames.set(id, r.nationname);
+  }
+
+  const shipped = readCsv(base("players")).map((r) => num(r.playerid)).filter((n) => n > 0);
+
+  /*
+   * Danh sách Ultimate Team: DI SẢN, không tái tạo được từ bảng gốc.
+   *
+   * Đã đo và xác nhận: bảng `players` của game là roster Career thuần — không
+   * Pelé, Maradona, Zidane; đội đông nhất 38 người. Nên game KHÔNG có cách nào
+   * nói cho ta biết id nào là nội dung ngoài Career.
+   *
+   * Nhưng cờ này vẫn đúng và vẫn cần: đo trên hai save, nó lọc 112 và 67 người,
+   * và KHÔNG ai trong số đó có trong bảng gốc. Bỏ đi thì cả trăm bản ghi lạ
+   * hiện lên đầu bảng (bảng sắp theo chỉ số) và che mất cầu thủ thật.
+   *
+   * Nên bê nguyên một lần từ `players.json` cũ rồi thôi. Nếu FC 27 đổi, phải
+   * tìm nguồn khác — không suy ra được từ `dataset_fc26/base/`.
+   */
+  const legacy = JSON.parse(readFileSync("public/fc26/players.json", "utf8")) as {
+    utIds?: number[];
+  };
+  const utIds = legacy.utIds ?? [];
+  if (utIds.length < 3_000) {
+    throw new Error(
+      `players.json chỉ có ${utIds.length} id UT — quá ít. Đừng xoá file đó ` +
+        `trước khi world.json đã sinh xong ít nhất một lần.`,
+    );
+  }
+
+  const teams = [...byTeam.keys()].sort((a, b) => a - b);
+  console.log(
+    `thế giới: ${teams.length} đội (${leagueOfTeam.size} CLB), ${links} liên kết ` +
+      `(${noJersey} không số áo), ${shipped.length} id gốc, ${utIds.length} id UT`,
+  );
+
+  write("world.json", {
+    builtAt,
+    teamCount: teams.length,
+    names: Object.fromEntries(
+      teams.filter((t) => teamName.has(t)).map((t) => [String(t), teamName.get(t)!]),
+    ),
+    /** Mảng phẳng để khỏi lặp tên khoá 23.000 lần. */
+    squads: Object.fromEntries(teams.map((t) => [String(t), byTeam.get(t)!])),
+    leagueOfTeam: Object.fromEntries([...leagueOfTeam].map(([t, l]) => [String(t), l])),
+    leagueNames: Object.fromEntries([...leagueNames].map(([l, n]) => [String(l), n])),
+    nationNames: Object.fromEntries([...nationNames].map(([n, s]) => [String(n), s])),
+    shippedIds: delta(shipped),
+    utIds: delta(utIds),
+  });
+}
+
+buildWorld();

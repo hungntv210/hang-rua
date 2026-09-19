@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:fc26": "npx tsx scripts/build-fc26-assets.ts",
+    "check:fc26": "npx tsx scripts/check-fc26-base.ts && npx tsx scripts/check-fc26-world.ts && npx tsx scripts/check-csv.ts"
   },
   "dependencies": {
     "framer-motion": "^13.3.0",
