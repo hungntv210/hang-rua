@@ -1,0 +1,14 @@
+# Dữ liệu nguồn ~12MB. KHÔNG cần khi deploy: Vercel chỉ chạy `next build`, còn
+# asset (`public/fc26/*.json`) đã dựng sẵn và commit vào repo. `npm run build:fc26`
+# là bước chạy ở máy, không phải bước trong pipeline deploy.
+#
+# Nếu sau này ai đó nối `build:fc26` vào lệnh build của Vercel thì phải bỏ dòng
+# này — không có nó, bản dựng sẽ ném ENOENT ngay ở bảng đầu tiên.
+dataset_fc26/
+
+# File save Career Mode — dữ liệu cá nhân, đã bị .gitignore chặn, thêm một lớp.
+.local/
+temp_fc26_upload/
+
+# Sổ tiến độ của phiên làm việc, không liên quan tới runtime.
+.superpowers/
