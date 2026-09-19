@@ -116,12 +116,33 @@ function buildWorld() {
    */
   const leagueNames = new Map<number, string>();
   const domesticLeagues = new Set<number>();
+  let badFlag = 0;
   for (const r of readCsv(base("leagues"))) {
     const id = num(r.leagueid);
     if (id < 0) continue;
     if (r.leaguename) leagueNames.set(id, r.leaguename);
-    if (num(r.isinternationalleague) !== 1) domesticLeagues.add(id);
+    /*
+     * NGHI NGỜ THÌ LOẠI, không nhận — cố ý so `=== 0` chứ không `!== 1`.
+     *
+     * `num()` trả -1 cho ô rỗng hoặc cột thiếu, nên nếu so `!== 1` thì một
+     * dòng MẤT cờ sẽ mặc định lọt vào `domesticLeagues`. Đúng đội tuyển như
+     * `Men's National` mất cờ là lọt vào `leagueOfTeam` và hiện y như một CLB
+     * thật — đúng triệu chứng tính năng này sinh ra để chặn ("tra CLB của
+     * người này ra Brazil thay vì Real Madrid"). Mất một giải vì dữ liệu lạ
+     * chỉ làm vài CLB không tra được `leagueOfTeam`; nhận nhầm một đội tuyển
+     * thành CLB thì sai mà trông bình thường — hai cái không cùng giá.
+     *
+     * Mốc hôm nay: 48 giải, 2 quốc tế, 0 dòng cờ lạ (không phải 0/1).
+     */
+    const flag = num(r.isinternationalleague);
+    if (flag !== 0 && flag !== 1) badFlag += 1;
+    if (flag === 0) domesticLeagues.add(id);
   }
+  // Bước lọc im lặng là bước sẽ bị quên là nó tồn tại — in số dòng cờ lạ ra
+  // luôn, kể cả khi là 0, giống cách buildNames() báo số nameid rỗng.
+  console.log(
+    `giải: ${leagueNames.size} tên, ${domesticLeagues.size} trong nước, ${badFlag} dòng isinternationalleague không phải 0/1`,
+  );
 
   const leagueOfTeam = new Map<number, number>();
   for (const r of readCsv(base("leagueteamlinks"))) {
@@ -184,9 +205,15 @@ function buildWorld() {
   }
 
   const teams = [...byTeam.keys()].sort((a, b) => a - b);
+  // Tính delta MỘT LẦN rồi dùng lại — log phải báo đúng số thứ THỰC SỰ ghi
+  // vào file. `delta()` khử trùng qua `new Set`, nên in `.length` của mảng
+  // thô (`shipped`/`utIds`) trước dedup sẽ báo số lớn hơn thực tế nếu có id
+  // trùng.
+  const shippedIds = delta(shipped);
+  const utIdsDelta = delta(utIds);
   console.log(
     `thế giới: ${teams.length} đội (${leagueOfTeam.size} CLB), ${links} liên kết ` +
-      `(${noJersey} không số áo), ${shipped.length} id gốc, ${utIds.length} id UT`,
+      `(${noJersey} không số áo), ${shippedIds.length} id gốc, ${utIdsDelta.length} id UT`,
   );
 
   write("world.json", {
@@ -200,8 +227,8 @@ function buildWorld() {
     leagueOfTeam: Object.fromEntries([...leagueOfTeam].map(([t, l]) => [String(t), l])),
     leagueNames: Object.fromEntries([...leagueNames].map(([l, n]) => [String(l), n])),
     nationNames: Object.fromEntries([...nationNames].map(([n, s]) => [String(n), s])),
-    shippedIds: delta(shipped),
-    utIds: delta(utIds),
+    shippedIds,
+    utIds: utIdsDelta,
   });
 }
 
