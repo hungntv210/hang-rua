@@ -3,9 +3,9 @@
  *
  *   npx tsx scripts/check-fc26-lib.ts
  *
- * Ba nhóm ở cuối là các đầu vào mà spec ngầm định nhưng không phần nào của
- * đường chạy bình thường chạm tới: asset hỏng, chỉ số ngoài dải, và dấu 65535.
- * Chúng là chỗ trang dễ vỡ theo kiểu người dùng nhìn thấy nhất.
+ * Nhóm cuối là các đầu vào mà đường chạy bình thường không bao giờ chạm tới:
+ * asset tải hỏng, chỉ số ngoài dải, và dấu 65535. Chúng là chỗ trang dễ vỡ
+ * theo kiểu người dùng nhìn thấy nhất, và không phép kiểm nào khác canh.
  */
 import { readFileSync } from "node:fs";
 
@@ -29,13 +29,29 @@ console.log("── Fc26World ──");
 check("tra được tên quốc gia", world.nation(1) === "Albania", String(world.nation(1)));
 check("quốc tịch null trả null", world.nation(null) === null);
 check("mã quốc gia lạ trả null", world.nation(99_999) === null);
-check("tập id gốc đủ lớn", world.shippedIds().size >= 20_000, `${world.shippedIds().size}`);
+check("tập id gốc đủ lớn", world.shippedIds().size >= 20_000, `${world.shippedIds().size} id`);
+// Việc lọc ở khâu gieo phải mang được tới tận đây: học viện của một người chơi
+// lọt vào `shippedIds` sẽ khiến tab Cầu thủ trẻ loại nhầm đúng những người nó
+// phải tìm — hỏng ở chỗ không ai nghĩ để nhìn.
+check(
+  "không id học viện nào trong roster gốc",
+  [...world.shippedIds()].every((id) => id < 460_000),
+);
 
 // `clubOf` phải trả CLB, không phải đội tuyển quốc gia. #158023 là Lionel Messi.
 const club = world.clubOf(158023);
-check("clubOf trả CLB chứ không phải đội tuyển", !!club && !/Argentina/i.test(club.name),
-  club ? `${club.name} · ${club.league}` : "null");
+check(
+  "clubOf trả CLB chứ không phải đội tuyển",
+  !!club && !/argentin/i.test(club.name),
+  club ? `${club.name} · ${club.league}` : "null",
+);
 check("clubOf với id không tồn tại trả null", world.clubOf(-1) === null);
+
+// Đội hình xuất phát KHÔNG được nướng vào asset — bất biến đã phải gỡ bỏ một lần.
+check(
+  "asset KHÔNG chứa mã vị trí",
+  !readFileSync("public/fc26/world.json", "utf8").includes('"position'),
+);
 
 console.log("\n── chuỗi tra tên ──");
 check("tên thường dùng thắng tên+họ", names.resolve(5982, 40655, 7926) === "Cristiano Ronaldo");
@@ -43,6 +59,10 @@ check("ghép tên + họ", names.resolve(21799, 24898, 0) === "Lionel Messi");
 // Cầu thủ MỘT tên được game lưu bằng cách đặt tên và họ bằng nhau.
 check("mononym không in hai lần", names.resolve(40399, 40399, 0) === "Zothanpuia");
 check("collapseDoubledName vẫn chuẩn hoá", collapseDoubledName("Zheng Zheng") === "Zheng");
+// Dải 44.000+ là `dcplayernames`, bảng từng bị bỏ sót và là nguyên nhân khiến
+// 15% cầu thủ phải nhờ một dataset công khai 1,9MB tra theo playerId.
+check("tra được dải dcplayernames", names.resolve(14131, 44018, 0) !== null,
+  String(names.resolve(14131, 44018, 0)));
 
 console.log("\n── đầu vào bất thường ──");
 check("dấu 65535 trả null", names.resolve(65535, 5125, 0) === null);

@@ -388,7 +388,7 @@ Nếu `.gitignore` đang loại trừ `dataset_fc26`, bỏ loại trừ cho `dat
 - [ ] **Step 6: Commit**
 
 ```bash
-git add scripts/fc26-base-tables.ts scripts/seed-fc26-base.ts scripts/check-fc26-base.ts dataset_fc26/base .gitignore && git commit -m "Tach dataset_fc26/base: 10 bang hang so phien ban, co cong kiem
+git add scripts/fc26-base-tables.ts scripts/seed-fc26-base.ts scripts/check-fc26-base.ts dataset_fc26/base .gitignore && git commit -m "Tach dataset_fc26/base: 11 bang hang so phien ban, co cong kiem
 
 Ca 10 bang da co san tu cac lan dump truoc nen pipeline chay duoc ngay.
 Thu muc Live Editor lan 248 bang gom ca career_*, va co HAI phien ban

@@ -114,6 +114,20 @@ function assembleName(slots: string[]): { first: string; last: string; full: str
   if (given && second.startsWith(`${given} `)) {
     return { first: given, last: second.slice(given.length + 1), full: second };
   }
+  /*
+   * Hai ô bằng nhau nghĩa là cầu thủ chỉ có MỘT tên.
+   *
+   * Đây là quy ước của chính game, giống hệt cách bảng gốc lưu mononym bằng
+   * `firstnameid == lastnameid`. Ghép máy móc ra "Zheng Zheng", "Peng Peng" —
+   * đo trên một save thật: 2/25 cầu thủ trẻ hiện ra như vậy.
+   *
+   * Chặn ngay tại đây chứ không ở phía hiển thị: đây là chỗ DUY NHẤT mọi tên
+   * do career sinh ra đi qua, nên một guard ở đây rẻ hơn một guard ở từng nơi
+   * dùng — và không nơi nào bị bỏ sót. `lib/fc26/collapseDoubledName` làm đúng
+   * việc này cho nhánh tra theo chỉ số, nhưng tầng `lib/save` không được phụ
+   * thuộc vào tầng trên nó.
+   */
+  if (given && given === second) return { first: given, last: "", full: given };
   const full = [given, second].filter(Boolean).join(" ") || (slots[3] ?? "");
   return { first: given, last: second, full };
 }

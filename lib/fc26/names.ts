@@ -7,14 +7,14 @@
  *   2. kho tên này, tra theo chỉ số                (bảng gốc của game)
  *   3. `#playerId`
  *
- * Trước đây có bốn bậc, và bậc 2 là một dataset công khai 1,9MB tra theo
+ * Trước đây có BỐN bậc, và bậc 2 là một dataset công khai 1,9MB tra theo
  * `playerId`. Kho tên xếp SAU nó vì lúc ấy kho là bản SUY RA — tách tên đầy đủ
  * thành hai mảnh rồi bỏ phiếu, đạt 97,6%.
  *
- * Giờ kho tên lấy thẳng từ hai bảng gốc của game (`playernames` phủ nameid
- * 0–41.189, `dcplayernames` phủ từ 44.000), nên nó KHÔNG còn là bản suy ra và
- * lý do xếp sau không còn. Đo trên bốn save thật, chỉ save + kho tên:
- * 100,00% / 99,99% / 100,00% / 100,00%.
+ * Giờ kho tên lấy thẳng từ HAI bảng gốc của game (`playernames` phủ nameid
+ * 0–41.189, `dcplayernames` phủ từ 44.000; gộp lại 46.813 mục), nên nó không
+ * còn là bản suy ra và lý do xếp sau không còn. Đo trên bốn save thật, chỉ
+ * save + kho tên: 100,00% / 99,99% / 100,00% / 100,00%.
  *
  * Người duy nhất không tra ra mang `firstNameId = 65535`, tức chính game đánh
  * dấu "không có tên".
@@ -27,9 +27,9 @@
  * `lastnameid` bằng nhau. Bằng chứng trong bảng gốc: `#81379` có
  * `first=40399 last=40399`, ghép máy móc ra "Zothanpuia Zothanpuia".
  *
- * Trước đây chú thích ở đây nói đó là đặc điểm của dataset công khai. Sai —
- * dataset công khai chỉ chép lại quy ước của game. Nên đây là chuẩn hoá vĩnh
- * viễn: mọi nguồn lấy từ bảng gốc đều sẽ mang đúng đặc điểm này.
+ * Chú thích cũ ở đây nói đó là đặc điểm của dataset công khai. Sai — dataset
+ * công khai chỉ chép lại quy ước của game. Nên đây là chuẩn hoá VĨNH VIỄN:
+ * mọi nguồn lấy từ bảng gốc đều sẽ mang đúng đặc điểm này.
  *
  * Không trường hợp nào in hai lần là đúng: hoặc người đó thật sự một tên, hoặc
  * dữ liệu có vấn đề — cả hai đều nên hiện một lần.
@@ -49,7 +49,13 @@ interface Packed {
 
 interface Payload {
   builtAt: string;
-  /** Kho DUY NHẤT — cả ba chỉ số tên đều trỏ vào đây. */
+  /**
+   * Kho DUY NHẤT — cả ba chỉ số tên đều trỏ vào đây.
+   *
+   * Bản dựng cũ tách làm ba kho vì nó SUY RA kho tên bằng cách tách tên đầy đủ
+   * của cầu thủ. Bảng gốc của game thì chỉ có một không gian id, trải trên hai
+   * bảng `playernames` và `dcplayernames`, và bản dựng gộp chúng lại.
+   */
   pool: Packed;
   /** Luôn `true`: dựng từ bảng gốc, không phải suy ra. */
   exact?: boolean;
@@ -89,7 +95,20 @@ export class Fc26Names {
     commonNameId: number | null,
   ): string | null {
     if (commonNameId) {
-      return this.pool.get(commonNameId) ?? null;
+      /*
+       * Chuẩn hoá cả nhánh này, không chỉ nhánh ghép tên + họ.
+       *
+       * Tưởng là thừa — một ô tên thường dùng thì đã là một chuỗi hoàn chỉnh,
+       * đâu có ghép gì mà lặp. Nhưng chính KHO TÊN của game chứa sẵn chuỗi bị
+       * lặp: `#191572` có `commonNameId = 40225` trỏ tới đúng chữ "Zheng Zheng",
+       * `#272314` trỏ tới "Peng Peng". Đo trên một save thật: 2/25 cầu thủ trẻ
+       * hiện ra như vậy, và chúng lọt qua vì nhánh này trả thẳng.
+       *
+       * Tức việc lặp không chỉ do phép ghép của mình mà có sẵn trong dữ liệu —
+       * nên chỗ chuẩn hoá phải là MỌI lối ra của hàm này, không riêng lối ghép.
+       */
+      const c = this.pool.get(commonNameId);
+      return c ? collapseDoubledName(c) : null;
     }
     if (firstNameId === null || lastNameId === null) return null;
     const f = this.pool.get(firstNameId);

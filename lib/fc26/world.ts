@@ -20,15 +20,19 @@
 export interface WorldPayload {
   builtAt: string;
   teamCount: number;
+  /** Mã đội → tên. Chỉ đội có tên thật. */
   names: Record<string, string>;
+  /** Mã đội → mảng phẳng [playerId, số áo, …]. */
   squads: Record<string, number[]>;
-  /** CHỈ giải trong nước, nên có mặt ở đây nghĩa là CLB chứ không phải đội tuyển. */
+  /** Mã đội → mã giải. CHỈ giải trong nước, nên có mặt ở đây nghĩa là CLB. */
   leagueOfTeam: Record<string, number>;
+  /** Mã giải → tên. */
   leagueNames: Record<string, string>;
+  /** Mã quốc gia → tên. */
   nationNames: Record<string, string>;
-  /** Mã hoá delta tăng dần. */
+  /** Id roster gốc, mã hoá delta tăng dần. */
   shippedIds: number[];
-  /** Mã hoá delta tăng dần. */
+  /** Id nội dung Ultimate Team, mã hoá delta tăng dần. */
   utIds: number[];
 }
 
@@ -43,6 +47,7 @@ export interface ClubMatch {
   total: number;
 }
 
+/** Giải mã danh sách id đã mã hoá delta. Phải khớp `delta()` trong bản dựng. */
 function undelta(d: number[]): number[] {
   const out: number[] = [];
   let acc = 0;
@@ -85,7 +90,8 @@ export class Fc26World {
    *
    * Dùng để nhận ra cầu thủ do career SINH RA: ai không có ở đây thì không tồn
    * tại lúc game phát hành. Đó là dấu hiệu duy nhất không phụ thuộc career cụ
-   * thể nào — dải ID thì mỗi career một khác.
+   * thể nào — dải ID thì mỗi career một khác (460xxx ở career này, 9xxx ở
+   * career kia).
    */
   shippedIds(): Set<number> {
     return this.shipped;
@@ -94,17 +100,27 @@ export class Fc26World {
   /**
    * Cầu thủ này là nội dung Ultimate Team, không thuộc danh sách career.
    *
-   * Danh sách này là DI SẢN từ dataset công khai và không tái tạo được từ bảng
-   * gốc: bảng `players` của game là roster Career thuần, không chứa Icon nào.
-   * Nhưng nó vẫn đúng — đo trên hai save, nó lọc 112 và 67 người và không ai
-   * trong số đó có trong bảng gốc. Bỏ đi thì cả trăm bản ghi lạ hiện lên đầu
-   * bảng, vì bảng sắp theo chỉ số.
+   * Danh sách này là DI SẢN từ dataset công khai và KHÔNG tái tạo được từ bảng
+   * gốc: bảng `players` của game là roster Career thuần — đã tìm và không có
+   * Pelé, Maradona, Zidane; đội đông nhất 38 người. Nên game không có cách nào
+   * nói cho ta biết id nào là nội dung ngoài Career.
+   *
+   * Nhưng cờ này vẫn đúng và vẫn cần: đo trên hai save, nó lọc 112 và 67 người,
+   * và KHÔNG ai trong số đó có trong bảng gốc. Bỏ đi thì cả trăm bản ghi lạ —
+   * người 45 tuổi chỉ số 91 — hiện lên ĐẦU bảng, vì bảng sắp theo chỉ số.
+   *
+   * Nếu FC 27 đổi, phải tìm nguồn khác; không suy ra được từ `dataset_fc26/base/`.
    */
   isUltimateTeam(playerId: number): boolean {
     return this.ut.has(playerId);
   }
 
-  /** Tên quốc gia theo mã đọc từ save. Áp dụng cho MỌI cầu thủ, kể cả người không tra được tên. */
+  /**
+   * Tên quốc gia theo mã đọc từ save.
+   *
+   * Tách khỏi phần CLB vì áp dụng được cho **mọi** cầu thủ, kể cả người không
+   * tra được tên — với nhóm đó đây là mẩu nhận dạng duy nhất còn lại.
+   */
   nation(nationalityId: number | null): string | null {
     if (nationalityId === null) return null;
     return this.data.nationNames?.[String(nationalityId)] ?? null;
@@ -113,8 +129,11 @@ export class Fc26World {
   /**
    * CLB gốc của một cầu thủ — CLB thật, không phải đội tuyển quốc gia.
    *
-   * `teamplayerlinks` nối cầu thủ với cả hai. Lọc theo `leagueOfTeam`, vốn chỉ
-   * chứa giải trong nước, nên đội tuyển tự rụng khỏi kết quả.
+   * `teamplayerlinks` nối cầu thủ với CẢ HAI, nên lấy đội đầu tiên gặp được sẽ
+   * ra "Brazil" thay vì "Real Madrid" khá thường xuyên. Lọc theo `leagueOfTeam`,
+   * vốn chỉ chứa giải trong nước, nên đội tuyển tự rụng khỏi kết quả.
+   *
+   * Dataset công khai trước đây không có cách nào phân biệt hai loại đó.
    */
   clubOf(playerId: number): { name: string; league: string | null } | null {
     for (const team of this.teamsOf.get(playerId) ?? []) {
@@ -191,7 +210,8 @@ let pending: Promise<Fc26World | null> | null = null;
 
 /**
  * Tải asset. Hỏng thì trả `null` chứ không ném: mất nó làm trang nghèo đi một
- * chút, không làm hỏng việc đọc chỉ số từ save.
+ * chút — không CLB, không số áo — nhưng mọi chỉ số vẫn đọc được từ save, nên
+ * không có lý do gì để chặn cả trang.
  */
 export function loadFc26World(url = "/fc26/world.json"): Promise<Fc26World | null> {
   if (!pending) {
