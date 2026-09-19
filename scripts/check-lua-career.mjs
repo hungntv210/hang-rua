@@ -141,6 +141,11 @@ end
 function GetDBTableRows(name)
   TOUCHED[#TOUCHED + 1] = "rows:" .. name
   if name == "bang_no" then error("no khi doc du lieu") end
+  -- NO_CAREER: dung o menu chinh. Bang career/cm tra nil, bang goc van chay.
+  if NO_CAREER and (string.sub(name, 1, 7) == "career_" or string.sub(name, 1, 3) == "cm_")
+     and name ~= "career_calendar" then
+    return nil
+  end
   if name == "career_calendar" then return nil end          -- bang co schema, khong co du lieu
   if name == "career_users" then
     return { wrap({ userid = "0", clubteamid = "115486", nationalteamid = "-1",
@@ -165,7 +170,7 @@ end
 dofile(SCRIPT_PATH)
 `;
 
-function run({ desktopPath, writable, env = {} }) {
+function run({ desktopPath, writable, env = {}, noCareer = false }) {
   const L = lauxlib.luaL_newstate();
   lualib.luaL_openlibs(L);
 
@@ -177,6 +182,9 @@ function run({ desktopPath, writable, env = {} }) {
 
   setStr("SCRIPT_PATH", SCRIPT);
   setStr("desktop_path", desktopPath);
+
+  lua.lua_pushboolean(L, noCareer ? 1 : 0);
+  lua.lua_setglobal(L, to_luastring("NO_CAREER"));
 
   lua.lua_newtable(L);
   writable.forEach((v, i) => {
@@ -264,10 +272,16 @@ check("KHÔNG chạm vào LE.db", !a.cursor);
 console.log("\n3. BẤT BIẾN — giá trị của script này là NHANH");
 check("KHÔNG đọc dữ liệu bảng `players`", !a.touched.includes("rows:players"));
 check("KHÔNG sinh fc26_players.csv", !a.files["fc26_players.csv"]);
+// Đếm theo bảng KHÁC NHAU, không theo số lời gọi: cổng chặn career đọc thử
+// `career_users` và `cm_teamsheets` trước, nên hai bảng đó được đọc hai lần.
+// Đếm lời gọi sẽ báo hỏng vì một lý do đúng đắn, và đó là phép kiểm tồi.
+const readTables = new Set(
+  a.touched.filter((t) => t.startsWith("rows:")).map((t) => t.slice(5)),
+);
 check(
   "chỉ chạm đúng những bảng cần",
-  a.touched.filter((t) => t.startsWith("rows:")).length <= 6,
-  a.touched.filter((t) => t.startsWith("rows:")).join(" "),
+  readTables.size <= 6,
+  [...readTables].join(" "),
 );
 
 // ── 4. Bảng hỏng không được làm hỏng cả lượt ────────────────────────────────
@@ -281,6 +295,26 @@ check(
   "bảng đứng SAU bảng rỗng vẫn được ghi",
   !!d.files["fc26_cm_teamsheets.csv"] && !!d.files["fc26_teamplayerlinks.csv"],
 );
+
+// ── 4b. CỔNG CHẶN: chạy ngoài career mode ───────────────────────────────────
+//
+// Đây là phép kiểm cho lỗi ĐÃ XẢY RA THẬT. Lượt chạy đầu tiên của script này
+// thực hiện từ menu chính: bốn bảng career trả nil và bị bỏ qua lặng lẽ, còn
+// `teamplayerlinks` vẫn chạy và GHI ĐÈ file cũ bằng roster gốc không có câu lạc
+// bộ của người chơi. Script báo "xong", người dùng tin là xong.
+console.log("\n4b. Chạy ngoài career mode — phải từ chối, KHÔNG được ghi gì");
+const e = run({ desktopPath: "C:\\Desktop", writable: ["C:\\Desktop"], noCareer: true });
+check("KHÔNG ném lỗi", !e.error, e.error ?? "");
+check("báo rõ là chưa vào career", !!e.box && e.box.includes("CHUA VAO CAREER MODE"));
+check(
+  "KHÔNG ghi đè fc26_teamplayerlinks.csv",
+  !e.files["fc26_teamplayerlinks.csv"],
+  Object.keys(e.files).join(" "),
+);
+// `fc26_write_test.tmp` là file thử-ghi để tìm thư mục output; nó được tạo rồi
+// xoá ngay, nên không tính. Thứ phải KHÔNG tồn tại là mọi file dữ liệu.
+const eData = Object.keys(e.files).filter((f) => f !== "fc26_write_test.tmp");
+check("không ghi file dữ liệu nào", eData.length === 0, eData.join(" "));
 
 // ── 5. Nội dung CSV ─────────────────────────────────────────────────────────
 console.log("\n5. Nội dung CSV");

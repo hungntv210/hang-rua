@@ -238,6 +238,47 @@ local function fieldNames(tableName)
   return names
 end
 
+--[[
+  CỔNG CHẶN: phải đang ở TRONG career mode, kiểm trước khi ghi bất cứ thứ gì.
+
+  Lượt chạy đầu tiên của script này thất bại đúng kiểu tệ nhất — im lặng. Nó
+  chạy xong, ghi "xong" vào file tiến độ, hiện hộp thoại báo thành công, và
+  người dùng tin là xong. Nhưng nó chạy từ menu chính chứ không phải trong
+  career, nên:
+
+    * bốn bảng `career_*` và `cm_*` trả nil và bị bỏ qua lặng lẽ
+    * `teamplayerlinks` VẪN chạy, vì đó là bảng gốc của game — và nó ghi đè
+      file cũ bằng roster gốc KHÔNG CÓ câu lạc bộ của người chơi
+
+  Tức là lượt chạy vừa không lấy được gì, vừa phá mất dữ liệu tốt đang có.
+
+  Nên giờ kiểm trước: `cm_teamsheets` và `career_users` chỉ tồn tại khi career
+  đã nạp. Không có chúng thì dừng luôn, chưa mở file nào. Một lượt chạy không
+  ghi gì và nói rõ lý do thì luôn tốt hơn một lượt chạy ghi nhầm.
+]]
+do
+  local missing = {}
+  for _, probe in ipairs({ "career_users", "cm_teamsheets" }) do
+    local cols = fieldNames(probe)
+    local rows = cols and try(GetDBTableRows, probe) or nil
+    if not rows or #rows == 0 then missing[#missing + 1] = probe end
+  end
+
+  if #missing > 0 then
+    MessageBox(
+      "Dump career FC 26 - CHUA VAO CAREER MODE",
+      "Khong doc duoc bang: " .. table.concat(missing, ", ") .. "\n\n" ..
+      "Nhung bang nay chi ton tai khi career da nap. Rat co the ban dang o\n" ..
+      "menu chinh chu khong phai trong career.\n\n" ..
+      "CACH LAM DUNG:\n" ..
+      "  1. Vao THANG career mode cua ban (thay duoc lich thi dau, doi hinh)\n" ..
+      "  2. Moi bat Live Editor va chay lai file nay\n\n" ..
+      "Script DUNG LUON, chua ghi file nao — de khong de len ban export cu."
+    )
+    return
+  end
+end
+
 local dumped, empty, failed = 0, 0, 0
 
 for i = 1, #WANT do

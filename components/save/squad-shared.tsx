@@ -104,22 +104,29 @@ export function initialsOf(name: string | null): string | null {
  * ảnh từ nguồn ngoài thì vừa sai bản quyền vừa hỏng ngay khi nguồn đổi đường
  * dẫn. Nên đây là bóng người kèm chữ cái đầu tên.
  *
- * Trước đây chỗ này hiện SỐ ÁO. Số áo đã bị bỏ vì nó không đọc được từ save —
- * nó thuộc về cặp (cầu thủ, đội) chứ không thuộc về cầu thủ, và dò trong bản ghi
- * 144 byte với 24 mẫu ở cổng 100% không ra trường nào. Số áo cũ lấy từ một ảnh
- * chụp nướng sẵn, tức là đúng với đúng một career tại đúng một thời điểm.
+ * SỐ ÁO chỉ hiện khi người dùng nạp bản export career, vì nó không đọc được từ
+ * save — nó thuộc về cặp (cầu thủ, đội) chứ không thuộc về cầu thủ, và dò trong
+ * bản ghi 144 byte với 24 mẫu ở cổng 100% không ra trường nào. Không có export
+ * thì hiện chữ cái đầu tên, chứ KHÔNG lấy số áo từ một bảng nướng sẵn: bảng đó
+ * chỉ đúng với một career tại một thời điểm.
  *
  * Thủ môn đổi màu theo đúng quy ước của mọi sơ đồ đội hình.
  */
 export function PlayerAvatar({
   initials,
+  jersey = null,
   gk = false,
   size = 28,
 }: {
   initials: string | null;
+  /** Số áo nếu có bản export career. Ưu tiên hơn chữ cái đầu tên. */
+  jersey?: number | null;
   gk?: boolean;
   size?: number;
 }) {
+  // Số áo thắng chữ cái đầu khi có: nó là thứ người chơi dùng để nhận ra cầu
+  // thủ trong game, và nó ngắn hơn nên đọc được ở cỡ nhỏ hơn.
+  const label = jersey && jersey > 0 ? String(jersey) : initials;
   return (
     <span
       className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ${
@@ -132,14 +139,14 @@ export function PlayerAvatar({
         <circle cx="12" cy="8.5" r="4" className="fill-mist" />
         <path d="M3.5 24c0-5 3.8-8.5 8.5-8.5s8.5 3.5 8.5 8.5z" className="fill-mist" />
       </svg>
-      {initials ? (
+      {label ? (
         <span
           className={`relative font-mono font-bold leading-none tracking-tight ${
             gk ? "text-ghost" : "text-white"
           }`}
-          style={{ fontSize: Math.max(8, Math.round(size * 0.36)) }}
+          style={{ fontSize: Math.max(8, Math.round(size * (jersey ? 0.42 : 0.36))) }}
         >
-          {initials}
+          {label}
         </span>
       ) : null}
     </span>

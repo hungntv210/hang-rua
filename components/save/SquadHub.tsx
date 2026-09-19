@@ -29,9 +29,13 @@ interface Props {
   lineup: Lineup;
   /** Mọi cầu thủ đọc được từ save. */
   players: SavePlayer[];
+  /** Số áo — chỉ có khi người dùng nạp bản export career. */
+  jerseyOf?: Map<number, number>;
+  /** Lương mỗi tuần — cùng nguồn với số áo. */
+  wageOf?: Map<number, number>;
 }
 
-export function SquadHub({ lineup, players }: Props) {
+export function SquadHub({ lineup, players, jerseyOf, wageOf }: Props) {
   const byId = useMemo(() => {
     const m = new Map<number, SavePlayer>();
     for (const p of players) m.set(p.playerId, p);
@@ -77,14 +81,21 @@ export function SquadHub({ lineup, players }: Props) {
           {lineup.formationName}
         </h2>
         <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-mist-dim">
-          {squad.length} cầu thủ đọc từ save · đội hình gợi ý
+          {squad.length} cầu thủ đọc từ save ·{" "}
+          {lineup.source === "export" ? (
+            <span className="text-jade">
+              đội hình thật{lineup.sheetName ? ` · ${lineup.sheetName}` : ""}
+            </span>
+          ) : (
+            "đội hình gợi ý"
+          )}
         </span>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,480px)_minmax(0,1fr)] xl:gap-8">
         {/* KHỐI TRÁI ───────────────────────────────────────────────────── */}
         <div className="space-y-4 xl:sticky xl:top-6 xl:self-start">
-          <Pitch lineup={lineup} players={players} />
+          <Pitch lineup={lineup} players={players} jerseyOf={jerseyOf} />
 
           <section>
             <div className="mb-2 flex items-baseline gap-2">
@@ -112,6 +123,7 @@ export function SquadHub({ lineup, players }: Props) {
                   >
                     <PlayerAvatar
                       initials={initialsOf(p.name)}
+                      jersey={jerseyOf?.get(p.playerId) ?? null}
                       gk={p.position === "GK"}
                       size={24}
                     />
@@ -129,16 +141,32 @@ export function SquadHub({ lineup, players }: Props) {
 
         {/* KHỐI PHẢI ───────────────────────────────────────────────────── */}
         <div className="min-w-0 space-y-4">
-          <SquadList squad={squad} starterIds={starterIds} />
+          <SquadList
+            squad={squad}
+            starterIds={starterIds}
+            jerseyOf={jerseyOf}
+            wageOf={wageOf}
+          />
 
           <p className="text-xs leading-relaxed text-mist">
             <strong>Danh sách đội, tuổi, vị trí sở trường và hạn hợp đồng đọc thẳng
             từ file save của bạn</strong> — đổi save thì chúng đổi theo.{" "}
-            <strong>Riêng 11 suất đá chính thì không:</strong> save không lưu được
-            ai đá ô nào, nên trang tự xếp từ vị trí sở trường và chỉ số, rồi chọn
-            sơ đồ mà đội này xếp được mạnh nhất. Đó là một gợi ý, không phải đội
-            hình bạn đã xếp trong game. Vòng cam quanh ảnh đại diện nghĩa là người
-            đó đang đá lệch tuyến, vòng đỏ là trái vị trí hẳn.{" "}
+            {lineup.source === "export" ? (
+              <>
+                <strong>11 suất đá chính là đội hình thật bạn đã xếp</strong>, đọc từ
+                bản export career và đã đối chiếu khớp với file save. Số áo và lương
+                cũng từ đó.{" "}
+              </>
+            ) : (
+              <>
+                <strong>Riêng 11 suất đá chính thì không:</strong> save không lưu được
+                ai đá ô nào, nên trang tự xếp từ vị trí sở trường và chỉ số, rồi chọn
+                sơ đồ mà đội này xếp được mạnh nhất. Đó là một gợi ý, không phải đội
+                hình bạn đã xếp trong game.{" "}
+              </>
+            )}
+            Vòng cam quanh ảnh đại diện nghĩa là người đó đang đá lệch tuyến, vòng đỏ
+            là trái vị trí hẳn.{" "}
             <strong>Cột &ldquo;Giá trị&rdquo; cũng là ước tính</strong> — game
             không lưu giá trị chuyển nhượng ở bất kỳ đâu, nên con số này tính từ
             CS, TN và tuổi: đúng bậc độ lớn và đúng thứ tự giữa các cầu thủ, không

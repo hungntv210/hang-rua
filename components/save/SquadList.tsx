@@ -67,11 +67,23 @@ function nationCode(nation: string | null): string {
 interface Props {
   /** Toàn bộ cầu thủ của đội — không chỉ đội hình xuất phát. */
   squad: SavePlayer[];
-  /** Ai được xếp đá chính trong đội hình GỢI Ý, để đánh dấu. */
+  /** Ai được xếp đá chính, để đánh dấu. */
   starterIds: Set<number>;
+  /** Số áo — chỉ có khi người dùng nạp bản export career. */
+  jerseyOf?: Map<number, number>;
+  /** Lương mỗi tuần — cùng nguồn với số áo. Không có thì cột lương ẩn hẳn. */
+  wageOf?: Map<number, number>;
 }
 
-export function SquadList({ squad, starterIds }: Props) {
+export function SquadList({ squad, starterIds, jerseyOf, wageOf }: Props) {
+  /*
+   * Cột lương ẩn HẲN khi không có dữ liệu, không hiện một cột toàn dấu gạch.
+   *
+   * Một cột rỗng chạy suốt bảng trông như lỗi, và nó chiếm chỗ của thứ khác
+   * trên màn hình hẹp. Ẩn đi thì bảng vẫn đọc được, và khi người dùng nạp bản
+   * export thì cột xuất hiện — bản thân việc nó xuất hiện đã là phản hồi.
+   */
+  const showWage = !!wageOf && wageOf.size > 0;
   const groups = useMemo(() => {
     const m = new Map<PositionGroup, SavePlayer[]>();
     for (const g of GROUP_ORDER) m.set(g, []);
@@ -106,7 +118,9 @@ export function SquadList({ squad, starterIds }: Props) {
                  nhóm hiện trọn, và khi tràn thì hàng thứ bảy bị cắt một nửa —
                  dấu hiệu "còn nữa" rõ hơn bất kỳ mũi tên nào. */
               <div className="max-h-[17rem] overflow-y-auto overflow-x-auto rounded-sm border border-grid bg-abyss/60">
-                <table className="w-full min-w-[520px] border-collapse text-left">
+                <table
+                  className={`w-full border-collapse text-left ${showWage ? "min-w-[600px]" : "min-w-[520px]"}`}
+                >
                   <thead>
                     <tr className="sticky top-0 z-10 bg-abyss-200 text-mist-dim">
                       <th scope="col" className="th-cell w-full">
@@ -131,6 +145,15 @@ export function SquadList({ squad, starterIds }: Props) {
                       >
                         Giá trị ≈
                       </th>
+                      {showWage ? (
+                        <th
+                          scope="col"
+                          className="th-cell whitespace-nowrap text-right"
+                          title="Đọc từ bản export career"
+                        >
+                          Lương
+                        </th>
+                      ) : null}
                     </tr>
                   </thead>
                   <tbody>
@@ -145,6 +168,7 @@ export function SquadList({ squad, starterIds }: Props) {
                             <div className="flex items-center gap-2">
                               <PlayerAvatar
                                 initials={initialsOf(p.name)}
+                                jersey={jerseyOf?.get(p.playerId) ?? null}
                                 gk={p.position === "GK"}
                                 size={26}
                               />
@@ -196,6 +220,11 @@ export function SquadList({ squad, starterIds }: Props) {
                           <td className="whitespace-nowrap px-2 py-1.5 text-right font-mono text-xs tabular-nums text-mist">
                             {formatMoney(p.valueEstimate)}
                           </td>
+                          {showWage ? (
+                            <td className="whitespace-nowrap px-2 py-1.5 text-right font-mono text-xs tabular-nums text-ghost">
+                              {formatMoney(wageOf!.get(p.playerId) ?? null)}
+                            </td>
+                          ) : null}
                         </tr>
                       );
                     })}

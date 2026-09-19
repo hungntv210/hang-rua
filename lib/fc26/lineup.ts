@@ -69,7 +69,19 @@ export interface LineupSlot {
   fit: Fit;
 }
 
+/**
+ * Đội hình này từ đâu ra.
+ *
+ * Bắt buộc phải có, và bắt buộc phải hiển thị: hai nguồn cho ra cùng một kiểu
+ * dữ liệu và vẽ ra cùng một sơ đồ, nhưng một cái là sự thật đọc được còn một
+ * cái là phỏng đoán. Không phân biệt được ở tầng kiểu thì giao diện sẽ quên.
+ */
+export type LineupSource = "export" | "suy-tu-save";
+
 export interface Lineup {
+  source: LineupSource;
+  /** Tên team sheet, chỉ có khi nguồn là bản export. */
+  sheetName?: string;
   formationName: string;
   slots: LineupSlot[];
   /** Cả đội trừ 11 người được xếp đá chính, xếp theo chỉ số giảm dần. */
@@ -213,12 +225,136 @@ export function buildLineup(
     .map((p) => p.playerId);
 
   return {
+    source: "suy-tu-save",
     formationName: best.shape.name,
     slots: best.slots,
     benchIds,
     squadIds: squad.map((p) => p.playerId),
     exactCount: best.slots.filter((s) => s.fit === "exact").length,
   };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Đội hình THẬT, từ bản export career
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Dựng đội hình từ team sheet thật thay vì suy ra.
+ *
+ * Khác `buildLineup` ở chỗ quyết định: ai đá và đá ô nào đều ĐỌC ĐƯỢC, không
+ * phải chọn. Việc duy nhất còn phải suy là SƠ ĐỒ — `cm_teamsheets` không lưu
+ * `sourceformationid` (luôn bằng -1 trong Career Mode), nên phải nhận ra nó từ
+ * tập mã vị trí của 11 người đá chính.
+ *
+ * Cách nhận: mỗi cầu thủ có một mã vị trí trong đội (`teamplayerlinks.position`,
+ * 0-27 cho suất đá chính). Sắp 11 mã đó lại rồi so với `pos` của từng sơ đồ.
+ * Đo trên 400 đội khi dựng asset: 395 ra duy nhất, 5 mơ hồ, 0 không khớp.
+ */
+export function lineupFromSheet(
+  xi: number[],
+  squadIds: number[],
+  players: Map<number, LineupPlayer>,
+  slotCodeOf: Map<number, number>,
+  shapes: FormationShape[],
+  positionName: (code: number) => string,
+): Lineup | null {
+  const starters = xi.filter((p) => p > 0 && players.has(p));
+  if (starters.length !== 11) return null;
+
+  const codes = starters.map((p) => slotCodeOf.get(p));
+  if (codes.some((c) => c === undefined)) return null;
+  const key = [...(codes as number[])].sort((a, b) => a - b).join(",");
+
+  const shape = shapes.find(
+    (f) => f.pos.length === 11 && [...f.pos].sort((a, b) => a - b).join(",") === key,
+  );
+  if (!shape) return null;
+
+  /*
+   * Ghép cầu thủ vào ô theo MÃ VỊ TRÍ, không theo thứ tự trong team sheet.
+   *
+   * `playerid0..10` là thứ tự suất của game, còn `shape.pos` là thứ tự ô của
+   * bảng sơ đồ. Hai thứ tự đó không nhất thiết trùng nhau, và giả định chúng
+   * trùng sẽ cho ra một đội hình đủ 11 người nhưng đứng sai chỗ — sai kiểu
+   * trông vẫn hợp lý.
+   */
+  const byCode = new Map<number, number[]>();
+  starters.forEach((pid, i) => {
+    const code = (codes as number[])[i];
+    const list = byCode.get(code);
+    if (list) list.push(pid);
+    else byCode.set(code, [pid]);
+  });
+
+  const slots: LineupSlot[] = [];
+  for (let i = 0; i < shape.pos.length; i += 1) {
+    const code = shape.pos[i];
+    const queue = byCode.get(code);
+    const pid = queue && queue.length > 0 ? queue.shift()! : undefined;
+    if (pid === undefined) return null;
+    const player = players.get(pid)!;
+    slots.push({
+      x: shape.off[i]?.[0] ?? 0.5,
+      y: shape.off[i]?.[1] ?? 0.5,
+      positionCode: code,
+      playerId: pid,
+      fit: fitOf(player.position, positionName(code)),
+    });
+  }
+
+  const inXi = new Set(starters);
+  const benchIds = squadIds
+    .map((id) => players.get(id))
+    .filter((p): p is LineupPlayer => !!p && !inXi.has(p.playerId))
+    .sort((a, b) => {
+      const ga = a.position === "GK" ? 1 : 0;
+      const gb = b.position === "GK" ? 1 : 0;
+      if (ga !== gb) return gb - ga;
+      return rating(b) - rating(a);
+    })
+    .map((p) => p.playerId);
+
+  return {
+    source: "export",
+    formationName: shape.name,
+    slots,
+    benchIds,
+    squadIds: squadIds.filter((id) => players.has(id)),
+    exactCount: slots.filter((s) => s.fit === "exact").length,
+  };
+}
+
+/**
+ * Thử lần lượt nhiều team sheet, giữ cái đầu tiên dựng được sơ đồ.
+ *
+ * Một career có thể có nhiều team sheet cho cùng một đội — đội chính, đội trẻ,
+ * các phương án chiến thuật. Chỉ sheet CHÍNH là khớp với `teamplayerlinks`, vì
+ * bảng đó chỉ lưu một mã vị trí cho mỗi cặp (cầu thủ, đội). Các sheet còn lại
+ * cho ra mã 28/29 và không sơ đồ nào khớp.
+ *
+ * Nên không đoán sheet nào là chính: thử hết, giữ cái chạy được. Tự xác thực,
+ * cùng cách `squad.ts` nhận ra khối đội hình.
+ */
+export function lineupFromSheets(
+  sheets: Array<{ name: string; slots: number[] }>,
+  squadIds: number[],
+  players: Map<number, LineupPlayer>,
+  slotCodeOf: Map<number, number>,
+  shapes: FormationShape[],
+  positionName: (code: number) => string,
+): { lineup: Lineup; sheetName: string } | null {
+  for (const sheet of sheets) {
+    const lineup = lineupFromSheet(
+      sheet.slots.slice(0, 11),
+      squadIds,
+      players,
+      slotCodeOf,
+      shapes,
+      positionName,
+    );
+    if (lineup) return { lineup: { ...lineup, sheetName: sheet.name }, sheetName: sheet.name };
+  }
+  return null;
 }
 
 /** Nhãn ngắn cho mức hợp, dùng ở chú giải trên sân. */

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Notice } from "@/components/Notice";
 import { PlayerTable } from "@/components/save/PlayerTable";
+import { CareerExportDrop } from "@/components/save/CareerExportDrop";
 import { SaveDropZone } from "@/components/save/SaveDropZone";
 import { SaveFieldTable } from "@/components/save/SaveFieldTable";
 import { SaveNameList } from "@/components/save/SaveNameList";
@@ -14,7 +15,8 @@ import { SquadHub } from "@/components/save/SquadHub";
 import { TabBar, TabPanel, type TabItem } from "@/components/TabBar";
 import { loadFc26Database } from "@/lib/fc26/db";
 import { loadFc26Formations } from "@/lib/fc26/formations";
-import { buildLineup, pickSquad, type Lineup } from "@/lib/fc26/lineup";
+import { buildLineup, lineupFromSheets, pickSquad, type Lineup } from "@/lib/fc26/lineup";
+import { bestGate, gateSheets, type CareerExport, type GateResult } from "@/lib/fc26/career-export";
 import { loadFc26Names } from "@/lib/fc26/names";
 import {
   diagnosticsToJson,
@@ -51,6 +53,10 @@ export function SaveReaderClient() {
   const [tab, setTab] = useState<Tab>("lineup");
   const [players, setPlayers] = useState<SavePlayer[] | null>(null);
   const [lineup, setLineup] = useState<Lineup | null>(null);
+  /** Bản export career người dùng nạp thêm. `null` là bình thường, không phải lỗi. */
+  const [careerExport, setCareerExport] = useState<CareerExport | null>(null);
+  /** Kết quả đối chiếu export với save — hiển thị nguyên văn cho người dùng. */
+  const [exportGate, setExportGate] = useState<GateResult | null>(null);
   const [iconCount, setIconCount] = useState(0);
   const workerRef = useRef<Worker | null>(null);
 
@@ -159,15 +165,45 @@ export function SaveReaderClient() {
         const squad = pickSquad(career.squads, byId);
         if (!squad) {
           setLineup(null);
+          setExportGate(null);
           return;
         }
+
+        /*
+         * Có bản export thì thử đội hình THẬT trước, nhưng chỉ khi nó qua cổng
+         * chặn thời điểm. Trượt cổng thì lùi về đội hình gợi ý và GIỮ LẠI lý do
+         * để nói ra — im lặng lùi về sẽ khiến người dùng tưởng export của họ
+         * không được đọc, rồi đi chạy lại script một cách vô ích.
+         */
+        if (careerExport) {
+          const inSave = new Set(squad);
+          const passed = gateSheets(careerExport, inSave);
+          setExportGate(bestGate(careerExport, inSave));
+          if (passed.length > 0) {
+            const built = lineupFromSheets(
+              passed.map((p) => p.sheet),
+              squad,
+              byId,
+              careerExport.slotCodeOf,
+              table.shapes,
+              schema.positionName,
+            );
+            if (built) {
+              setLineup(built.lineup);
+              return;
+            }
+          }
+        } else {
+          setExportGate(null);
+        }
+
         setLineup(buildLineup(squad, byId, table.shapes, schema.positionName));
       },
     );
     return () => {
       alive = false;
     };
-  }, [doc]);
+  }, [doc, careerExport]);
 
   // Dọn worker khi rời trang: worker sống độc lập với React, không tự chết theo
   // component.
@@ -273,6 +309,9 @@ export function SaveReaderClient() {
           players={players}
           lineup={lineup}
           iconCount={iconCount}
+          careerExport={careerExport}
+          onCareerExport={setCareerExport}
+          exportGate={exportGate}
         />
       ) : null}
     </div>
@@ -286,12 +325,18 @@ function SaveResult({
   players,
   lineup,
   iconCount,
+  careerExport,
+  onCareerExport,
+  exportGate,
 }: {
   doc: SaveDocument;
   tab: Tab;
   onTab: (tab: Tab) => void;
   players: SavePlayer[] | null;
   lineup: Lineup | null;
+  careerExport: CareerExport | null;
+  onCareerExport: (data: CareerExport | null) => void;
+  exportGate: GateResult | null;
   iconCount: number;
 }) {
   return (
@@ -327,17 +372,33 @@ function SaveResult({
 
       <TabPanel tabKey={tab}>
       {tab === "lineup" ? (
-        lineup && players ? (
-          <SquadHub lineup={lineup} players={players} />
-        ) : (
-          <Notice title="Chưa dựng được sơ đồ đội hình">
+        <div className="space-y-4">
+          {/* Ô nạp export nằm NGOÀI nhánh điều kiện: trong nhánh thì nó bị gỡ
+              khỏi cây mỗi khi đội hình tạm thời không dựng được, và người dùng
+              mất luôn thông báo vì sao. */}
+          <CareerExportDrop
+            data={careerExport}
+            onLoad={onCareerExport}
+            gate={exportGate}
+            inUse={lineup?.source === "export"}
+          />
+          {lineup && players ? (
+            <SquadHub
+              lineup={lineup}
+              players={players}
+              jerseyOf={careerExport?.jerseyOf}
+              wageOf={careerExport?.wageOf}
+            />
+          ) : (
+            <Notice title="Chưa dựng được sơ đồ đội hình">
             Không tìm thấy khối đội hình nào trong file này trông như một đội bóng
             thật — cần ít nhất 16 cầu thủ và hai thủ môn. Save chứa nhiều khối
             danh sách cầu thủ, trong đó có cả danh sách theo dõi chuyển nhượng, và
             vẽ một danh sách theo dõi thành sơ đồ đội hình thì sai hẳn nghĩa. Bảng
-            cầu thủ ở tab bên cạnh vẫn đầy đủ.
-          </Notice>
-        )
+              cầu thủ ở tab bên cạnh vẫn đầy đủ.
+            </Notice>
+          )}
+        </div>
       ) : null}
       {tab === "players" ? (
         players && players.length > 0 ? (

@@ -46,9 +46,11 @@ interface Props {
   lineup: Lineup;
   /** Mọi cầu thủ đọc từ save, để tra tên và chỉ số. */
   players: SavePlayer[];
+  /** Số áo — chỉ có khi người dùng nạp bản export career. */
+  jerseyOf?: Map<number, number>;
 }
 
-export function Pitch({ lineup, players }: Props) {
+export function Pitch({ lineup, players, jerseyOf }: Props) {
   /**
    * Ô đang mở bảng cùng vị trí.
    *
@@ -219,10 +221,20 @@ export function Pitch({ lineup, players }: Props) {
                 }`}
               >
                 <span className="sm:hidden">
-                  <PlayerAvatar initials={missing ? null : initialsOf(p.name)} gk={gk} size={28} />
+                  <PlayerAvatar
+                    initials={missing ? null : initialsOf(p.name)}
+                    jersey={jerseyOf?.get(slot.playerId) ?? null}
+                    gk={gk}
+                    size={28}
+                  />
                 </span>
                 <span className="hidden sm:block">
-                  <PlayerAvatar initials={missing ? null : initialsOf(p.name)} gk={gk} size={34} />
+                  <PlayerAvatar
+                    initials={missing ? null : initialsOf(p.name)}
+                    jersey={jerseyOf?.get(slot.playerId) ?? null}
+                    gk={gk}
+                    size={34}
+                  />
                 </span>
               </span>
 
