@@ -11,7 +11,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-import { readCsv } from "./csv";
+import { num, readCsv } from "./csv";
 import { BASE_TABLES, BASE_DIR } from "./fc26-base-tables";
 
 let failed = 0;
@@ -46,6 +46,85 @@ for (const t of BASE_TABLES) {
   check(`${t.name}: đủ dòng`, rows.length >= t.minRows, `${rows.length} (tối thiểu ${t.minRows})`);
   check(`${t.name}: có cột khoá "${t.key}"`, rows.length > 0 && t.key in rows[0]);
 }
+
+/*
+ * Bất biến theo NỘI DUNG, không chỉ theo tên file.
+ *
+ * Hai bất biến phía trên (không career_ hay cm_, không hậu tố né tránh) chỉ soi
+ * TÊN FILE — chúng không trả lời được câu hỏi mà cổng này tồn tại để trả lời:
+ * "có dữ liệu của một người chơi cụ thể lọt vào asset dùng chung không?". Ba
+ * phép kiểm dưới đây đọc thẳng NỘI DUNG để trả lời đúng câu đó.
+ */
+const teamplayerlinksRows = readCsv(join(BASE_DIR, "teamplayerlinks.csv"));
+const defaultTeamsheetsRows = readCsv(join(BASE_DIR, "default_teamsheets.csv"));
+const teamsRows = readCsv(join(BASE_DIR, "teams.csv"));
+
+/**
+ * Bất biến 1 (quan trọng nhất): không playerId nào do career sinh ra — dải
+ * học viện/regen, >= 460.000 (xem lib/save/career/schema.ts: cùng con số 55
+ * cầu thủ, cùng việc chỉ 22/55 có tên dạng chữ trong save — dấu hiệu của một
+ * lứa regen cụ thể, không phải id thật của roster gốc).
+ *
+ * `default_teamsheets.csv` không có một cột "playerid" duy nhất — nó có ~60
+ * cột giữ id cầu thủ (`playerid0`..`playerid51` cộng các vai trò đá phạt/đá
+ * góc/đội trưởng); chỉ `teamid` và 6 cột `customsub*in/out` (giữ CHỈ SỐ Ô,
+ * 0–51 hoặc -1 khi trống) là không phải playerId. Soi đúng một cột "playerid"
+ * như ở `teamplayerlinks` sẽ luôn báo 0 một cách vô nghĩa vì cột đó không tồn
+ * tại — chính kiểu "trắng vì không hỏi đúng chỗ" mà bất biến này phải tránh.
+ *
+ * Đo trên bản dump hiện tại: `teamplayerlinks` 0 dòng dính — bản NGOÀI career
+ * đã dùng đúng ý. Nhưng `default_teamsheets` KHÔNG có bản .KHONG-CO-CAREER để
+ * thay (chỉ `teamplayerlinks` và `career_calendar` có), nên nó vẫn mang trạng
+ * thái của career lúc chụp: 15 CLB THẬT (không phải 2 CLB tự tạo ở bất biến 2)
+ * đang xếp một cầu thủ học viện vào đội hình mặc định — tức là career đó đã
+ * cho mượn/chuyển nhượng regen của mình sang các CLB khác, và bản chụp
+ * `default_teamsheets` giữ nguyên trạng thái đó. Phép kiểm này CỐ Ý báo FAIL
+ * cho tới khi ai đó chụp lại bảng này ngoài career bằng
+ * `scripts/fc26-dump-base.lua` — cho nó "đạt" bằng cách nới ngưỡng hay đổi
+ * cột soi sẽ xoá đúng thứ cổng này được yêu cầu phải bắt.
+ */
+const ACADEMY_ID_FLOOR = 460_000;
+const dtsPlayerCols = defaultTeamsheetsRows.length
+  ? Object.keys(defaultTeamsheetsRows[0]).filter((k) => k !== "teamid" && !k.startsWith("customsub"))
+  : [];
+const tplAcademyLeak = teamplayerlinksRows.filter((r) => num(r.playerid) >= ACADEMY_ID_FLOOR);
+const dtsAcademyLeak = defaultTeamsheetsRows.filter((r) =>
+  dtsPlayerCols.some((c) => num(r[c]) >= ACADEMY_ID_FLOOR),
+);
+check(
+  "không playerId học viện (career sinh ra, >= 460000) trong teamplayerlinks/default_teamsheets",
+  tplAcademyLeak.length === 0 && dtsAcademyLeak.length === 0,
+  `teamplayerlinks: ${tplAcademyLeak.length} dòng; default_teamsheets: ${dtsAcademyLeak.length} đội` +
+    (dtsAcademyLeak.length ? ` (vd teamId ${dtsAcademyLeak.slice(0, 3).map((r) => r.teamid).join(", ")})` : ""),
+);
+
+/**
+ * Bất biến 2: CLB tự tạo trong career (tên bắt đầu bằng "*", vd
+ * "*TeamName_Abbr15_112264") không được có cầu thủ thật nào gán vào trong
+ * `teamplayerlinks` — nếu có, đó là đội hình của chính người chơi bị nướng
+ * vào asset dùng chung.
+ */
+const fakeTeamIds = new Set(teamsRows.filter((r) => r.teamname.startsWith("*")).map((r) => r.teamid));
+const fakeTeamLinks = teamplayerlinksRows.filter((r) => fakeTeamIds.has(r.teamid));
+check(
+  "không CLB tự tạo nào có cầu thủ trong teamplayerlinks",
+  fakeTeamLinks.length === 0,
+  `${fakeTeamLinks.length} dòng thuộc ${fakeTeamIds.size} CLB tự tạo`,
+);
+
+/**
+ * Bất biến 3: số CLB tự tạo phải nằm trong một NGƯỠNG, không phải bằng 0.
+ * Bản dump khởi tạo hiện tại được chụp TRONG career nên mang sẵn CLB tự tạo
+ * của chính save đó (đo hôm nay: 2) — vô hại vì không có cầu thủ (bất biến 2)
+ * và bản dựng lọc tên bắt đầu bằng "*". Khi chụp lại NGOÀI career bằng
+ * `fc26-dump-base.lua`, con số này phải về 0; nếu nó vọt lên thì nghĩa là vừa
+ * có người chụp trong career một save có nhiều CLB tự tạo.
+ */
+check(
+  "số CLB tự tạo trong ngưỡng chấp nhận được (<= 5)",
+  fakeTeamIds.size <= 5,
+  `${fakeTeamIds.size} CLB: ${[...fakeTeamIds].join(", ")}`,
+);
 
 console.log(failed === 0 ? "\nTất cả đều đạt." : `\n${failed} mục KHÔNG đạt.`);
 process.exit(failed ? 1 : 0);
