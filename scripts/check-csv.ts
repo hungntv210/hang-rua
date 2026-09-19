@@ -43,6 +43,26 @@ check("cắt khoảng trắng hai đầu giá trị", rows[0]?.name === "Alice")
 check("giữ dấu phẩy trong ô bọc nháy", rows[1]?.name === "B,b");
 check("bỏ dòng rỗng cuối file", rows.length === 2, `${rows.length} dòng`);
 
+// Ba test dưới canh các ranh giới của guard `if (lines.length === 0) return [];`:
+// hàm gốc ở build-fc26-squads.ts không có nó, và sẽ ném TypeError trên file rỗng.
+// Ba task sau sẽ import module này, nên ranh giới phải có người canh.
+const p1 = join(dir, "empty.csv");
+writeFileSync(p1, "", "utf8");
+check("readCsv: file rỗng hoàn toàn trả mảng rỗng", readCsv(p1).length === 0);
+
+const p2 = join(dir, "header-only.csv");
+writeFileSync(p2, "a,b\r\n", "utf8");
+check("readCsv: chỉ có dòng tiêu đề trả mảng rỗng", readCsv(p2).length === 0);
+
+const p3 = join(dir, "short-row.csv");
+writeFileSync(p3, "a,b,c\r\n1,2\r\n", "utf8");
+const rowsShort = readCsv(p3);
+check(
+  "readCsv: dòng thiếu cột thì ô vắng là chuỗi rỗng",
+  rowsShort[0]?.c === "",
+  JSON.stringify(rowsShort[0]),
+);
+
 check("num: số thường", num("42") === 42);
 check("num: ô rỗng trả -1 chứ không phải 0", num("") === -1);
 check("num: undefined trả -1", num(undefined) === -1);
