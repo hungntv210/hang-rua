@@ -10,6 +10,7 @@
  */
 import { readFileSync } from "node:fs";
 
+import { collapseDoubledName } from "../lib/fc26/names";
 import { findYouthPlayers } from "../lib/fc26/youth";
 import { type LineupPlayer, pickSquad } from "../lib/fc26/lineup";
 import { parseSaveBuffer } from "../lib/save";
@@ -19,8 +20,61 @@ import { decodeAllPlayers } from "../lib/save/career/players";
 import { positionName } from "../lib/save/career/schema";
 import { findSquads } from "../lib/save/career/squad";
 
-const db = JSON.parse(readFileSync("public/fc26/players.json", "utf8")) as { ids: number[] };
+const db = JSON.parse(readFileSync("public/fc26/players.json", "utf8")) as {
+  ids: number[];
+  names: string[];
+};
 const known = new Set(db.ids);
+const dbName = new Map<number, string>();
+db.ids.forEach((id, i) => dbName.set(id, db.names[i]));
+
+/*
+ * Kho tên, dựng đúng như `Fc26Names` dựng.
+ *
+ * Bộ kiểm phải đi qua CÙNG chuỗi tra tên mà giao diện đi, nếu không nó mù
+ * trước đúng loại lỗi vừa xảy ra: tab cầu thủ trẻ đọc danh sách THÔ thay vì
+ * danh sách đã ghép tên, nên hiện `#804279` cho một cầu thủ mà kho tên thừa
+ * sức tra ra "James Maddison". Bộ kiểm cũ cũng dùng danh sách thô, nên nó
+ * không thể thấy gì.
+ */
+interface Packed { id: number[]; text: string[] }
+const pool = JSON.parse(readFileSync("public/fc26/names.json", "utf8")) as {
+  pool?: Packed;
+  first?: Packed;
+  last?: Packed;
+  common?: Packed;
+};
+const asMap = (p: Packed | undefined) => {
+  const m = new Map<number, string>();
+  if (!p) return m;
+  for (let i = 0; i < p.id.length; i += 1) m.set(p.id[i], p.text[i]);
+  return m;
+};
+// Kho gốc là MỘT bảng dùng chung cho cả ba chỉ số; asset cũ thì ba kho riêng.
+const single = pool.pool ? asMap(pool.pool) : null;
+const firstMap = single ?? asMap(pool.first);
+const lastMap = single ?? asMap(pool.last);
+const commonMap = single ?? asMap(pool.common);
+
+/** Tra tên đúng thứ tự ưu tiên của giao diện: save → DB nhúng → kho tên. */
+function resolveName(p: {
+  playerId: number;
+  name: string | null;
+  firstNameId: number | null;
+  lastNameId: number | null;
+  commonNameId: number | null;
+}): string | null {
+  if (p.name) return p.name;
+  const fromDb = dbName.get(p.playerId);
+  if (fromDb) return collapseDoubledName(fromDb);
+  if (p.commonNameId) return commonMap.get(p.commonNameId) ?? null;
+  if (p.firstNameId === null || p.lastNameId === null) return null;
+  const f = firstMap.get(p.firstNameId);
+  const l = lastMap.get(p.lastNameId);
+  if (!f || !l) return null;
+  // Mononym: game lưu tên và họ bằng nhau. Xem `Fc26Names.resolve`.
+  return f === l ? f : `${f} ${l}`;
+}
 
 let failed = 0;
 const check = (label: string, ok: boolean, detail = "") => {
@@ -56,7 +110,9 @@ for (const savePath of process.argv.slice(2)) {
   const squad =
     pickSquad(findSquads(bytes, new Set(byId.keys())).map((s) => s.playerIds), byId) ?? [];
 
-  const { players, stats } = findYouthPlayers(career.players, known, new Set(squad));
+  // Ghép tên TRƯỚC khi lọc, đúng thứ tự giao diện làm.
+  const enriched = career.players.map((p) => ({ ...p, name: resolveName(p) }));
+  const { players, stats } = findYouthPlayers(enriched, known, new Set(squad));
   console.log(
     `       ${stats.careerCreated} do career sinh ra → loại ${stats.inSenior} ở đội một, ` +
       `${stats.tooOld} quá tuổi, ${stats.implausible} vô lý → còn ${players.length}`,
@@ -103,12 +159,27 @@ for (const savePath of process.argv.slice(2)) {
    * Kluivert" ở 9/19 cầu thủ regen. Trông vẫn như một cái tên, nên không ai
    * nhận ra cho tới khi đọc kỹ danh sách.
    */
-  const dup = career.players.filter((p) => {
+  const dup = enriched.filter((p) => {
     if (!p.name) return false;
     const w = p.name.split(/\s+/);
     return w.length >= 2 && w[0] === w[1];
   });
   check(`${name}: tên không bị lặp từ đầu`, dup.length === 0, dup.slice(0, 3).map((p) => p.name).join(", "));
+
+  /*
+   * Không ai bị bỏ trống tên khi kho tên tra được.
+   *
+   * Đây là phép kiểm bắt được lỗi vừa sửa. Cầu thủ thật sự không tra được thì
+   * vẫn chấp nhận — cái sai là để trống một người mà nguồn dữ liệu có sẵn.
+   */
+  const lostName = players.filter((p) => !p.name && resolveName({ ...p, name: null }));
+  check(
+    `${name}: không bỏ sót tên mà kho tên tra được`,
+    lostName.length === 0,
+    lostName.slice(0, 3).map((p) => `#${p.playerId}`).join(", "),
+  );
+  const unnamed = players.filter((p) => !p.name);
+  console.log(`       ${unnamed.length}/${players.length} không tra được tên (kho tên thiếu)`);
 }
 
 console.log(failed === 0 ? "\nTất cả đều đạt." : `\n${failed} mục KHÔNG đạt.`);

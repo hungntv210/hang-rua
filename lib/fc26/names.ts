@@ -18,6 +18,25 @@
  * Với nhóm đó thì nó đạt 100%: đo trên 55 cầu thủ regen của một career thật.
  */
 
+/**
+ * Gộp tên bị lặp thành một.
+ *
+ * Cầu thủ chỉ có MỘT tên được lưu bằng cách đặt tên và họ bằng nhau, và điều
+ * đó đi thẳng vào cả kho tên lẫn dataset công khai. Đo trên DB nhúng: 5/24.676
+ * bản ghi mang tên kiểu "Zothanpuia Zothanpuia", "Zheng Zheng" — toàn cầu thủ
+ * Ấn Độ và Trung Quốc vốn được gọi bằng một tên.
+ *
+ * Không trường hợp nào in hai lần là đúng, nên chuẩn hoá ở một chỗ dùng chung
+ * thay vì sửa riêng từng nguồn — nguồn sau sẽ lại mang đúng đặc điểm đó.
+ */
+export function collapseDoubledName(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2 && parts[0] === parts[1]) {
+    return [parts[0], ...parts.slice(2)].join(" ");
+  }
+  return name;
+}
+
 interface Packed {
   id: number[];
   text: string[];
@@ -25,11 +44,21 @@ interface Packed {
 
 interface Payload {
   builtAt: string;
-  /** Tỉ lệ khớp từng chữ đo lại trên chính nguồn lúc dựng. */
-  accuracy: number;
-  first: Packed;
-  last: Packed;
-  common: Packed;
+  /**
+   * Kho DUY NHẤT — cả ba chỉ số tên đều trỏ vào đây.
+   *
+   * Bản dựng cũ tách làm ba kho vì nó SUY RA kho tên bằng cách tách tên đầy đủ
+   * của cầu thủ. Bảng gốc của game thì chỉ có một: `playernames`, 41.189 mục.
+   */
+  pool?: Packed;
+  /** Đúng khi dựng từ bảng gốc, không phải suy ra. */
+  exact?: boolean;
+
+  /** Ba kho của bản dựng cũ. Giữ để asset đã cache vẫn nạp được. */
+  accuracy?: number;
+  first?: Packed;
+  last?: Packed;
+  common?: Packed;
 }
 
 function unpack(p: Packed | undefined): Map<number, string> {
@@ -46,10 +75,20 @@ export class Fc26Names {
   readonly accuracy: number;
 
   private constructor(data: Payload) {
-    this.first = unpack(data.first);
-    this.last = unpack(data.last);
-    this.common = unpack(data.common);
-    this.accuracy = data.accuracy ?? 0;
+    if (data.pool) {
+      // Một kho dùng chung cho cả ba chỉ số.
+      const all = unpack(data.pool);
+      this.first = all;
+      this.last = all;
+      this.common = all;
+      this.accuracy = 1;
+    } else {
+      // Asset cũ: ba kho riêng, dựng bằng suy diễn.
+      this.first = unpack(data.first);
+      this.last = unpack(data.last);
+      this.common = unpack(data.common);
+      this.accuracy = data.accuracy ?? 0;
+    }
   }
 
   static fromPayload(data: Payload): Fc26Names {
@@ -76,7 +115,16 @@ export class Fc26Names {
     if (firstNameId === null || lastNameId === null) return null;
     const f = this.first.get(firstNameId);
     const l = this.last.get(lastNameId);
-    return f && l ? `${f} ${l}` : null;
+    if (!f || !l) return null;
+    /*
+     * Tên và họ trùng nhau nghĩa là cầu thủ chỉ có MỘT tên.
+     *
+     * Game lưu mononym bằng cách đặt cả hai ô bằng nhau, nên ghép máy móc sẽ
+     * ra "Zothanpuia Zothanpuia", "Zheng Zheng", "Lalchungnunga Lalchungnunga".
+     * Không trường hợp nào mà in hai lần là đúng: hoặc người đó thật sự một
+     * tên, hoặc dữ liệu có vấn đề — cả hai đều nên hiện một lần.
+     */
+    return f === l ? f : collapseDoubledName(`${f} ${l}`);
   }
 }
 

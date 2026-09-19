@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Notice } from "@/components/Notice";
 import { PlayerTable } from "@/components/save/PlayerTable";
@@ -63,8 +63,8 @@ export function SaveReaderClient() {
   const [exportGate, setExportGate] = useState<GateResult | null>(null);
   /** CLB nhận ra từ roster gốc — cho số áo và tên đội. `null` với CLB tự tạo. */
   const [club, setClub] = useState<ClubMatch | null>(null);
-  /** Cầu thủ trẻ do career sinh ra, lọc từ chính save. */
-  const [youth, setYouth] = useState<YouthResult | null>(null);
+  /** Mọi playerId có trong roster xuất xưởng — để nhận ra ai do career sinh ra. */
+  const [dbIds, setDbIds] = useState<Set<number> | null>(null);
   const [iconCount, setIconCount] = useState(0);
   const workerRef = useRef<Worker | null>(null);
 
@@ -87,6 +87,7 @@ export function SaveReaderClient() {
     setPlayers(career.players);
     void Promise.all([loadFc26Database(), loadFc26Names()]).then(([db, names]) => {
       if (!alive || !db) return;
+      setDbIds(db.ids());
       /*
        * Bỏ nội dung Ultimate Team khỏi danh sách.
        *
@@ -147,6 +148,19 @@ export function SaveReaderClient() {
   }, [doc]);
 
   /**
+   * Cầu thủ trẻ, suy từ danh sách ĐÃ GHÉP TÊN.
+   *
+   * Phải là `players` chứ không phải `doc.career.players`. Danh sách thô chỉ
+   * mang tên đọc thẳng từ save; tên tra từ DB nhúng và từ kho tên được ghép ở
+   * effect phía trên. Bản đầu dùng danh sách thô và hệ quả là tab này hiện
+   * `#804279` cho một cầu thủ mà kho tên thừa sức tra ra "James Maddison".
+   */
+  const youth: YouthResult | null = useMemo(() => {
+    if (!players || !dbIds) return null;
+    return findYouthPlayers(players, dbIds, new Set(lineup?.squadIds ?? []));
+  }, [players, dbIds, lineup]);
+
+  /**
    * Đối chiếu đội hình đọc từ save với bảng sơ đồ đã dựng sẵn.
    *
    * Tách khỏi effect ghép tên vì hai việc độc lập: mất bảng sơ đồ thì vẫn còn
@@ -163,8 +177,7 @@ export function SaveReaderClient() {
       loadFc26Formations(),
       import("@/lib/save/career/schema"),
       loadFc26Squads(),
-      loadFc26Database(),
-    ]).then(([table, schema, squadDb, db]) => {
+    ]).then(([table, schema, squadDb]) => {
         if (!alive || !table) return;
         // Cần chỉ số và vị trí sở trường của MỌI cầu thủ đọc được, không chỉ
         // của đội — `pickSquad` phải nhận ra khối nào là một đội bóng thật.
@@ -179,7 +192,6 @@ export function SaveReaderClient() {
           setLineup(null);
           setExportGate(null);
           setClub(null);
-          setYouth(null);
           return;
         }
 
@@ -193,19 +205,6 @@ export function SaveReaderClient() {
          */
         const matched = squadDb?.matchClub(squad) ?? null;
         setClub(matched);
-
-        /*
-         * Cầu thủ trẻ: lọc từ chính save, không cần bản export.
-         *
-         * Dấu hiệu là "không có trong DB nhúng" — tức do career sinh ra. Ngưỡng
-         * ID không dùng được: career này dùng dải 9xxx, career trước dùng
-         * 460xxx, hai dải không liên quan gì nhau.
-         */
-        if (db) {
-          setYouth(findYouthPlayers(career.players, db.ids(), new Set(squad)));
-        } else {
-          setYouth(null);
-        }
 
         /*
          * Có bản export thì thử đội hình THẬT trước, nhưng chỉ khi nó qua cổng

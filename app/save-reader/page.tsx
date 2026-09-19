@@ -58,10 +58,10 @@ export default function SaveReaderPage() {
           đó thì nạp thêm bản export Live Editor ở mục tuỳ chọn trên tab Đội hình.{" "}
           <em>Giá trị chuyển nhượng</em> là trường hợp khác hẳn: game không lưu nó
           ở bất kỳ đâu — nó dựng lúc chạy rồi vứt — nên trang ước tính từ chỉ số,
-          tiềm năng và tuổi, và đánh dấu rõ là ước tính. Khoảng một phần năm cầu thủ chưa
-          có tên — chủ yếu là đội trẻ và đội dự bị, nhóm không trang thống kê nào
-          liệt kê vì họ không thi đấu ở giải nào; chỉ số của họ vẫn đọc được đầy đủ
-          và họ được nhận dạng qua quốc tịch, vị trí và tuổi. Các tab còn lại bày
+          tiềm năng và tuổi, và đánh dấu rõ là ước tính. Gần như mọi cầu thủ đều có tên: kho tên
+          lấy thẳng từ bảng gốc của game (41.189 mục), nên cả cầu thủ do career
+          sinh ra cũng tra được. Đo trên save thật còn 1–2 người trong hơn 19.000
+          chưa tra ra, và chỉ số của họ vẫn đọc được đầy đủ. Các tab còn lại bày
           lớp field tự mô tả — phần sự kiện Career Mode — cùng những vùng byte chưa
           giải mã.
         </p>

@@ -8,6 +8,8 @@
  * `public/fc26/README.md` để biết vì sao ranh giới đó quan trọng.
  */
 
+import { collapseDoubledName } from "./names";
+
 export interface Fc26Entry {
   name: string;
   fullName: string;
@@ -95,8 +97,11 @@ export class Fc26Database {
     const i = this.index.get(playerId);
     if (i === undefined) return null;
     return {
-      name: this.data.names[i],
-      fullName: this.data.fullNames[i] || this.data.names[i],
+      // Dataset công khai mang cả tên bị lặp của cầu thủ một tên — xem
+      // `collapseDoubledName`. Chuẩn hoá lúc ĐỌC chứ không sửa asset: nguồn
+      // tiếp theo sẽ lại mang đúng đặc điểm đó.
+      name: collapseDoubledName(this.data.names[i]),
+      fullName: collapseDoubledName(this.data.fullNames[i] || this.data.names[i]),
       club: this.data.clubs[i],
       league: this.data.leagues[i],
       nation: this.data.nations[i],
