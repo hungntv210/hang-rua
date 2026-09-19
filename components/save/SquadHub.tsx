@@ -33,9 +33,11 @@ interface Props {
   jerseyOf?: Map<number, number>;
   /** Lương mỗi tuần — cùng nguồn với số áo. */
   wageOf?: Map<number, number>;
+  /** Tên CLB nhận ra từ roster gốc. `null` với CLB người chơi tự tạo. */
+  clubName?: string | null;
 }
 
-export function SquadHub({ lineup, players, jerseyOf, wageOf }: Props) {
+export function SquadHub({ lineup, players, jerseyOf, wageOf, clubName }: Props) {
   const byId = useMemo(() => {
     const m = new Map<number, SavePlayer>();
     for (const p of players) m.set(p.playerId, p);
@@ -78,7 +80,7 @@ export function SquadHub({ lineup, players, jerseyOf, wageOf }: Props) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h2 className="font-display text-2xl font-semibold tracking-tight text-ghost">
-          {lineup.formationName}
+          {clubName ? `${clubName} · ${lineup.formationName}` : lineup.formationName}
         </h2>
         <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-mist-dim">
           {squad.length} cầu thủ đọc từ save ·{" "}

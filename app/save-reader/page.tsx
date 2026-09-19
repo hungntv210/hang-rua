@@ -44,10 +44,18 @@ export default function SaveReaderPage() {
           cùng số sao kỹ năng, chân không thuận và danh tiếng.
         </p>
         <p className="max-w-3xl text-sm text-mist">
-          Chưa đọc được: <em>CLB hiện tại trong career</em> và <em>lương</em>. Cột
-          CLB hiện là CLB gốc từ cơ sở dữ liệu nên chưa phản ánh chuyển nhượng đã
-          diễn ra trong career; còn lương thì chỉ nằm trong một bảng 45 dòng của
-          riêng hai đội bạn cầm, quá nhỏ để định vị được trong file 15MB.{" "}
+          <strong>Chỉ cần một file save.</strong> Trang tự nhận ra câu lạc bộ, gắn{" "}
+          <strong>số áo</strong> từ roster gốc của game, dựng sơ đồ đội hình, và lọc
+          ra <strong>cầu thủ trẻ do career sinh ra</strong> ở tab riêng. Không phải
+          chạy công cụ nào kèm theo.
+        </p>
+        <p className="max-w-3xl text-sm text-mist">
+          Hai thứ save KHÔNG lưu được: <em>đội hình bạn đã xếp</em> và{" "}
+          <em>lương</em>. Đội hình xuất phát đã dò sáu hướng và đóng — mức khớp cao
+          nhất đúng bằng mức ngẫu nhiên — nên sơ đồ trên trang là đội hình gợi ý,
+          suy từ vị trí sở trường và chỉ số. Lương chỉ nằm trong một bảng 45 dòng
+          của riêng đội bạn cầm, quá nhỏ để định vị trong file 15MB. Muốn hai thứ
+          đó thì nạp thêm bản export Live Editor ở mục tuỳ chọn trên tab Đội hình.{" "}
           <em>Giá trị chuyển nhượng</em> là trường hợp khác hẳn: game không lưu nó
           ở bất kỳ đâu — nó dựng lúc chạy rồi vứt — nên trang ước tính từ chỉ số,
           tiềm năng và tuổi, và đánh dấu rõ là ước tính. Khoảng một phần năm cầu thủ chưa

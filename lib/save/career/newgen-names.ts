@@ -90,6 +90,35 @@ export interface NewgenName {
 }
 
 /**
+ * Ghép bốn ô thành tên hiển thị.
+ *
+ * ─── Ô 2 KHÔNG PHẢI LÚC NÀO CŨNG LÀ HỌ ──────────────────────────────────────
+ *
+ * Hai career thật, hai bố cục khác nhau, đo được:
+ *
+ *     career A   ô0 "Alex"      ô2 "Dahl"              → ghép ra "Alex Dahl" ✓
+ *     career B   ô0 "Patricio"  ô2 "Patricio Pacífico" → ghép ra tên LẶP ✗
+ *
+ * Ở career B, ô 2 đã là tên đầy đủ. Đo trên save thật: 9/19 bản ghi theo bố cục
+ * ấy, tức gần một nửa cầu thủ regen hiện ra với tên đầu bị lặp hai lần.
+ *
+ * Nên không đoán bố cục nữa mà nhận ra từ chính dữ liệu: nếu ô 2 đã bắt đầu
+ * bằng ô 0 kèm dấu cách thì nó là tên đầy đủ, dùng thẳng. Kiểm cả dấu cách là
+ * cố ý — người tên "Danilo Danilo" có thật, và bỏ dấu cách ra khỏi phép so sẽ
+ * biến họ thành "Danilo".
+ */
+function assembleName(slots: string[]): { first: string; last: string; full: string } {
+  const given = slots[0] ?? "";
+  const second = slots[2] ?? "";
+
+  if (given && second.startsWith(`${given} `)) {
+    return { first: given, last: second.slice(given.length + 1), full: second };
+  }
+  const full = [given, second].filter(Boolean).join(" ") || (slots[3] ?? "");
+  return { first: given, last: second, full };
+}
+
+/**
  * Số bản ghi liên tiếp phải cùng hợp lệ thì mới nhận là bảng.
  *
  * Một, thậm chí hai, bản ghi khớp vẫn có thể là ngẫu nhiên: phiên bản đầu chỉ
@@ -147,9 +176,9 @@ export function readNewgenNames(bytes: Uint8Array): Map<number, NewgenName> {
       const slots: string[] = [];
       for (let s = 0; s < NEWGEN_NAME_SLOTS; s += 1) slots.push(readSlot(bytes, base + s * SLOT));
 
-      const full = [slots[0], slots[2]].filter(Boolean).join(" ") || slots[3];
+      const { first: given, last: family, full } = assembleName(slots);
       // Khối đứng trước thắng: bảng đầu là bảng chính, khối sau chỉ bù phần thiếu.
-      if (full && !out.has(id)) out.set(id, { playerId: id, first: slots[0], last: slots[2], full });
+      if (full && !out.has(id)) out.set(id, { playerId: id, first: given, last: family, full });
     }
 
     // Tiếp tục ngay sau khối vừa đọc. Không nhích tiến thì vòng lặp treo.

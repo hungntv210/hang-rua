@@ -60,6 +60,18 @@ export class Fc26Database {
     return new Fc26Database(data);
   }
 
+  /**
+   * Mọi playerId có trong roster xuất xưởng của game.
+   *
+   * Dùng để nhận ra cầu thủ do career SINH RA: ai không có ở đây thì không tồn
+   * tại lúc game phát hành. Đó là dấu hiệu duy nhất không phụ thuộc career cụ
+   * thể nào — dải ID thì mỗi career một khác (460xxx ở career này, 9xxx ở
+   * career kia).
+   */
+  ids(): Set<number> {
+    return new Set(this.data.ids);
+  }
+
   get size(): number {
     return this.data.ids.length;
   }

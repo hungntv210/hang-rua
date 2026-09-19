@@ -101,15 +101,45 @@ export function CareerExportDrop({ data, onLoad, gate, inUse }: Props) {
         ? "border-amber/40 bg-amber-wash/40"
         : "border-grid bg-abyss/40";
 
+  /*
+   * Thu gọn thành một dòng mở được.
+   *
+   * Bản trước là một khung lớn chiếm đầu trang, và nó đọc như một BƯỚC BẮT
+   * BUỘC — đúng thứ người dùng phản đối: họ không muốn chạy lại script Lua mỗi
+   * lần có save mới. Trang chạy đủ chỉ với file save; bản export chỉ thêm đội
+   * hình thật và lương.
+   *
+   * Nhưng khi nó ĐANG được dùng hoặc ĐANG báo lỗi thì mở sẵn: một trạng thái
+   * đáng chú ý mà giấu sau một cú bấm thì coi như không tồn tại.
+   */
+  const notable = !!error || inUse || (!!loaded && !!gate && !gate.ok);
+
   return (
-    <div className={`rounded-sm border border-dashed px-3 py-2.5 ${tone}`}>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+    <details
+      open={notable}
+      className={`rounded-sm border border-dashed px-3 py-2 ${tone}`}
+    >
+      <summary className="focus-ring flex cursor-pointer list-none items-center gap-2 text-[12px] text-mist marker:content-none">
+        <span className="font-mono text-[10px] text-mist-dim" aria-hidden>
+          ▸
+        </span>
+        <span className="text-ghost">Đội hình thật, số áo và lương</span>
+        {inUse ? (
+          <span className="rounded-[2px] bg-jade-wash px-1 font-mono text-[9px] uppercase text-jade">
+            đang dùng
+          </span>
+        ) : loaded && gate && !gate.ok ? (
+          <span className="rounded-[2px] bg-amber-wash px-1 font-mono text-[9px] uppercase text-amber">
+            không khớp save
+          </span>
+        ) : (
+          <span className="text-mist-dim">— tuỳ chọn, cần chạy script Lua</span>
+        )}
+      </summary>
+
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-medium text-ghost">
-            Đội hình thật, số áo và lương{" "}
-            <span className="font-normal text-mist-dim">— tuỳ chọn</span>
-          </p>
-          <p className="mt-0.5 text-[11px] leading-relaxed text-mist">
+          <p className="text-[11px] leading-relaxed text-mist">
             {error ? (
               <span className="text-crimson">{error}</span>
             ) : inUse && gate ? (
@@ -123,9 +153,14 @@ export function CareerExportDrop({ data, onLoad, gate, inUse }: Props) {
               </span>
             ) : (
               <>
-                Chạy <code>scripts/fc26-dump-career.lua</code> trong Live Editor rồi chọn{" "}
-                {REQUIRED_FILES.length} file <code>fc26_*.csv</code>. Không có cũng không sao:
-                trang vẫn dựng đội hình gợi ý từ file save.
+                <strong>Không cần cho việc dùng trang hằng ngày.</strong> Số áo, tên
+                CLB, danh sách đội và cầu thủ trẻ đều đã đọc được từ chính file save.
+                Bản export chỉ thêm hai thứ mà save không lưu:{" "}
+                <strong>đội hình bạn đã xếp</strong> và <strong>lương</strong>. Muốn
+                có thì chạy <code>scripts/fc26-dump-career.lua</code> trong Live
+                Editor rồi chọn {REQUIRED_FILES.length} file <code>fc26_*.csv</code> —
+                và phải làm lại mỗi lần muốn cập nhật, vì cả hai đều đổi theo từng
+                thời điểm trong career.
               </>
             )}
           </p>
@@ -153,6 +188,6 @@ export function CareerExportDrop({ data, onLoad, gate, inUse }: Props) {
           }}
         />
       </div>
-    </div>
+    </details>
   );
 }

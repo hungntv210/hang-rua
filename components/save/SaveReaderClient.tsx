@@ -12,8 +12,11 @@ import { SaveStats } from "@/components/save/SaveStats";
 import { SaveStringList } from "@/components/save/SaveStringList";
 import { SaveUnknownList } from "@/components/save/SaveUnknownList";
 import { SquadHub } from "@/components/save/SquadHub";
+import { YouthList } from "@/components/save/YouthList";
 import { TabBar, TabPanel, type TabItem } from "@/components/TabBar";
 import { loadFc26Database } from "@/lib/fc26/db";
+import { loadFc26Squads, type ClubMatch } from "@/lib/fc26/squads";
+import { findYouthPlayers, type YouthResult } from "@/lib/fc26/youth";
 import { loadFc26Formations } from "@/lib/fc26/formations";
 import { buildLineup, lineupFromSheets, pickSquad, type Lineup } from "@/lib/fc26/lineup";
 import { bestGate, gateSheets, type CareerExport, type GateResult } from "@/lib/fc26/career-export";
@@ -27,10 +30,11 @@ import { formatBytes, formatCount } from "@/lib/save/format";
 import { FILE_LIMITS } from "@/lib/save/heuristics";
 import type { SaveDocument, SavePlayer, WorkerResponse } from "@/lib/save/types";
 
-type Tab = "lineup" | "players" | "fields" | "names" | "strings" | "unknown";
+type Tab = "lineup" | "youth" | "players" | "fields" | "names" | "strings" | "unknown";
 
 const TABS: TabItem<Tab>[] = [
   { id: "lineup", label: "Đội hình", labelJp: "布陣" },
+  { id: "youth", label: "Cầu thủ trẻ", labelJp: "育成" },
   { id: "players", label: "Cầu thủ", labelJp: "選手" },
   { id: "fields", label: "Field" },
   { id: "names", label: "Tên field" },
@@ -57,6 +61,10 @@ export function SaveReaderClient() {
   const [careerExport, setCareerExport] = useState<CareerExport | null>(null);
   /** Kết quả đối chiếu export với save — hiển thị nguyên văn cho người dùng. */
   const [exportGate, setExportGate] = useState<GateResult | null>(null);
+  /** CLB nhận ra từ roster gốc — cho số áo và tên đội. `null` với CLB tự tạo. */
+  const [club, setClub] = useState<ClubMatch | null>(null);
+  /** Cầu thủ trẻ do career sinh ra, lọc từ chính save. */
+  const [youth, setYouth] = useState<YouthResult | null>(null);
   const [iconCount, setIconCount] = useState(0);
   const workerRef = useRef<Worker | null>(null);
 
@@ -151,8 +159,12 @@ export function SaveReaderClient() {
       return;
     }
     let alive = true;
-    void Promise.all([loadFc26Formations(), import("@/lib/save/career/schema")]).then(
-      ([table, schema]) => {
+    void Promise.all([
+      loadFc26Formations(),
+      import("@/lib/save/career/schema"),
+      loadFc26Squads(),
+      loadFc26Database(),
+    ]).then(([table, schema, squadDb, db]) => {
         if (!alive || !table) return;
         // Cần chỉ số và vị trí sở trường của MỌI cầu thủ đọc được, không chỉ
         // của đội — `pickSquad` phải nhận ra khối nào là một đội bóng thật.
@@ -166,7 +178,33 @@ export function SaveReaderClient() {
         if (!squad) {
           setLineup(null);
           setExportGate(null);
+          setClub(null);
+          setYouth(null);
           return;
+        }
+
+        /*
+         * Nhận CLB từ roster gốc, để có số áo và tên đội.
+         *
+         * Số áo là hằng số theo phiên bản game nên bake được — khác hẳn đội
+         * hình xuất phát. Trả `null` với CLB người chơi tự tạo, và đó là hành
+         * vi đúng: đoán bừa từng khớp nhầm một CLB tự tạo với "AFC Bournemouth"
+         * chỉ vì chín cầu thủ trong đội vốn từ đó.
+         */
+        const matched = squadDb?.matchClub(squad) ?? null;
+        setClub(matched);
+
+        /*
+         * Cầu thủ trẻ: lọc từ chính save, không cần bản export.
+         *
+         * Dấu hiệu là "không có trong DB nhúng" — tức do career sinh ra. Ngưỡng
+         * ID không dùng được: career này dùng dải 9xxx, career trước dùng
+         * 460xxx, hai dải không liên quan gì nhau.
+         */
+        if (db) {
+          setYouth(findYouthPlayers(career.players, db.ids(), new Set(squad)));
+        } else {
+          setYouth(null);
         }
 
         /*
@@ -198,8 +236,7 @@ export function SaveReaderClient() {
         }
 
         setLineup(buildLineup(squad, byId, table.shapes, schema.positionName));
-      },
-    );
+    });
     return () => {
       alive = false;
     };
@@ -312,6 +349,8 @@ export function SaveReaderClient() {
           careerExport={careerExport}
           onCareerExport={setCareerExport}
           exportGate={exportGate}
+          club={club}
+          youth={youth}
         />
       ) : null}
     </div>
@@ -328,6 +367,8 @@ function SaveResult({
   careerExport,
   onCareerExport,
   exportGate,
+  club,
+  youth,
 }: {
   doc: SaveDocument;
   tab: Tab;
@@ -337,6 +378,8 @@ function SaveResult({
   careerExport: CareerExport | null;
   onCareerExport: (data: CareerExport | null) => void;
   exportGate: GateResult | null;
+  club: ClubMatch | null;
+  youth: YouthResult | null;
   iconCount: number;
 }) {
   return (
@@ -386,8 +429,9 @@ function SaveResult({
             <SquadHub
               lineup={lineup}
               players={players}
-              jerseyOf={careerExport?.jerseyOf}
+              jerseyOf={careerExport?.jerseyOf ?? club?.jerseyOf}
               wageOf={careerExport?.wageOf}
+              clubName={club?.name ?? null}
             />
           ) : (
             <Notice title="Chưa dựng được sơ đồ đội hình">
@@ -399,6 +443,20 @@ function SaveResult({
             </Notice>
           )}
         </div>
+      ) : null}
+      {tab === "youth" ? (
+        youth ? (
+          <YouthList
+            players={youth.players}
+            stats={youth.stats}
+            jerseyOf={careerExport?.jerseyOf ?? club?.jerseyOf}
+          />
+        ) : (
+          <Notice title="Chưa đọc được danh sách cầu thủ trẻ">
+            Cần cả bảng cầu thủ trong save lẫn cơ sở dữ liệu FC 26 nhúng — thiếu
+            một trong hai thì không phân biệt được ai do career sinh ra.
+          </Notice>
+        )
       ) : null}
       {tab === "players" ? (
         players && players.length > 0 ? (
