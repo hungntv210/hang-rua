@@ -274,6 +274,7 @@ end
 ---------------------------------------------------------------------------
 
 local dumped, empty, failed = 0, 0, 0
+local wrote = {}
 
 for i = 1, #WANT do
   local tname = WANT[i]
@@ -321,6 +322,7 @@ for i = 1, #WANT do
           f:flush()
           f:close()
           note(string.format("%s: %d dong", tname, n))
+          wrote[tname] = true
           dumped = dumped + 1
         end
       end
@@ -341,8 +343,34 @@ do
   end
 end
 
+--[[
+  Thieu bang la CANH BAO, khong phai "XONG".
+
+  Chuoi hong day du neu khong doi tieu de: mot bang tra nil -> khong mo file ->
+  file CU cua bang do song sot trong base/ -> cong kiem van xanh (file ton tai,
+  du dong, dung cot khoa) -> build tron 10 bang phien ban moi voi mot bang
+  phien ban cu. Chinh bang `dcplayernames` la thu da bi bo sot mot lan va lam
+  mat ten 15% cau thu.
+
+  Chu thich dau file nay da ghi dung bai hoc do ("that bai dung kieu te nhat —
+  im lang… hop thoai bao XONG") roi phan ket lai lap lai no.
+]]
+local missing = {}
+for i = 1, #WANT do
+  if not wrote[WANT[i]] then missing[#missing + 1] = WANT[i] end
+end
+
 MessageBox(
-  "Dump base FC 26 - XONG",
+  (#missing > 0)
+    and ("Dump base FC 26 - THIEU " .. #missing .. " BANG")
+    or "Dump base FC 26 - XONG",
+  ((#missing > 0) and ("!!! THIEU: " .. table.concat(missing, ", ") ..
+     "
+DUNG chay build:fc26 voi ban chup nay — file cu cua nhung bang do
+" ..
+     "van con trong base/ va se bi tron lan voi ban moi.
+
+") or "") ..
   string.format(
     "%d bang da ghi, %d bang rong, %d bang loi.\n\nThu muc:\n%s\n\n%s\n\n" ..
     "BUOC TIEP THEO: chay `npm run build:fc26` roi `npm run check:fc26`.\n" ..

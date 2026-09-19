@@ -111,8 +111,35 @@ function assembleName(slots: string[]): { first: string; last: string; full: str
   const given = slots[0] ?? "";
   const second = slots[2] ?? "";
 
+  /*
+   * Gộp tên lặp ở ĐẦU RA, không ở một nhánh.
+   *
+   * Phiên bản trước đặt guard mononym trên đúng một trong ba lối ra, và chú
+   * thích lại khẳng định "đây là chỗ DUY NHẤT mọi tên do career sinh ra đi
+   * qua". Đúng về vị trí, sai về phạm vi: hai lối ra kia trả chuỗi thô.
+   *
+   * Kịch bản lọt: kho tên của game CHỨA SẴN chuỗi lặp — `commonNameId=40225`
+   * trỏ tới đúng chữ "Zheng Zheng". Một newgen theo bố cục "career B" mang tên
+   * đầy đủ lặp sẵn (ô0 "Zheng", ô2 "Zheng Zheng") sẽ đi qua nhánh `startsWith`
+   * và hiện ra nguyên xi.
+   *
+   * Không dùng `collapseDoubledName` của `lib/fc26` vì tầng `lib/save` không
+   * được phụ thuộc tầng trên nó; cùng một quy tắc, viết tại chỗ.
+   *
+   * Đánh đổi đã biết: chú thích bên dưới ghi "người tên 'Danilo Danilo' có
+   * thật". Người đó sẽ hiện thành "Danilo". Dự án đã chọn hướng này ở mọi
+   * đường tra tên khác — in hai lần không bao giờ là cái người xem muốn thấy —
+   * nên chỗ này theo cho nhất quán, thay vì để một đường ra riêng lệch luật.
+   */
+  const collapse = (s: string) => {
+    const parts = s.trim().split(/\s+/);
+    return parts.length >= 2 && parts[0] === parts[1]
+      ? [parts[0], ...parts.slice(2)].join(" ")
+      : s;
+  };
+
   if (given && second.startsWith(`${given} `)) {
-    return { first: given, last: second.slice(given.length + 1), full: second };
+    return { first: given, last: second.slice(given.length + 1), full: collapse(second) };
   }
   /*
    * Hai ô bằng nhau nghĩa là cầu thủ chỉ có MỘT tên.
@@ -129,7 +156,7 @@ function assembleName(slots: string[]): { first: string; last: string; full: str
    */
   if (given && given === second) return { first: given, last: "", full: given };
   const full = [given, second].filter(Boolean).join(" ") || (slots[3] ?? "");
-  return { first: given, last: second, full };
+  return { first: given, last: second, full: collapse(full) };
 }
 
 /**

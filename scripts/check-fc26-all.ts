@@ -56,10 +56,28 @@ const run = (label: string, args: string[]) => {
   }
 };
 
+/*
+ * Thiếu save là TRƯỢT, không phải "bỏ qua".
+ *
+ * Bản đầu chỉ in một dòng rồi bỏ qua sáu cổng con và vẫn kết thúc bằng "TOÀN BỘ
+ * ĐẠT", `exit 0`. Nghĩa là bất kỳ ai không có sẵn bốn file save trong máy —
+ * người khác, CI, hoặc chính mình sau khi dọn thư mục settings — chạy lệnh kiểm
+ * duy nhất của dự án và được báo xanh mà không một dòng dữ liệu save nào được
+ * đọc.
+ *
+ * Đây đúng là kiểu hỏng đã xảy ra một lần trong chính nhánh này: `shell: true`
+ * cắt đường dẫn theo khoảng trắng nên cổng con không nhận được save nào. Lần
+ * đó tôi sửa đường vận chuyển; bên tiêu thụ vẫn fail-open, nên bất kỳ lý do
+ * nào khác làm mất save đều cho ra cùng một màu xanh.
+ */
 const present = SAVES.filter((p) => existsSync(p));
-if (present.length === 0) {
-  console.log("Không tìm thấy file save nào — bỏ qua các cổng cần save.");
-}
+check(
+  `nhận đủ ${SAVES.length} file save để kiểm`,
+  present.length === SAVES.length,
+  `${present.length}/${SAVES.length} — thiếu: ${SAVES.filter((p) => !existsSync(p))
+    .map((p) => p.split(/[\\/]/).pop())
+    .join(", ") || "không"}`,
+);
 
 run("CSV", ["scripts/check-csv.ts"]);
 run("dataset_fc26/base", ["scripts/check-fc26-base.ts"]);

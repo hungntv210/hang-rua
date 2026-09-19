@@ -60,6 +60,19 @@ check("65535 không tra ra chữ", names.resolve(65535, 5125, 0) === null);
 check("chỉ số ngoài mọi dải trả null", names.resolve(9_999_999, 9_999_998, 0) === null);
 check("thiếu một mảnh thì trả null, không ghép nửa vời", names.resolve(21799, null, 0) === null);
 
+/*
+ * Không có save nào truyền vào là TRƯỢT, không phải "không có gì để kiểm".
+ *
+ * Vòng lặp `for (const p of process.argv.slice(2))` với 0 đối số chạy 0 vòng
+ * rồi `exit 0` — một cổng báo xanh trong khi không đọc một byte dữ liệu nào.
+ * Đã xảy ra thật trong dự án này: `shell: true` cắt đường dẫn chứa khoảng
+ * trắng, cổng con không nhận được save nào, và cả bộ vẫn xanh.
+ */
+if (process.argv.length <= 2) {
+  console.log("FAIL  không có file save nào được truyền vào — cổng này không kiểm được gì");
+  process.exit(1);
+}
+
 for (const savePath of process.argv.slice(2)) {
   const label = savePath.split(/[\\/]/).pop()!;
   const buf = readFileSync(savePath);

@@ -68,13 +68,18 @@ Ba cai bay da tra gia de biet, ghi lai de khong lap:
    `locate.ts` neo pha bang tinh duy nhat cua `playerId`, tuyet doi khong bang
    entropy.
 
-Ten cau thu den tu hai nguon bu nhau: cau thu co san tra tu `public/fc26/players.json`
-(DB nhung, sinh boi `scripts/build-fc26-db.ts`), cau thu do career sinh ra lay
-tu chinh save. Khong tra duoc thi hien `playerId` va danh dau ro - khong bia.
+Ten cau thu tra tu MOT kho duy nhat: `public/fc26/names.json`, gop hai bang
+goc cua game (`playernames` phu nameid 0-41.189, `dcplayernames` phu tu 44.000;
+46.813 muc). Save chi luu CHI SO ten, va ca ba chi so deu tro vao kho nay, nen
+cau thu co san va cau thu do career sinh ra deu ra ten cung mot duong. Khong
+tra duoc thi hien `playerId` va danh dau ro - khong bia.
+
+Do tren bon save that, chi dung save + kho ten: 100% / 99,99% / 100% / 100%.
 
 ```bash
-npx tsx scripts/probe-career.ts <duong-dan-save> [players.csv]
-npx tsx scripts/build-fc26-db.ts <players.csv> public/fc26/players.json
+npm run build:fc26                             # dataset_fc26/ -> public/fc26/
+npm run check:fc26                             # cong kiem dau-cuoi, 4 save that
+npx tsx scripts/probe-career.ts <save> [players.csv]
 npx tsx scripts/train-ovr.ts <players.csv>
 ```
 
@@ -88,7 +93,7 @@ thread ranh nen tab khong dung hinh.
 ```bash
 npx tsx scripts/probe-save.ts                  # tu kiem tren fixture
 npx tsx scripts/check-export.ts                # tu kiem phan xuat CSV/JSON
-node scripts/check-lua-dump.mjs                # tu kiem script Lua (VM gia lap, 8 kich ban)
+node scripts/check-lua-career.mjs              # tu kiem script Lua career (VM gia lap)
 npx tsx scripts/probe-save.ts <duong-dan-save> # do file that
 npx tsx scripts/hex-probe.ts <file> str "PlayerID"
 npx tsx scripts/hex-probe.ts <file> at 9046300 420
@@ -98,10 +103,18 @@ npx tsx scripts/hex-probe.ts <file> at 9046300 420
 
 Xem `docs/superpowers/specs/2026-09-16-live-editor-decode-design.md`.
 
-`scripts/fc26-dump-db.lua` chay trong game bang FC 26 Live Editor, tu liet ke
-schema roi dump toan bo DB ra CSV. No duoc thiet ke de chay DUNG MOT LAN, nen
-giai doan manifest ghi ra dia TRUOC giai doan quet cham: co treo giua chung thi
-van con schema, khong mat luot khoi dong game.
+Hai script Lua, hai muc dich khac han:
+
+* `scripts/fc26-dump-base.lua` — chup 11 bang HANG SO PHIEN BAN vao
+  `dataset_fc26/base/`. Chay o MENU CHINH, NGOAI career. Mot lan moi ban game.
+  Xem `public/fc26/README.md`.
+* `scripts/fc26-dump-career.lua` — chup 6 bang trang thai CAREER (luong, doi
+  hinh da xep). Chay TRONG career. Tuy chon, chi khi muon nap them export.
+
+Hai cong tien kiem nguoc chieu nhau va do la chu y: ban base dung khi bang
+career CO du lieu, ban career dung khi chung RONG. Khong phai quy uoc ma la
+cau truc — chay ngoai career thi du lieu mot nguoi choi khong co duong lot vao
+asset dung chung.
 
 QUAN TRONG: export va file save phai CUNG MOT THOI DIEM. Vao career -> chay
 script -> LUU GAME NGAY -> dung dung save do. `probe-fields.ts` co cong chan do
@@ -109,14 +122,13 @@ lai cac truong da biet chac; khong dat 98% thi no dung, vi moi ket luan sau do
 se vo nghia.
 
 ```bash
-npx tsx scripts/probe-fields.ts <save> dataset_fc26/fc26_players.csv
-npx tsx scripts/probe-squads.ts <save> [dataset_fc26/fc26_teamplayerlinks.csv]
-npx tsx scripts/build-fc26-db.ts --newgen-from <save> <csv...> public/fc26/players.json
+npx tsx scripts/probe-fields.ts <save> dataset_fc26/base/players.csv
+npx tsx scripts/probe-squads.ts <save> [dataset_fc26/base/teamplayerlinks.csv]
 ```
 
-Co `--newgen-from` vi export chup career cua MOT nguoi: newgen trong do mang ID
-ma career nguoi khac gan cho cau thu hoan toan khac, nen khong duoc nuong vao DB
-dung chung.
+Newgen cua MOT nguoi khong bao gio duoc nuong vao asset dung chung: ID cua ho
+la ID ma career nguoi khac gan cho cau thu hoan toan khac. `check-fc26-base.ts`
+canh dieu nay bang ba bat bien theo NOI DUNG, khong phai theo ten file.
 
 ### Cau truc file - da xac minh tren save that
 

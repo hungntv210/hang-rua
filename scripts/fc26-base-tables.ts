@@ -1,10 +1,19 @@
 /**
  * Mười một bảng hằng số phiên bản — MỘT nguồn sự thật duy nhất.
  *
- * Script Lua chụp đúng danh sách này, cổng kiểm xác nhận đúng danh sách này,
- * và bản dựng đọc đúng danh sách này. Trước đây ba chỗ đó giữ ba danh sách
- * riêng, và chúng lệch nhau — `dcplayernames` có trong game, không có trong
- * bản dựng, nên 15% cầu thủ mất tên suốt một thời gian dài.
+ * Cổng kiểm và bản dựng đọc đúng danh sách này. Trước đây chúng giữ danh sách
+ * riêng và lệch nhau — `dcplayernames` có trong game, không có trong bản dựng,
+ * nên 15% cầu thủ mất tên suốt một thời gian dài.
+ *
+ * GIỚI HẠN phải nói rõ: `scripts/fc26-dump-base.lua` giữ một bản CHÉP TAY của
+ * danh sách này (`WANT`), vì Lua không import được TypeScript. Và
+ * `check-fc26-base.ts` KHÔNG bắt được lệch giữa hai bản: nó kiểm file có tồn
+ * tại trong `base/` không, mà `base/` luôn đã có sẵn 11 CSV đã commit — nên bỏ
+ * sót một tên trong `WANT` chỉ để lại file CŨ, và cổng vẫn xanh.
+ *
+ * Thứ thật sự canh là hộp thoại kết của chính script Lua: nó đối chiếu số bảng
+ * ghi được với `WANT` và đổi tiêu đề thành cảnh báo khi thiếu. Sửa danh sách ở
+ * một nơi thì phải sửa ở cả hai.
  *
  * `minRows` là số đo trên bản dump thật, để nới ~5%. Nó bắt được lượt chụp
  * hỏng giữa chừng — thứ mà phép kiểm "file có tồn tại không" bỏ lọt.

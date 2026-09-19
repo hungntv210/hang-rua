@@ -65,6 +65,19 @@ check(
   !("positions" in payload) && !rawJson.includes('"position'),
 );
 
+/*
+ * Không có save nào truyền vào là TRƯỢT, không phải "không có gì để kiểm".
+ *
+ * Vòng lặp `for (const p of process.argv.slice(2))` với 0 đối số chạy 0 vòng
+ * rồi `exit 0` — một cổng báo xanh trong khi không đọc một byte dữ liệu nào.
+ * Đã xảy ra thật trong dự án này: `shell: true` cắt đường dẫn chứa khoảng
+ * trắng, cổng con không nhận được save nào, và cả bộ vẫn xanh.
+ */
+if (process.argv.length <= 2) {
+  console.log("FAIL  không có file save nào được truyền vào — cổng này không kiểm được gì");
+  process.exit(1);
+}
+
 for (const savePath of process.argv.slice(2)) {
   const name = savePath.split(/[\\/]/).pop()!;
   console.log(`\n── ${name} ──`);

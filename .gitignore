@@ -25,6 +25,10 @@ temp_fc26_upload/
 # career của một người chơi cụ thể.
 dataset_fc26/*
 !dataset_fc26/base/
+# `ut-ids.json` la DAU VAO cua ban dung, khong phai bang dump tu game — nen no
+# nam canh `base/` chu khong trong do. Phai commit: no khong tai tao duoc tu
+# bang goc, va thieu no thi `npm run build:fc26` nem ENOENT tren clone sach.
+!dataset_fc26/ut-ids.json
 *.tsbuildinfo
 next-env.d.ts
 
