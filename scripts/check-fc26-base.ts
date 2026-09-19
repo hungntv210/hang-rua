@@ -12,7 +12,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { num, readCsv } from "./csv";
-import { BASE_TABLES, BASE_DIR } from "./fc26-base-tables";
+import { BASE_TABLES, BASE_DIR, defaultTeamsheetPlayerColumns } from "./fc26-base-tables";
 
 let failed = 0;
 const check = (label: string, ok: boolean, detail = "") => {
@@ -58,6 +58,7 @@ for (const t of BASE_TABLES) {
 const teamplayerlinksRows = readCsv(join(BASE_DIR, "teamplayerlinks.csv"));
 const defaultTeamsheetsRows = readCsv(join(BASE_DIR, "default_teamsheets.csv"));
 const teamsRows = readCsv(join(BASE_DIR, "teams.csv"));
+const playersRows = readCsv(join(BASE_DIR, "players.csv"));
 
 /**
  * Bất biến 1 (quan trọng nhất): không playerId nào do career sinh ra — dải
@@ -65,35 +66,44 @@ const teamsRows = readCsv(join(BASE_DIR, "teams.csv"));
  * cầu thủ, cùng việc chỉ 22/55 có tên dạng chữ trong save — dấu hiệu của một
  * lứa regen cụ thể, không phải id thật của roster gốc).
  *
+ * Soi cả `players.csv`, không chỉ `teamplayerlinks`/`default_teamsheets`:
+ * `players.csv` là NGUỒN của `shippedIds` (`Fc26World.isShipped()`), tức
+ * đúng lý do việc lọc học viện quan trọng — bỏ sót bảng này thì hai bảng kia
+ * có sạch cũng vô nghĩa, vì tab Cầu thủ trẻ đọc `players.csv` để biết ai
+ * "đã xuất xưởng".
+ *
  * `default_teamsheets.csv` không có một cột "playerid" duy nhất — nó có ~60
  * cột giữ id cầu thủ (`playerid0`..`playerid51` cộng các vai trò đá phạt/đá
  * góc/đội trưởng); chỉ `teamid` và 6 cột `customsub*in/out` (giữ CHỈ SỐ Ô,
- * 0–51 hoặc -1 khi trống) là không phải playerId. Soi đúng một cột "playerid"
- * như ở `teamplayerlinks` sẽ luôn báo 0 một cách vô nghĩa vì cột đó không tồn
- * tại — chính kiểu "trắng vì không hỏi đúng chỗ" mà bất biến này phải tránh.
+ * 0–51 hoặc -1 khi trống) là không phải playerId. Danh sách cột đó lấy từ
+ * `defaultTeamsheetPlayerColumns()` trong `fc26-base-tables.ts` — CÙNG hàm mà
+ * `seed-fc26-base.ts` dùng để lọc, để bộ lọc và bất biến canh không bao giờ
+ * lệch phạm vi cột với nhau (từng lệch: seed quét mọi ô kể cả `teamid`, ở
+ * đây loại trừ nó — an toàn hôm nay chỉ nhờ `teamid` cao nhất là 132.681,
+ * không phải nhờ thiết kế).
  *
  * `default_teamsheets.csv` KHÔNG có bản `.KHONG-CO-CAREER` để thay (chỉ
  * `teamplayerlinks` và `career_calendar` có) nên trước đây nó vẫn mang trạng
  * thái của career lúc chụp — có lần đo được 15 CLB THẬT (không phải 2 CLB tự
  * tạo ở bất biến 2) xếp một cầu thủ học viện vào đội hình mặc định, tức là
  * career đó đã cho mượn/chuyển nhượng regen của mình sang CLB khác. Từ
- * `scripts/seed-fc26-base.ts` vòng sửa sau, `default_teamsheets` được LỌC bỏ
- * đúng những dòng đó trước khi ghi vào `dataset_fc26/base/` — bất biến này ở
- * đây để giữ cho việc lọc đó không bao giờ lặng lẽ hỏng lại: cho nó "đạt"
- * bằng cách nới ngưỡng hay đổi cột soi sẽ xoá đúng thứ cổng này phải bắt.
+ * `scripts/seed-fc26-base.ts` vòng sửa sau, `players`/`default_teamsheets`
+ * được LỌC bỏ đúng những dòng đó trước khi ghi vào `dataset_fc26/base/` —
+ * bất biến này ở đây để giữ cho việc lọc đó không bao giờ lặng lẽ hỏng lại:
+ * cho nó "đạt" bằng cách nới ngưỡng hay đổi cột soi sẽ xoá đúng thứ cổng này
+ * phải bắt.
  */
 const ACADEMY_ID_FLOOR = 460_000;
-const dtsPlayerCols = defaultTeamsheetsRows.length
-  ? Object.keys(defaultTeamsheetsRows[0]).filter((k) => k !== "teamid" && !k.startsWith("customsub"))
-  : [];
+const dtsPlayerCols = defaultTeamsheetsRows.length ? defaultTeamsheetPlayerColumns(defaultTeamsheetsRows[0]) : [];
+const playersAcademyLeak = playersRows.filter((r) => num(r.playerid) >= ACADEMY_ID_FLOOR);
 const tplAcademyLeak = teamplayerlinksRows.filter((r) => num(r.playerid) >= ACADEMY_ID_FLOOR);
 const dtsAcademyLeak = defaultTeamsheetsRows.filter((r) =>
   dtsPlayerCols.some((c) => num(r[c]) >= ACADEMY_ID_FLOOR),
 );
 check(
-  "không playerId học viện (career sinh ra, >= 460000) trong teamplayerlinks/default_teamsheets",
-  tplAcademyLeak.length === 0 && dtsAcademyLeak.length === 0,
-  `teamplayerlinks: ${tplAcademyLeak.length} dòng; default_teamsheets: ${dtsAcademyLeak.length} đội` +
+  "không playerId học viện (career sinh ra, >= 460000) trong players/teamplayerlinks/default_teamsheets",
+  playersAcademyLeak.length === 0 && tplAcademyLeak.length === 0 && dtsAcademyLeak.length === 0,
+  `players: ${playersAcademyLeak.length} dòng; teamplayerlinks: ${tplAcademyLeak.length} dòng; default_teamsheets: ${dtsAcademyLeak.length} đội` +
     (dtsAcademyLeak.length ? ` (vd teamId ${dtsAcademyLeak.slice(0, 3).map((r) => r.teamid).join(", ")})` : ""),
 );
 

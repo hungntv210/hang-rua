@@ -16,7 +16,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { num, readCsv } from "./csv";
-import { BASE_DIR, BASE_TABLES } from "./fc26-base-tables";
+import { BASE_DIR, BASE_TABLES, defaultTeamsheetPlayerColumns } from "./fc26-base-tables";
 
 const SRC = "dataset_fc26/Live Editor";
 
@@ -69,8 +69,19 @@ const CAREER_ACADEMY_ID_FLOOR = 460_000;
 const DEFAULT_TEAMSHEET_LEAK_FLOOR = 460_000;
 const DEFAULT_TEAMSHEET_LEAK_CEILING = 470_000;
 
-/** CLB tự tạo bỏ ở bước lọc `teams`, dùng lại cho `leagueteamlinks`/`formations`/`default_teamsheets`. */
-let fakeTeamIds = new Set<string>();
+/**
+ * CLB tự tạo, đọc một lần TRƯỚC vòng lặp — không suy ra giữa chừng từ case
+ * `"teams"` của chính vòng lặp đó. Suy ra giữa chừng bằng `let` từng khiến
+ * `leagueteamlinks`/`formations`/`default_teamsheets` phụ thuộc ngầm vào việc
+ * `teams` đứng trước chúng trong `BASE_TABLES`; sắp lại mảng đó sẽ âm thầm
+ * cho Set rỗng, tức bộ lọc không lọc gì mà không báo lỗi. Đọc file này thêm
+ * một lần (324KB, chạy một lần trong đời) rẻ hơn hẳn một guard phải bảo trì.
+ */
+const fakeTeamIds = new Set(
+  readCsv(join(SRC, "fc26_teams.csv"))
+    .filter((r) => r.teamname.startsWith("*"))
+    .map((r) => r.teamid),
+);
 
 /** Bỏ DÒNG, giữ nguyên mọi CỘT — trả về {rows, removed} để in số liệu cho người chạy thấy. */
 function filterRows(
@@ -83,8 +94,6 @@ function filterRows(
       return { rows: kept, note: `bỏ ${rows.length - kept.length} học viện` };
     }
     case "teams": {
-      const fake = rows.filter((r) => r.teamname.startsWith("*"));
-      fakeTeamIds = new Set(fake.map((r) => r.teamid));
       const kept = rows.filter((r) => !fakeTeamIds.has(r.teamid));
       return { rows: kept, note: `bỏ ${rows.length - kept.length} CLB tự tạo` };
     }
@@ -95,10 +104,11 @@ function filterRows(
     }
     case "default_teamsheets": {
       const afterFakeTeam = rows.filter((r) => !fakeTeamIds.has(r.teamid));
+      const playerCols = afterFakeTeam.length > 0 ? defaultTeamsheetPlayerColumns(afterFakeTeam[0]) : [];
       const kept = afterFakeTeam.filter(
         (r) =>
-          !Object.values(r).some((v) => {
-            const n = num(v);
+          !playerCols.some((c) => {
+            const n = num(r[c]);
             return n >= DEFAULT_TEAMSHEET_LEAK_FLOOR && n < DEFAULT_TEAMSHEET_LEAK_CEILING;
           }),
       );
@@ -120,7 +130,7 @@ function toCsvCell(v: string): string {
 }
 
 function writeCsv(path: string, rows: Array<Record<string, string>>, columns: string[]): void {
-  const lines = [columns.join(",")];
+  const lines = [columns.map(toCsvCell).join(",")];
   for (const row of rows) lines.push(columns.map((c) => toCsvCell(row[c] ?? "")).join(","));
   writeFileSync(path, `${lines.join("\r\n")}\r\n`, "utf8");
 }
