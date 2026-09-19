@@ -93,7 +93,7 @@ thread ranh nen tab khong dung hinh.
 ```bash
 npx tsx scripts/probe-save.ts                  # tu kiem tren fixture
 npx tsx scripts/check-export.ts                # tu kiem phan xuat CSV/JSON
-node scripts/check-lua-career.mjs              # tu kiem script Lua career (VM gia lap)
+npm run check:fc26                             # gom moi cong: asset, 4 save that, 2 script Lua
 npx tsx scripts/probe-save.ts <duong-dan-save> # do file that
 npx tsx scripts/hex-probe.ts <file> str "PlayerID"
 npx tsx scripts/hex-probe.ts <file> at 9046300 420

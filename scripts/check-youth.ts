@@ -85,7 +85,14 @@ for (const savePath of process.argv.slice(2)) {
 
   // Đội hình chính, để loại người đã lên đội một.
   const bytes = new Uint8Array(buffer);
-  const loc = locatePlayerTable(bytes)!;
+  const loc = locatePlayerTable(bytes);
+  if (!loc) {
+    // Save không định vị được bảng cầu thủ là một dòng FAIL, không phải một
+    // TypeError. `check-fc26-club.ts` xử lý đúng cách này từ đầu; chỗ này
+    // dùng `!` nên một save lạ làm cả cổng nổ thay vì báo một mục không đạt.
+    check(`${name}: định vị được bảng cầu thủ`, false);
+    continue;
+  }
   const reader = new BitRecordReader(bytes, loc.base, loc.recordBytes, loc.count);
   const byId = new Map<number, LineupPlayer>(
     decodeAllPlayers(reader, loc.count).map((p) => [

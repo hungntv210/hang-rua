@@ -37,7 +37,10 @@ export default function SaveReaderPage() {
           số thành phần và có sai số ±1. Tên cầu thủ tra từ kho tên lấy thẳng
           hai bảng gốc của game, theo đúng chỉ số tên mà file save mang theo —
           nên cầu thủ có sẵn và cầu thủ do career sinh ra đều ra tên như nhau.
-          Cầu thủ không tra được tên hiển thị theo ID và được đánh dấu rõ.
+          Cầu thủ không tra được tên hiển thị theo ID và được đánh dấu rõ. Cột{" "}
+          <strong>CLB</strong> và <strong>số áo</strong> là ngoại lệ thứ hai: chúng
+          lấy từ roster <em>lúc game xuất xưởng</em>, nên với người vừa chuyển đến
+          trong career, đó là CLB cũ chứ không phải đội hiện tại.
         </p>
         <p className="max-w-3xl text-sm text-mist">
           Bấm vào một dòng để mở đủ <strong>31 chỉ số chi tiết</strong> theo nhóm,

@@ -40,7 +40,7 @@ export const BASE_TABLES = [
  * Bảng này không có một cột "playerid" duy nhất — nó có ~60 cột vai trò
  * (`playerid0`..`playerid51` cộng đội trưởng/đá phạt/đá góc). Chỉ `teamid`
  * và 6 cột `customsub*in/out` (giữ CHỈ SỐ Ô 0–51 hoặc -1, không phải
- * playerId) là ngoại lệ. `seed-fc26-base.ts` (lọc) và `check-fc26-base.ts`
+ * playerId) là ngoại lệ. bộ lọc khởi tạo (đã xoá) và `check-fc26-base.ts`
  * (canh) từng tự dựng danh sách này hai lần theo hai cách — export một chỗ
  * duy nhất để chúng không bao giờ lệch nhau.
  */

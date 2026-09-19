@@ -59,7 +59,21 @@ không có gì để vá.
 
 `scripts/check-fc26-base.ts` canh điều này bằng ba bất biến theo **nội dung**
 (không phải theo tên file): không playerId nào ở dải học viện, không CLB tự tạo
-nào có cầu thủ, không còn CLB tự tạo nào.
+nào có cầu thủ, không còn CLB tự tạo nào. Nhưng chúng canh **một hình dạng
+nhiễm bẩn đã biết** (dải id ≥460.000), không canh mệnh đề tổng quát — bảo đảm
+thật sự vẫn là bước 1.
+
+**Trên máy khác:** script Lua thử ghi vào
+`D:\Claude\projects\hang-rua\dataset_fc26\base` trước tiên. Không ghi được thì
+nó lùi về Desktop và vẫn chạy bình thường — khi đó phải **tự chép 11 file CSV**
+vào `dataset_fc26/base/` trước khi build. Hộp thoại kết luôn in ra thư mục nó
+đã ghi.
+
+Hộp thoại kết cũng là thứ duy nhất báo **thiếu bảng**: một bảng trả `nil` thì
+file CŨ của bảng đó ở lại trong `base/` và mọi cổng vẫn xanh (file tồn tại, đủ
+dòng, đúng cột khoá), rồi bản dựng trộn 10 bảng phiên bản mới với một bảng
+phiên bản cũ. Tiêu đề hộp thoại đổi thành `THIEU n BANG` khi việc đó xảy ra —
+đọc nó trước khi chạy `build:fc26`.
 
 ## Vì sao cần asset tên
 

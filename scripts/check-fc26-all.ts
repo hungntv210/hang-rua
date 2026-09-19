@@ -14,10 +14,11 @@
  * đạt 100% — càng ít người thì càng dễ đạt.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
+import { BASE_DIR } from "./fc26-base-tables";
 import { Fc26World } from "../lib/fc26/world";
 import { parseSaveBuffer } from "../lib/save";
 
@@ -34,6 +35,17 @@ let failed = 0;
 const check = (label: string, ok: boolean, detail = "") => {
   console.log(`${ok ? "  ok  " : "FAIL  "}${label}${detail ? ` — ${detail}` : ""}`);
   if (!ok) failed += 1;
+};
+
+const runNode = (label: string, args: string[]) => {
+  console.log(`
+== ${label} ==`);
+  try {
+    execFileSync("node", args, { stdio: "inherit" });
+  } catch {
+    failed += 1;
+    console.log(`FAIL  ${label} — cong con nay khong dat`);
+  }
 };
 
 const run = (label: string, args: string[]) => {
@@ -80,6 +92,16 @@ check(
 );
 
 run("CSV", ["scripts/check-csv.ts"]);
+
+/*
+ * Cong Lua chay bang fengari (VM Lua trong Node) voi API Live Editor gia lap.
+ * `fc26-dump-base.lua` khong chay duoc o day, nhung khong co nghia la khong
+ * kiem duoc: bo harness nay da co san trong repo tu hai luot khoi dong game
+ * truoc, va ngay lan chay dau no bat duoc mot loi cu phap Lua that trong
+ * script moi — loi se ngon mot luot khoi dong game nua neu khong ai chay.
+ */
+runNode("script Lua chup base", ["scripts/check-lua-base.mjs"]);
+runNode("script Lua chup career", ["scripts/check-lua-career.mjs"]);
 run("dataset_fc26/base", ["scripts/check-fc26-base.ts"]);
 run("world.json", ["scripts/check-fc26-world.ts"]);
 run("lớp đọc", ["scripts/check-fc26-lib.ts"]);
@@ -109,6 +131,34 @@ const world = JSON.parse(readFileSync("public/fc26/world.json", "utf8"));
 check(
   "world.json có đủ năm phần",
   !!world.squads && !!world.leagueOfTeam && !!world.nationNames && !!world.shippedIds && !!world.utIds,
+);
+
+/*
+ * Asset có cũ hơn nguồn không?
+ *
+ * Mọi cổng khác đọc ASSET và khẳng định asset đúng — không cổng nào hỏi asset
+ * có được dựng lại sau lần nguồn đổi gần nhất hay không. Sửa một CSV trong
+ * `dataset_fc26/` rồi quên `npm run build:fc26` thì toàn bộ bộ kiểm vẫn xanh,
+ * trên đúng cái asset cũ. `builtAt` được ghi vào cả ba payload nhưng trước
+ * đây không ai đọc nó.
+ *
+ * Dùng mtime chứ không dùng `builtAt`: `builtAt` chỉ tới ngày, nên sửa nguồn
+ * rồi dựng lại trong cùng một ngày sẽ không phân biệt được.
+ */
+const newest = (paths: string[]) => Math.max(...paths.map((p) => statSync(p).mtimeMs));
+const inputs = [
+  ...readdirSync(BASE_DIR).map((f) => join(BASE_DIR, f)),
+  "dataset_fc26/ut-ids.json",
+].filter((p) => existsSync(p) && statSync(p).isFile());
+const assets = ["names.json", "world.json", "formations.json"].map((f) => join("public/fc26", f));
+const newestInput = newest(inputs);
+const oldestAsset = Math.min(...assets.map((p) => statSync(p).mtimeMs));
+check(
+  "asset mới hơn mọi file nguồn",
+  oldestAsset >= newestInput,
+  oldestAsset >= newestInput
+    ? ""
+    : `nguồn đổi lúc ${new Date(newestInput).toISOString()} — chạy \`npm run build:fc26\``,
 );
 
 /*

@@ -334,13 +334,17 @@ end
 -- Xong
 ---------------------------------------------------------------------------
 
+--[[
+  Xoa file tien do khi thanh cong, thay vi ghi "xong" vao no.
+
+  Nho vay SU TON TAI cua `fc26_progress.txt` chinh la tin hieu: con file nghia
+  la lan chay truoc chet giua chung, va noi dung no cho biet chet o bang nao.
+  Ghi "xong" thi file o lai mai mai trong `dataset_fc26/base/` — mot file rac
+  lan vao thu muc du lieu (ma `.gitignore` da go ignore ca thu muc, nen no con
+  thanh ung vien commit), va khong con phan biet duoc thanh cong voi that bai.
+]]
 do
-  local f = openOut("fc26_progress.txt")
-  if f then
-    f:write("xong\n")
-    f:flush()
-    f:close()
-  end
+  try(os.remove, outPath("fc26_progress.txt"))
 end
 
 --[[
@@ -364,13 +368,9 @@ MessageBox(
   (#missing > 0)
     and ("Dump base FC 26 - THIEU " .. #missing .. " BANG")
     or "Dump base FC 26 - XONG",
-  ((#missing > 0) and ("!!! THIEU: " .. table.concat(missing, ", ") ..
-     "
-DUNG chay build:fc26 voi ban chup nay — file cu cua nhung bang do
-" ..
-     "van con trong base/ va se bi tron lan voi ban moi.
-
-") or "") ..
+  ((#missing > 0) and ("!!! THIEU: " .. table.concat(missing, ", ") .. "\n" ..
+     "DUNG chay build:fc26 voi ban chup nay - file CU cua nhung bang do van\n" ..
+     "con trong base/ va se bi tron lan voi ban moi.\n\n") or "") ..
   string.format(
     "%d bang da ghi, %d bang rong, %d bang loi.\n\nThu muc:\n%s\n\n%s\n\n" ..
     "BUOC TIEP THEO: chay `npm run build:fc26` roi `npm run check:fc26`.\n" ..
