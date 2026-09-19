@@ -28,7 +28,7 @@ const SAVES = [
   "CmMgrC20260704192007839",
   "CmMgrC20260729233455335",
   "CmMgrC20260917112651768",
-  "CmMgrC20260919014703842",
+  "CmMgrC20260919231841418",
 ].map((f) => join(SAVE_DIR, f));
 
 let failed = 0;
@@ -171,7 +171,7 @@ check(
 const w = Fc26World.fromPayload(JSON.parse(readFileSync("public/fc26/world.json", "utf8")));
 const EXPECT: Record<string, number> = {
   CmMgrC20260917112651768: 19_405,
-  CmMgrC20260919014703842: 19_336,
+  CmMgrC20260919231841418: 19_331,
 };
 for (const [file, want] of Object.entries(EXPECT)) {
   const path = join(SAVE_DIR, file);

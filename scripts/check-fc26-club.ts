@@ -46,11 +46,21 @@ const warn = (label: string, detail = "") => {
   console.log(`WARN  ${label}${detail ? ` — ${detail}` : ""}`);
 };
 
-/** Hai save đã biết `pickSquad` không chọn được khối đội hình — xem mốc so sánh ở đầu file. */
-const KNOWN_PICKSQUAD_GAPS = new Set([
-  "CmMgrC20260704192007839",
-  "CmMgrC20260729233455335",
-]);
+/*
+ * Danh sách miễn trừ giờ RỖNG — và việc nó từng không rỗng là một bài học.
+ *
+ * Hai save tháng 7 từng trượt "chọn được khối đội hình", và tôi xếp chúng vào
+ * đây như một "mốc đã biết, không liên quan tới nguồn dữ liệu". Sai: cả hai
+ * trượt vì `findSquads` quét nhảy 4 byte một trong khi khối của chúng nằm ở
+ * offset lệch. Cùng một lỗi sau đó làm hỏng một save MỚI của người dùng —
+ * và lúc đó nó không còn được miễn trừ nên mới lộ ra.
+ *
+ * Nói cách khác: gán nhãn "đã biết" cho một triệu chứng chưa tìm ra nguyên
+ * nhân đã che đúng cái lỗi đó thêm một thời gian nữa. Giữ danh sách này rỗng;
+ * thêm tên vào đây chỉ hợp lệ khi đã BIẾT nguyên nhân và nguyên nhân đó thật
+ * sự nằm ngoài phạm vi dự án.
+ */
+const KNOWN_PICKSQUAD_GAPS = new Set<string>([]);
 
 const rawJson = readFileSync("public/fc26/world.json", "utf8");
 const payload = JSON.parse(rawJson);
