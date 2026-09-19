@@ -77,7 +77,7 @@ hoàn toàn vô dụng với dự án: `flesh` 22.590KB, `skeletal` 21.300KB, `f
 
 ## Quyết định
 
-**Chụp rộng một lần, chọn hẹp khi build.** Một file Lua dump 10 bảng hằng số
+**Chụp rộng một lần, chọn hẹp khi build.** Một file Lua dump 11 bảng hằng số
 phiên bản, **giữ nguyên mọi cột**, chạy **ngoài career mode**. Cần thêm trường
 về sau thì chạy lại bước build, không mở lại game.
 
@@ -124,9 +124,16 @@ Ra `dataset_fc26/base/<tên bảng>.csv`, giữ nguyên mọi cột:
 | `leagueteamlinks` | 818 | CLB thuộc giải nào |
 | `nations` | 218 | tên quốc gia |
 | `formations` | 871 | hình học sân |
+| `default_teamsheets` | 818 | sơ đồ nào thực sự có đội dùng |
 | `teamkits` | 4.144 | màu áo (để dành) |
 
-Cả mười bảng đều là **hằng số phiên bản**, tức giống nhau ở mọi career của cùng
+> **Sửa sau khi lập kế hoạch:** bản đầu của spec liệt kê mười bảng và thiếu
+> `default_teamsheets`. Phát hiện khi đọc `build-fc26-formations.ts`:
+> `formations.json` chỉ nhỏ được 5KB nhờ **lọc** 871 sơ đồ xuống vài chục sơ đồ
+> thật sự có đội dùng, và thứ cho biết điều đó là bảng team sheet mặc định.
+> Thiếu nó thì file phình lại khoảng 130KB.
+
+Cả mười một bảng đều là **hằng số phiên bản**, tức giống nhau ở mọi career của cùng
 một bản game. Tiêu chí phân biệt đã dùng từ trước: bảng có tiền tố `career_`
 hoặc `cm_` là trạng thái của một career cụ thể và không bao giờ được nướng vào
 asset dùng chung. Trong 248 bảng của bản dump đầy đủ có 48 bảng thuộc nhóm đó;
@@ -165,11 +172,23 @@ Tổng tải về của trang giảm từ khoảng 2,8MB xuống khoảng 1MB.
 trúc:
 
 ```
-clubs      : [{ id, name, league, players: [{ id, jersey }] }]
-nations    : { mã: tên }
-shippedIds : tập 21.437 id roster gốc, mã hoá delta
-utIds      : 3.944 id nội dung Ultimate Team
+names        : { mã đội: tên }
+squads       : { mã đội: [playerId, số áo, …] }     ← mảng phẳng
+leagueOfTeam : { mã đội: mã giải }                  ← CHỈ giải trong nước
+leagueNames  : { mã giải: tên }
+nationNames  : { mã quốc gia: tên }
+shippedIds   : 21.437 id roster gốc, mã hoá delta
+utIds        : 3.944 id Ultimate Team, mã hoá delta
 ```
+
+Mảng phẳng `[playerId, số áo, …]` thay cho mảng đối tượng: tránh lặp tên khoá
+23.000 lần, và đó là hình dạng `squads.json` đang dùng nên phía đọc không đổi.
+
+`leagueOfTeam` chỉ chứa giải **trong nước** (`isinternationalleague = 0`), nên
+có mặt trong đó chính là dấu hiệu "đây là CLB, không phải đội tuyển quốc gia".
+`teamplayerlinks` nối cầu thủ với cả hai, và dataset công khai trước đây không
+có cách nào phân biệt — nên tra "CLB của người này" đôi khi ra "Brazil" thay vì
+"Real Madrid".
 
 `utIds` bê nguyên từ `players.json` hiện tại một lần rồi thôi. Đó là thứ duy
 nhất còn lại từ dataset công khai, vì bảng gốc không phân biệt được nội dung
