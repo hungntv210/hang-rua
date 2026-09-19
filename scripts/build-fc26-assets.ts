@@ -190,17 +190,26 @@ function buildWorld() {
    * và KHÔNG ai trong số đó có trong bảng gốc. Bỏ đi thì cả trăm bản ghi lạ
    * hiện lên đầu bảng (bảng sắp theo chỉ số) và che mất cầu thủ thật.
    *
-   * Nên bê nguyên một lần từ `players.json` cũ rồi thôi. Nếu FC 27 đổi, phải
-   * tìm nguồn khác — không suy ra được từ `dataset_fc26/base/`.
+   * ─── VÌ SAO NÓ LÀ MỘT FILE ĐẦU VÀO RIÊNG ──────────────────────────────────
+   *
+   * Bản đầu đọc thẳng `public/fc26/players.json`, tức bản dựng đọc chính một
+   * ĐẦU RA cũ của mình. Điều đó vỡ ngay khi `players.json` bị xoá: bản dựng
+   * không chạy lại được nữa, và một bản dựng không tái lập được thì mọi asset
+   * nó từng sinh ra thành thứ không ai dựng lại được.
+   *
+   * Nên tách ra `dataset_fc26/ut-ids.json` — một đầu vào thật, nằm trong thư
+   * mục đầu vào, commit một lần. Nó KHÔNG nằm trong `dataset_fc26/base/` vì
+   * `base/` có nghĩa hẹp: những bảng dump thẳng từ game, và cổng kiểm soi đúng
+   * danh sách đó. Cái này thì không đến từ game.
    */
-  const legacy = JSON.parse(readFileSync("public/fc26/players.json", "utf8")) as {
-    utIds?: number[];
-  };
-  const utIds = legacy.utIds ?? [];
+  const UT_PATH = "dataset_fc26/ut-ids.json";
+  const legacy = JSON.parse(readFileSync(UT_PATH, "utf8")) as { ids?: number[] };
+  const utIds = legacy.ids ?? [];
   if (utIds.length < 3_000) {
     throw new Error(
-      `players.json chỉ có ${utIds.length} id UT — quá ít. Đừng xoá file đó ` +
-        `trước khi world.json đã sinh xong ít nhất một lần.`,
+      `${UT_PATH} chỉ có ${utIds.length} id UT, quá ít so với 3.944 đo được. ` +
+        `File này không tái tạo được từ bảng gốc của game — khôi phục từ git ` +
+        `thay vì dựng lại.`,
     );
   }
 
@@ -233,3 +242,117 @@ function buildWorld() {
 }
 
 buildWorld();
+
+// ── Hình học sơ đồ ──────────────────────────────────────────────────────────
+/*
+ * CHỈ ghi hình học sơ đồ. Bảng team sheet KHÔNG được ghi ra.
+ *
+ * Đội hình xuất phát của 815 đội từng nằm trong file này và trang phát lại nó.
+ * Nhưng nó là ảnh chụp MỘT career tại một thời điểm, không phải hằng số theo
+ * phiên bản: người chơi xếp lại đội thì trang vẫn hiện trạng thái cũ, và save
+ * từ trước ngày chụp thì không khớp đội nào. Đo trên ba save của cùng một
+ * người: 0/11, 11/11, 11/11.
+ *
+ * Vẫn phải TÍNH ra team sheet, vì chúng là thứ cho biết sơ đồ nào thực sự có
+ * đội dùng — 871 sơ đồ trong bảng gốc mà chỉ vài chục được dùng thật. Bỏ bước
+ * lọc này thì file phình từ 8KB lên khoảng 130KB. Tính xong thì vứt.
+ */
+function buildFormations() {
+  interface Formation {
+    id: number;
+    name: string;
+    /** Mã vị trí FIFA (0–27) cho 11 ô, theo thứ tự ô của team sheet. */
+    pos: number[];
+    /** Toạ độ chuẩn hoá: x 0 (trái) → 1 (phải), y 0 (khung nhà) → 1 (khung đối thủ). */
+    off: Array<[number, number]>;
+    /** Gỡ mơ hồ khi hai sơ đồ trùng tập mã vị trí. */
+    weight: number;
+  }
+  /*
+   * `num` của `./csv` trả -1 khi ô rỗng — đúng cho việc phân biệt "không có"
+   * với "bằng 0", nhưng SAI cho toạ độ và mã vị trí, nơi 0 mới là giá trị mặc
+   * định hợp lệ. Một `-1` lọt vào `off` sẽ đẩy cầu thủ ra ngoài sân.
+   */
+  const n0 = (v: string | undefined) => {
+    const x = Number(v);
+    return Number.isFinite(x) ? x : 0;
+  };
+
+  const formations: Formation[] = readCsv(base("formations"))
+    .map((r) => {
+      const pos: number[] = [];
+      const off: Array<[number, number]> = [];
+      for (let i = 0; i < 11; i += 1) {
+        pos.push(Math.round(n0(r[`position${i}`])));
+        off.push([
+          Math.round(n0(r[`offset${i}x`]) * 1000) / 1000,
+          Math.round(n0(r[`offset${i}y`]) * 1000) / 1000,
+        ]);
+      }
+      return {
+        id: n0(r.formationid),
+        name: r.formationname ?? "",
+        pos,
+        off,
+        // Sơ đồ thiên về tấn công hơn thì tên thường được dùng làm tên hiển thị.
+        weight: n0(r.attackers) * 100 + n0(r.midfielders),
+      };
+    })
+    .filter((f) => f.name && f.name !== "-NONE-");
+
+  /** Tập mã vị trí đã sắp xếp → sơ đồ tiêu biểu. */
+  const byPositionSet = new Map<string, Formation>();
+  for (const f of formations) {
+    const key = [...f.pos].sort((a, b) => a - b).join(",");
+    const cur = byPositionSet.get(key);
+    // Trùng tập thì chốt theo `weight` rồi tới id — miễn là TẤT ĐỊNH, vì hình
+    // học của hai sơ đồ cùng tập mã gần như giống hệt nhau.
+    if (!cur || f.weight > cur.weight || (f.weight === cur.weight && f.id < cur.id)) {
+      byPositionSet.set(key, f);
+    }
+  }
+
+  /** playerId → (teamId → mã vị trí trong đội hình). */
+  const slotOf = new Map<number, Map<number, number>>();
+  for (const r of readCsv(base("teamplayerlinks"))) {
+    const pid = num(r.playerid);
+    const tid = num(r.teamid);
+    if (pid <= 0 || tid <= 0) continue;
+    if (!slotOf.has(pid)) slotOf.set(pid, new Map());
+    slotOf.get(pid)!.set(tid, n0(r.position));
+  }
+
+  const used = new Set<number>();
+  let unresolved = 0;
+  for (const r of readCsv(base("default_teamsheets"))) {
+    const team = num(r.teamid);
+    if (team <= 0) continue;
+    const slots: number[] = [];
+    let complete = true;
+    for (let i = 0; i < 11; i += 1) {
+      const pid = num(r[`playerid${i}`]);
+      const slot = slotOf.get(pid)?.get(team);
+      if (pid <= 0 || slot === undefined) {
+        complete = false;
+        break;
+      }
+      slots.push(slot);
+    }
+    if (!complete) continue;
+    const f = byPositionSet.get([...slots].sort((a, b) => a - b).join(","));
+    if (f) used.add(f.id);
+    else unresolved += 1;
+  }
+
+  const kept = formations.filter((f) => used.has(f.id));
+  console.log(
+    `sơ đồ: ${kept.length}/${formations.length} được dùng` +
+      (unresolved ? ` (${unresolved} đội không suy được sơ đồ)` : ""),
+  );
+  write("formations.json", {
+    builtAt,
+    formations: kept.map((f) => ({ id: f.id, name: f.name, pos: f.pos, off: f.off })),
+  });
+}
+
+buildFormations();
