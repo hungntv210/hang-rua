@@ -1,0 +1,219 @@
+confederation,nationid,isocountrycode,groupid,nationstartingfirstletter,streetdressing,top_tier,nationname
+2,1,AL,13,1,3,0,Albania
+2,2,AD,28,1,3,0,Andorra
+2,3,AM,14,1,1,0,Armenia
+2,4,AT,15,1,1,0,Austria
+2,5,AZ,16,1,3,0,Azerbaijan
+2,6,BY,4,2,1,0,Belarus
+2,7,BE,18,2,1,0,Belgium
+2,8,BA,19,2,1,0,Bosnia and Herzegovina
+2,9,BG,21,2,1,0,Bulgaria
+2,10,HR,0,3,1,0,Croatia
+2,11,CY,2,3,3,0,Cyprus
+2,12,CZ,32,3,1,0,Czechia
+2,13,DK,33,4,1,0,Denmark
+2,14,GB,38,5,6,1,England
+2,15,ME,0,13,3,0,Montenegro
+2,16,FO,49,6,1,0,Faroe Islands
+2,17,FI,1,6,1,0,Finland
+2,18,FR,41,6,2,1,France
+2,19,MK,21,14,3,0,North Macedonia
+2,20,GE,46,7,1,0,Georgia
+2,21,DE,48,7,1,1,Germany
+2,22,GR,2,7,3,0,Greece
+2,23,HU,52,8,1,0,Hungary
+2,24,IS,53,9,1,0,Iceland
+2,25,IE,102,18,6,0,Republic of Ireland
+2,26,IL,57,9,3,0,Israel
+2,27,IT,58,9,3,1,Italy
+2,28,LV,35,12,1,0,Latvia
+2,29,LI,47,12,1,0,Liechtenstein
+2,30,LT,98,12,1,0,Lithuania
+2,31,LU,63,12,1,0,Luxembourg
+2,32,MT,68,13,3,0,Malta
+2,33,MD,3,13,1,0,Moldova
+2,34,NL,34,14,1,1,Netherlands
+2,35,GB,56,14,6,0,Northern Ireland
+2,36,NO,75,14,1,0,Norway
+2,37,PL,78,16,1,0,Poland
+2,38,PT,6,16,3,1,Portugal
+2,39,RO,3,18,1,0,Romania
+2,40,RU,4,18,1,0,Russia
+2,41,SM,58,19,3,0,San Marino
+2,42,GB,80,19,6,0,Scotland
+2,43,SK,32,19,1,0,Slovakia
+2,44,SI,82,19,1,0,Slovenia
+2,45,ES,5,19,3,1,Spain
+2,46,SE,87,19,1,0,Sweden
+2,47,CH,88,19,1,0,Switzerland
+2,48,TR,91,20,3,0,Türkiye
+2,49,UA,93,21,1,0,Ukraine
+2,50,GB,95,23,6,0,Wales
+2,51,RS,0,19,1,0,Serbia
+4,52,AR,96,1,3,1,Argentina
+4,53,BO,96,2,3,0,Bolivia
+4,54,BR,20,2,3,1,Brazil
+4,55,CL,96,3,3,0,Chile
+4,56,CO,96,3,3,0,Colombia
+4,57,EC,96,5,3,0,Ecuador
+4,58,PY,96,16,3,0,Paraguay
+4,59,PE,96,16,3,0,Peru
+4,60,UY,96,21,3,0,Uruguay
+4,61,VE,96,22,3,0,Venezuela
+7,62,AI,25,1,3,0,Anguilla
+7,63,AG,25,1,3,0,Antigua & Barbuda
+7,64,AW,26,1,3,0,Aruba
+7,65,BS,25,2,3,0,Bahamas
+7,66,BB,25,2,3,0,Barbados
+7,67,BZ,97,2,3,0,Belize
+7,68,BM,25,2,3,0,Bermuda
+7,69,VG,25,2,3,0,British Virgin Isles
+7,70,CA,74,3,4,0,Canada
+7,71,KY,25,3,3,0,Cayman Islands
+7,72,CR,96,3,3,0,Costa Rica
+7,73,CU,96,3,3,0,Cuba
+7,74,DM,25,4,3,0,Dominica
+1,75,,38,9,1,0,International Men
+7,76,SV,96,5,3,0,El Salvador
+7,77,GD,25,7,3,0,Grenada
+7,78,GT,96,7,3,0,Guatemala
+7,79,GY,25,7,3,0,Guyana
+7,80,HT,27,8,3,0,Haiti
+7,81,HN,96,8,3,0,Honduras
+7,82,JM,25,10,3,0,Jamaica
+7,83,MX,96,13,3,0,Mexico
+7,84,MS,25,13,3,0,Montserrat
+7,85,AN,24,3,3,0,Curaçao
+7,86,NI,96,14,3,0,Nicaragua
+7,87,PA,96,16,3,0,Panama
+7,88,PR,96,16,3,0,Puerto Rico
+7,89,KN,25,19,3,0,St Kitts Nevis
+7,90,LC,25,19,3,0,St Lucia
+7,91,VC,25,19,3,0,St Vincent Grenadine
+7,92,SR,34,19,3,0,Suriname
+7,93,TT,25,20,3,0,Trinidad & Tobago
+7,94,TC,25,20,3,0,Turks & Caicos
+7,95,US,74,21,4,0,United States
+7,96,VI,25,21,3,0,US Virgin Islands
+3,97,DZ,65,1,3,0,Algeria
+3,98,AO,12,1,3,0,Angola
+3,99,BJ,42,2,3,0,Benin
+3,100,BW,11,2,3,0,Botswana
+3,101,BF,42,2,3,0,Burkina Faso
+3,102,BI,29,2,3,0,Burundi
+3,103,CM,42,3,3,0,Cameroon
+3,104,CV,12,3,3,0,Cabo Verde
+3,105,CF,30,3,3,0,Central African Rep.
+3,106,TD,43,3,3,0,Chad
+3,107,CG,29,3,3,0,Congo
+3,108,CI,31,3,3,0,Côte d'Ivoire
+3,109,DJ,51,4,3,0,Djibouti
+3,110,CD,42,4,3,0,DR Congo
+3,111,EG,37,5,5,0,Egypt
+3,112,GQ,5,5,3,0,Equatorial Guinea
+3,113,ER,51,5,3,0,Eritrea
+3,114,ET,40,5,3,0,Ethiopia
+3,115,GA,42,7,3,0,Gabon
+3,116,GM,45,7,3,0,Gambia
+3,117,GH,7,7,3,0,Ghana
+3,118,GN,42,7,3,0,Guinea
+3,119,GW,12,7,3,0,Guinea Bissau
+3,120,KE,36,11,3,0,Kenya
+3,121,LS,85,12,3,0,Lesotho
+3,122,LR,7,12,3,0,Liberia
+3,123,LY,65,12,5,0,Libya
+3,124,MG,64,13,3,0,Madagascar
+3,125,MW,99,13,3,0,Malawi
+3,126,ML,43,13,3,0,Mali
+3,127,MR,43,13,3,0,Mauritania
+3,128,MU,42,13,3,0,Mauritius
+3,129,MA,65,13,3,0,Morocco
+3,130,MZ,12,13,3,0,Mozambique
+3,131,NA,71,14,3,0,Namibia
+3,132,NE,43,14,3,0,Niger
+3,133,NG,73,14,3,0,Nigeria
+3,134,RW,29,18,3,0,Rwanda
+3,135,ST,12,19,3,0,São Tomé & Príncipe
+3,136,SN,42,19,3,0,Senegal
+3,137,SC,7,19,3,0,Seychelles
+3,138,SL,7,19,3,0,Sierra Leone
+3,139,SO,51,19,3,0,Somalia
+3,140,ZA,84,19,3,0,South Africa
+3,141,SD,37,19,3,0,Sudan
+3,142,SZ,83,5,3,0,Eswatini
+3,143,TZ,36,20,3,0,Tanzania
+3,144,TG,42,20,3,0,Togo
+3,145,TN,65,20,3,0,Tunisia
+3,146,UG,36,21,3,0,Uganda
+3,147,ZM,100,26,3,0,Zambia
+3,148,ZW,101,26,3,0,Zimbabwe
+5,149,AF,76,1,3,0,Afghanistan
+5,150,BH,8,2,5,0,Bahrain
+5,151,BD,17,2,3,0,Bangladesh
+5,152,BT,72,2,3,0,Bhutan
+5,153,BN,66,2,3,0,Brunei Darussalam
+5,154,KH,23,3,3,0,Cambodia
+5,155,CN,9,3,3,0,China PR
+5,157,GU,25,7,3,0,Guam
+5,158,HK,9,8,3,0,Hong Kong
+5,159,IN,54,9,3,0,India
+5,160,ID,55,9,3,0,Indonesia
+5,161,IR,103,9,5,0,Iran
+5,162,IQ,8,9,5,0,Iraq
+5,163,JP,10,10,4,0,Japan
+5,164,JO,8,10,5,0,Jordan
+2,165,KZ,59,11,3,0,Kazakhstan
+5,166,KP,60,11,4,0,Korea DPR
+5,167,KR,60,18,4,0,Republic of Korea
+5,168,KW,8,11,5,0,Kuwait
+5,169,KG,61,11,3,0,Kyrgyzstan
+5,170,LA,62,12,3,0,Laos
+5,171,LB,8,12,3,0,Lebanon
+5,172,MO,9,13,3,0,Macau
+5,173,MY,66,13,3,0,Malaysia
+5,174,MV,67,13,3,0,Maldives
+5,175,MN,70,13,3,0,Mongolia
+5,176,MM,22,13,3,0,Myanmar
+5,177,NP,72,14,3,0,Nepal
+5,178,OM,8,15,5,0,Oman
+5,179,PK,76,16,5,0,Pakistan
+5,180,PS,8,16,5,0,Palestine
+5,181,PH,77,16,3,0,Philippines
+5,182,QA,8,17,5,0,Qatar
+5,183,SA,8,19,5,0,Saudi Arabia
+5,184,SG,81,19,3,0,Singapore
+5,185,LK,86,19,3,0,Sri Lanka
+5,186,SY,8,19,5,0,Syria
+5,187,TJ,89,20,3,0,Tajikistan
+5,188,TH,90,20,3,0,Thailand
+5,189,TM,92,20,3,0,Turkmenistan
+5,190,AE,8,21,5,0,United Arab Emirates
+5,191,UZ,4,21,5,0,Uzbekistan
+5,192,VN,94,22,3,0,Vietnam
+5,193,YE,8,25,5,0,Yemen
+6,194,AS,79,1,3,0,American Samoa
+5,195,AU,104,1,4,0,Australia
+6,196,CK,79,3,3,0,Cook Islands
+6,197,FJ,69,6,3,0,Fiji
+6,198,NZ,104,14,1,0,New Zealand
+6,199,PG,69,16,3,0,Papua New Guinea
+6,200,WS,79,19,3,0,Samoa
+6,201,SB,69,19,3,0,Solomon Islands
+6,202,PF,44,20,3,0,Tahiti
+6,203,TO,79,20,3,0,Tonga
+6,204,VU,69,22,3,0,Vanuatu
+1,205,GI,38,7,3,0,Gibraltar
+1,206,GL,33,7,1,0,Greenland
+7,207,DO,96,4,3,0,Dominican Republic
+2,208,EE,39,5,1,0,Estonia
+1,209,,38,3,1,0,Created Players
+1,210,,38,6,1,0,Free Agents
+1,211,,38,18,1,0,Rest of World
+5,212,TL,6,20,3,0,Timor-Leste
+5,213,TW,9,3,3,0,Chinese Taipei
+3,214,KM,43,3,3,0,Comoros
+6,215,NC,44,14,3,0,New Caledonia
+3,218,SS,37,19,3,0,South Sudan
+2,219,XK,13,11,1,0,Kosovo
+1,222,,38,9,1,0,International Women
+4,225,,38,3,3,0,CONMEBOL
