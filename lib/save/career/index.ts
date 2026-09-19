@@ -2,7 +2,7 @@
  * Cửa vào tầng career: từ byte thô ra danh sách cầu thủ.
  *
  * Không chạm DOM, không fetch. Tên cầu thủ thật đến từ DB nhúng và được ghép ở
- * tầng trên (`lib/fc26/db.ts`) — tầng này chỉ đọc những gì có trong file.
+ * tầng trên (`lib/fc26/world.ts`) — tầng này chỉ đọc những gì có trong file.
  */
 
 import { BitRecordReader } from "../bitreader";

@@ -14,10 +14,21 @@ yarn-error.log*
 .local/
 temp_fc26_upload/
 
-# Dataset nguồn (~25MB CSV). KHÔNG cần khi chạy: thứ runtime dùng là
-# public/fc26/players.json đã dựng sẵn. Cách tái tạo ghi trong
-# public/fc26/README.md, nên không có lý do gì để nhét 25MB vào repo.
-dataset_fc26/
+# Dataset nguồn. Phần lớn KHÔNG cần khi chạy: thứ runtime dùng là
+# public/fc26/players.json đã dựng sẵn, và bản dump đầy đủ (~25MB, 248 bảng
+# lẫn cả career_*) không có lý do gì để nhét vào repo.
+#
+# Ngoại lệ cố ý: dataset_fc26/base/ (~12MB, 11 bảng hằng số phiên bản) ĐƯỢC
+# commit. Đó là giá của việc mua lấy một điều kiện: không phải mở game chạy
+# lại Lua mỗi lần cần thêm một trường dữ liệu. Cổng kiểm ở
+# scripts/check-fc26-base.ts đảm bảo thư mục này không bao giờ lẫn dữ liệu
+# career của một người chơi cụ thể.
+dataset_fc26/*
+!dataset_fc26/base/
+# `ut-ids.json` la DAU VAO cua ban dung, khong phai bang dump tu game — nen no
+# nam canh `base/` chu khong trong do. Phai commit: no khong tai tao duoc tu
+# bang goc, va thieu no thi `npm run build:fc26` nem ENOENT tren clone sach.
+!dataset_fc26/ut-ids.json
 *.tsbuildinfo
 next-env.d.ts
 

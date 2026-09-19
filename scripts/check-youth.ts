@@ -4,13 +4,14 @@
  *   npx tsx scripts/check-youth.ts <save…>
  *
  * Phép kiểm đáng giá nhất là phép kiểm ÂM TÍNH: nội dung Ultimate Team và ô
- * trống trong bảng đều "không có trong DB nhúng" giống hệt cầu thủ học viện, và
- * chúng phải bị loại. Chỉ kiểm "có tìm ra 8 người không" thì một bộ lọc trả về
- * tất cả cũng qua.
+ * trống trong bảng đều "không có trong roster xuất xưởng" giống hệt cầu thủ
+ * học viện, và chúng phải bị loại. Chỉ kiểm "có tìm ra 8 người không" thì một
+ * bộ lọc trả về tất cả cũng qua.
  */
 import { readFileSync } from "node:fs";
 
-import { collapseDoubledName } from "../lib/fc26/names";
+import { Fc26Names } from "../lib/fc26/names";
+import { Fc26World } from "../lib/fc26/world";
 import { findYouthPlayers } from "../lib/fc26/youth";
 import { type LineupPlayer, pickSquad } from "../lib/fc26/lineup";
 import { parseSaveBuffer } from "../lib/save";
@@ -20,16 +21,13 @@ import { decodeAllPlayers } from "../lib/save/career/players";
 import { positionName } from "../lib/save/career/schema";
 import { findSquads } from "../lib/save/career/squad";
 
-const db = JSON.parse(readFileSync("public/fc26/players.json", "utf8")) as {
-  ids: number[];
-  names: string[];
-};
-const known = new Set(db.ids);
-const dbName = new Map<number, string>();
-db.ids.forEach((id, i) => dbName.set(id, db.names[i]));
+const world = Fc26World.fromPayload(
+  JSON.parse(readFileSync("public/fc26/world.json", "utf8")),
+);
+const known = world.shippedIds();
 
 /*
- * Kho tên, dựng đúng như `Fc26Names` dựng.
+ * Kho tên qua chính `Fc26Names` — không tự dựng lại logic tra pool ở đây.
  *
  * Bộ kiểm phải đi qua CÙNG chuỗi tra tên mà giao diện đi, nếu không nó mù
  * trước đúng loại lỗi vừa xảy ra: tab cầu thủ trẻ đọc danh sách THÔ thay vì
@@ -37,43 +35,18 @@ db.ids.forEach((id, i) => dbName.set(id, db.names[i]));
  * sức tra ra "James Maddison". Bộ kiểm cũ cũng dùng danh sách thô, nên nó
  * không thể thấy gì.
  */
-interface Packed { id: number[]; text: string[] }
-const pool = JSON.parse(readFileSync("public/fc26/names.json", "utf8")) as {
-  pool?: Packed;
-  first?: Packed;
-  last?: Packed;
-  common?: Packed;
-};
-const asMap = (p: Packed | undefined) => {
-  const m = new Map<number, string>();
-  if (!p) return m;
-  for (let i = 0; i < p.id.length; i += 1) m.set(p.id[i], p.text[i]);
-  return m;
-};
-// Kho gốc là MỘT bảng dùng chung cho cả ba chỉ số; asset cũ thì ba kho riêng.
-const single = pool.pool ? asMap(pool.pool) : null;
-const firstMap = single ?? asMap(pool.first);
-const lastMap = single ?? asMap(pool.last);
-const commonMap = single ?? asMap(pool.common);
+const names = Fc26Names.fromPayload(
+  JSON.parse(readFileSync("public/fc26/names.json", "utf8")),
+);
 
-/** Tra tên đúng thứ tự ưu tiên của giao diện: save → DB nhúng → kho tên. */
+/** Tra tên đúng thứ tự ưu tiên của giao diện: save → kho tên. */
 function resolveName(p: {
-  playerId: number;
   name: string | null;
   firstNameId: number | null;
   lastNameId: number | null;
   commonNameId: number | null;
 }): string | null {
-  if (p.name) return p.name;
-  const fromDb = dbName.get(p.playerId);
-  if (fromDb) return collapseDoubledName(fromDb);
-  if (p.commonNameId) return commonMap.get(p.commonNameId) ?? null;
-  if (p.firstNameId === null || p.lastNameId === null) return null;
-  const f = firstMap.get(p.firstNameId);
-  const l = lastMap.get(p.lastNameId);
-  if (!f || !l) return null;
-  // Mononym: game lưu tên và họ bằng nhau. Xem `Fc26Names.resolve`.
-  return f === l ? f : `${f} ${l}`;
+  return p.name ?? names.resolve(p.firstNameId, p.lastNameId, p.commonNameId);
 }
 
 let failed = 0;
@@ -81,6 +54,19 @@ const check = (label: string, ok: boolean, detail = "") => {
   console.log(`${ok ? "  ok  " : "FAIL  "}${label}${detail ? ` — ${detail}` : ""}`);
   if (!ok) failed += 1;
 };
+
+/*
+ * Không có save nào truyền vào là TRƯỢT, không phải "không có gì để kiểm".
+ *
+ * Vòng lặp `for (const p of process.argv.slice(2))` với 0 đối số chạy 0 vòng
+ * rồi `exit 0` — một cổng báo xanh trong khi không đọc một byte dữ liệu nào.
+ * Đã xảy ra thật trong dự án này: `shell: true` cắt đường dẫn chứa khoảng
+ * trắng, cổng con không nhận được save nào, và cả bộ vẫn xanh.
+ */
+if (process.argv.length <= 2) {
+  console.log("FAIL  không có file save nào được truyền vào — cổng này không kiểm được gì");
+  process.exit(1);
+}
 
 for (const savePath of process.argv.slice(2)) {
   const name = savePath.split(/[\\/]/).pop()!;
@@ -99,7 +85,14 @@ for (const savePath of process.argv.slice(2)) {
 
   // Đội hình chính, để loại người đã lên đội một.
   const bytes = new Uint8Array(buffer);
-  const loc = locatePlayerTable(bytes)!;
+  const loc = locatePlayerTable(bytes);
+  if (!loc) {
+    // Save không định vị được bảng cầu thủ là một dòng FAIL, không phải một
+    // TypeError. `check-fc26-club.ts` xử lý đúng cách này từ đầu; chỗ này
+    // dùng `!` nên một save lạ làm cả cổng nổ thay vì báo một mục không đạt.
+    check(`${name}: định vị được bảng cầu thủ`, false);
+    continue;
+  }
   const reader = new BitRecordReader(bytes, loc.base, loc.recordBytes, loc.count);
   const byId = new Map<number, LineupPlayer>(
     decodeAllPlayers(reader, loc.count).map((p) => [

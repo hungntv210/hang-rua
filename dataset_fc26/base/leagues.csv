@@ -1,0 +1,49 @@
+iscompetitioncrowdcardsenabled,leaguename,isinternationalleague,leaguetype,iswomencompetition,iscompetitionscarfenabled,countryid,leagueid,iscompetitionpoleflagenabled,iswithintransferwindow,leaguetimeslice,level,isbannerenabled
+2,3F Superliga,0,0,0,2,13,1,2,0,8,1,2
+2,1A Pro League,0,0,0,2,7,4,2,0,7,1,2
+2,Eredivisie,0,0,0,2,34,10,2,0,12,1,2
+2,Premier League,0,0,0,1,14,13,2,0,6,1,2
+2,EFL Championship,0,0,0,2,14,14,2,0,7,2,2
+2,Ligue 1 McDonald's,0,0,0,2,18,16,2,0,6,1,2
+2,Ligue 2 BKT,0,0,0,2,18,17,2,0,6,2,2
+2,Bundesliga,0,0,0,2,21,19,2,0,6,1,2
+2,Bundesliga 2,0,0,0,2,21,20,2,0,7,2,2
+1,Serie A Enilive,0,0,0,1,27,31,1,0,7,1,1
+2,Serie BKT,0,0,0,2,27,32,2,0,6,2,2
+2,MLS,0,0,0,2,95,39,2,0,3,1,2
+2,Eliteserien,0,0,0,2,36,41,2,0,9,1,2
+2,Scottish Prem,0,0,0,2,42,50,2,0,6,1,2
+1,LALIGA EA SPORTS,0,0,0,0,45,53,1,0,6,1,1
+1,LALIGA HYPERMOTION,0,0,0,0,45,54,1,0,6,2,1
+2,Allsvenskan,0,0,0,2,46,56,2,0,9,1,2
+2,EFL League One,0,0,0,2,14,60,2,0,7,3,2
+2,EFL League Two,0,0,0,2,14,61,2,0,7,4,2
+2,SSE Airtricity PD,0,0,0,2,25,65,2,0,9,1,2
+2,PKO BP Ekstraklasa,0,0,0,2,37,66,2,0,7,1,2
+2,Trendyol Süper Lig,0,0,0,2,48,68,2,0,6,1,2
+2,Men's ROW,0,0,0,2,211,76,2,0,0,4,2
+2,Men's National,1,0,0,2,75,78,2,0,0,5,2
+2,Ö. Bundesliga,0,0,0,2,4,80,2,0,7,1,2
+2,K League 1,0,0,0,2,167,83,2,0,12,1,2
+2,Brack Super League,0,0,0,2,47,189,2,0,7,1,2
+2,Liga Portugal,0,0,0,2,38,308,2,0,7,1,2
+2,SUPERLIGA,0,0,0,2,39,330,2,0,7,1,2
+2,ROSHN Saudi League,0,0,0,2,183,350,2,0,7,1,2
+2,A-League,0,0,0,2,195,351,2,0,3,1,2
+2,LPF,0,0,0,2,52,353,2,0,5,1,2
+2,Free Agents,0,0,0,2,210,382,2,0,0,1,2
+2,Creation Centre,0,0,0,2,216,384,2,0,0,1,2
+2,Libertadores,0,0,0,2,225,1003,2,0,0,1,2
+2,Sudamericana,0,0,0,2,225,1014,2,0,0,1,2
+2,*LeagueName_Abbr15_2000,0,0,0,2,0,2000,2,0,0,6,2
+2,CSL,0,0,0,2,155,2012,2,0,7,1,2
+2,World League,0,0,0,2,0,2028,2,0,0,7,2
+2,3. Liga,0,0,0,2,21,2076,2,0,6,3,2
+2,Women's Intl. Cup,1,0,1,2,222,2136,2,0,3,5,2
+2,ISL,0,0,0,2,159,2149,2,0,4,1,2
+2,GPFBL,0,0,1,2,21,2215,2,0,4,1,2
+2,Barclays WSL,0,0,1,2,14,2216,2,0,4,1,2
+2,Arkema PL,0,0,1,2,18,2218,2,0,5,1,2
+2,NWSL,0,0,1,1,95,2221,1,0,13,1,1
+2,Liga F Moeve,0,0,1,2,45,2222,2,0,3,1,2
+2,Women's ROW,0,0,1,2,211,2226,2,0,0,1,2

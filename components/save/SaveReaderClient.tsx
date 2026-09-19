@@ -14,8 +14,7 @@ import { SaveUnknownList } from "@/components/save/SaveUnknownList";
 import { SquadHub } from "@/components/save/SquadHub";
 import { YouthList } from "@/components/save/YouthList";
 import { TabBar, TabPanel, type TabItem } from "@/components/TabBar";
-import { loadFc26Database } from "@/lib/fc26/db";
-import { loadFc26Squads, type ClubMatch } from "@/lib/fc26/squads";
+import { loadFc26World, type ClubMatch } from "@/lib/fc26/world";
 import { findYouthPlayers, type YouthResult } from "@/lib/fc26/youth";
 import { loadFc26Formations } from "@/lib/fc26/formations";
 import { buildLineup, lineupFromSheets, pickSquad, type Lineup } from "@/lib/fc26/lineup";
@@ -64,14 +63,14 @@ export function SaveReaderClient() {
   /** CLB nhận ra từ roster gốc — cho số áo và tên đội. `null` với CLB tự tạo. */
   const [club, setClub] = useState<ClubMatch | null>(null);
   /** Mọi playerId có trong roster xuất xưởng — để nhận ra ai do career sinh ra. */
-  const [dbIds, setDbIds] = useState<Set<number> | null>(null);
+  const [shippedIds, setShippedIds] = useState<Set<number> | null>(null);
   const [iconCount, setIconCount] = useState(0);
   const workerRef = useRef<Worker | null>(null);
 
   // Tải DB tên ngay khi trang mở, song song với việc người dùng chọn file: 1,5MB
   // tải xong trước cả khi thả xong file, nên bảng không phải chờ thêm nhịp nào.
   useEffect(() => {
-    void loadFc26Database();
+    void loadFc26World();
     void loadFc26Names();
   }, []);
 
@@ -85,60 +84,46 @@ export function SaveReaderClient() {
     }
     let alive = true;
     setPlayers(career.players);
-    void Promise.all([loadFc26Database(), loadFc26Names()]).then(([db, names]) => {
-      if (!alive || !db) return;
-      setDbIds(db.ids());
+    void Promise.all([loadFc26World(), loadFc26Names()]).then(([world, names]) => {
+      if (!alive || !world) return;
+      setShippedIds(world.shippedIds());
       /*
        * Bỏ nội dung Ultimate Team khỏi danh sách.
        *
-       * Icon và hero có trong roster của game nên có trong save, nhưng không
-       * thuộc career. Trước đây chúng được gắn nhãn và vẫn hiển thị; nhưng vì
-       * bảng sắp theo chỉ số nên một loạt huyền thoại 44 tuổi chỉ số 91 vẫn nằm
-       * ngay đầu danh sách, che mất cầu thủ thật. Bỏ hẳn, và BÁO SỐ LƯỢNG —
-       * danh sách hụt vài nghìn người mà không nói gì thì trông như parser sót.
+       * Chúng là bản ghi thật, đọc ra đúng — nhưng bảng sắp theo chỉ số nên một
+       * loạt người 44 tuổi chỉ số 91 nằm ngay đầu danh sách, che mất cầu thủ thật.
+       * Bỏ hẳn, và BÁO SỐ LƯỢNG: danh sách hụt người mà không nói gì thì trông
+       * như parser sót.
        */
       let icons = 0;
       setPlayers(
         career.players
           .filter((p) => {
-            if (!db.isUltimateTeam(p.playerId)) return true;
+            if (!world.isUltimateTeam(p.playerId)) return true;
             icons += 1;
             return false;
           })
           .map((p) => {
-          // Quốc tịch tra được cho MỌI cầu thủ vì mã quốc gia đọc thẳng từ save.
-          // Với nhóm không có tên, đây là mẩu nhận dạng duy nhất còn lại.
-          const nation = db.nation(p.nationalityId);
-          if (p.nameSource === "newgen") return { ...p, nation };
-          const entry = db.get(p.playerId);
-          if (!entry) {
+            // Quốc tịch tra được cho MỌI cầu thủ vì mã quốc gia đọc thẳng từ save.
+            const nation = world.nation(p.nationalityId);
+            const club = world.clubOf(p.playerId);
+            const base = {
+              ...p,
+              nation,
+              club: club?.name ?? null,
+              league: club?.league ?? null,
+            };
+            if (p.nameSource === "newgen") return base;
             /*
-             * Không có trong DB thì tra KHO TÊN bằng chỉ số đọc từ save.
+             * Tên LUÔN tra từ kho, kể cả cầu thủ có sẵn.
              *
-             * Đây là cách duy nhất lấy được tên cầu thủ do career sinh ra: save
-             * chỉ lưu chuỗi tên cho 22/55 nhóm này, còn lại thì tên không có
-             * trong file dưới dạng chữ. Đo trên career thật: 55/55 giải được.
+             * Trước đây bậc này chỉ chạy khi `players.json` không có bản ghi. Giờ
+             * kho tên là bảng gốc của game nên nó đúng cho mọi người, và bậc kia
+             * đã bỏ.
              */
             const fromPool = names?.resolve(p.firstNameId, p.lastNameId, p.commonNameId);
-            if (fromPool) {
-              return { ...p, nation, name: fromPool, nameSource: "namePool" as const };
-            }
-            return { ...p, nation };
-          }
-          return {
-            ...p,
-            name: entry.name,
-            nameSource: "database" as const,
-            // `|| null` chứ không gán thẳng: từ khi DB gộp theo từng trường, một
-            // cầu thủ có thể có tên mà không có CLB (nguồn Live Editor cố ý không
-            // góp CLB). Giá trị khi đó là chuỗi rỗng, và chuỗi rỗng KHÔNG kích
-            // hoạt `?? "—"` ở bảng — ô hiện ra trắng trơn, trông như lỗi giao diện
-            // thay vì "không có dữ liệu".
-            club: entry.club || null,
-            league: entry.league || null,
-            nation: entry.nation || nation,
-          };
-        }),
+            return fromPool ? { ...base, name: fromPool, nameSource: "namePool" as const } : base;
+          }),
       );
       setIconCount(icons);
     });
@@ -156,9 +141,9 @@ export function SaveReaderClient() {
    * `#804279` cho một cầu thủ mà kho tên thừa sức tra ra "James Maddison".
    */
   const youth: YouthResult | null = useMemo(() => {
-    if (!players || !dbIds) return null;
-    return findYouthPlayers(players, dbIds, new Set(lineup?.squadIds ?? []));
-  }, [players, dbIds, lineup]);
+    if (!players || !shippedIds) return null;
+    return findYouthPlayers(players, shippedIds, new Set(lineup?.squadIds ?? []));
+  }, [players, shippedIds, lineup]);
 
   /**
    * Đối chiếu đội hình đọc từ save với bảng sơ đồ đã dựng sẵn.
@@ -176,8 +161,8 @@ export function SaveReaderClient() {
     void Promise.all([
       loadFc26Formations(),
       import("@/lib/save/career/schema"),
-      loadFc26Squads(),
-    ]).then(([table, schema, squadDb]) => {
+      loadFc26World(),
+    ]).then(([table, schema, world]) => {
         if (!alive || !table) return;
         // Cần chỉ số và vị trí sở trường của MỌI cầu thủ đọc được, không chỉ
         // của đội — `pickSquad` phải nhận ra khối nào là một đội bóng thật.
@@ -203,7 +188,7 @@ export function SaveReaderClient() {
          * vi đúng: đoán bừa từng khớp nhầm một CLB tự tạo với "AFC Bournemouth"
          * chỉ vì chín cầu thủ trong đội vốn từ đó.
          */
-        const matched = squadDb?.matchClub(squad) ?? null;
+        const matched = world?.matchClub(squad) ?? null;
         setClub(matched);
 
         /*

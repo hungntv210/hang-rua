@@ -9,6 +9,8 @@
 import { readFileSync } from "node:fs";
 
 import { buildLineup, pickSquad, type FormationShape, type LineupPlayer } from "../lib/fc26/lineup";
+import { Fc26Names } from "../lib/fc26/names";
+import { Fc26World } from "../lib/fc26/world";
 import { BitRecordReader } from "../lib/save/bitreader";
 import { locatePlayerTable } from "../lib/save/career/locate";
 import { decodeAllPlayers } from "../lib/save/career/players";
@@ -21,17 +23,12 @@ if (!savePath) {
   process.exit(1);
 }
 
-const db = JSON.parse(readFileSync("public/fc26/players.json", "utf8")) as {
-  ids: number[];
-  names: string[];
-  clubs: string[];
-};
-const nameOf = new Map<number, string>();
-const clubOf = new Map<number, string>();
-db.ids.forEach((id, i) => {
-  nameOf.set(id, db.names[i]);
-  clubOf.set(id, db.clubs[i]);
-});
+const world = Fc26World.fromPayload(
+  JSON.parse(readFileSync("public/fc26/world.json", "utf8")),
+);
+const names = Fc26Names.fromPayload(
+  JSON.parse(readFileSync("public/fc26/names.json", "utf8")),
+);
 
 const bytes = new Uint8Array(readFileSync(savePath));
 const loc = locatePlayerTable(bytes);
@@ -65,12 +62,12 @@ const rows = squad
 const clubs = new Map<string, number>();
 console.log(`đội ${squad.length} cầu thủ:`);
 for (const { id, p, r } of rows) {
-  const name = nameOf.get(id);
-  const club = clubOf.get(id) ?? "";
+  const name = names.resolve(r.firstNameId, r.lastNameId, r.commonNameId);
+  const club = world.clubOf(id)?.name ?? "";
   if (club) clubs.set(club, (clubs.get(club) ?? 0) + 1);
-  // Cầu thủ do career sinh ra không có trong DB nhúng — đánh dấu rõ thay vì
-  // để trống, vì "không có tên" và "tên rỗng" là hai chuyện khác nhau.
-  const label = name ?? (id >= 400000 ? "(career sinh ra)" : "(không có trong DB)");
+  // Cầu thủ do career sinh ra không có trong roster xuất xưởng — đánh dấu rõ
+  // thay vì để trống, vì "không có tên" và "tên rỗng" là hai chuyện khác nhau.
+  const label = name ?? (world.shippedIds().has(id) ? "(không tra được tên)" : "(career sinh ra)");
   console.log(
     `  #${String(id).padStart(7)} ${String(p.overall ?? "??").padStart(2)}/${String(
       r.potential ?? "??",
@@ -79,12 +76,14 @@ for (const { id, p, r } of rows) {
   );
 }
 
-console.log("\nCLB gốc của các cầu thủ (theo dataset đầu mùa):");
+console.log("\nCLB gốc của các cầu thủ (theo bảng gốc của game):");
 for (const [club, n] of [...clubs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6)) {
   console.log(`  ${String(n).padStart(2)} × ${club}`);
 }
-const regen = squad.filter((id) => id >= 400000).length;
-console.log(`\n${regen}/${squad.length} cầu thủ do career sinh ra (ID ≥ 400000)`);
+// Không dùng ngưỡng ID cứng (ví dụ 400000): dải id career sinh ra khác nhau
+// giữa các career, còn `shippedIds()` là tập roster xuất xưởng thật của game.
+const regen = squad.filter((id) => !world.shippedIds().has(id)).length;
+console.log(`\n${regen}/${squad.length} cầu thủ do career sinh ra (không có trong roster xuất xưởng)`);
 
 // Đội hình gợi ý — đúng thứ trang sẽ vẽ khi chưa có bản export career.
 const shapes: FormationShape[] = JSON.parse(
@@ -97,9 +96,11 @@ if (lineup) {
   );
   for (const slot of lineup.slots) {
     const p = byId.get(slot.playerId)!;
+    const r = rawById.get(slot.playerId);
+    const slotName = r ? names.resolve(r.firstNameId, r.lastNameId, r.commonNameId) : null;
     console.log(
       `  ${positionName(slot.positionCode).padEnd(4)} ${String(p.overall ?? "??").padStart(2)} ` +
-        `${(nameOf.get(slot.playerId) ?? `#${slot.playerId}`).padEnd(24)} ` +
+        `${(slotName ?? `#${slot.playerId}`).padEnd(24)} ` +
         `sở trường ${p.position.padEnd(4)} ${slot.fit === "exact" ? "" : `(${slot.fit})`}`,
     );
   }

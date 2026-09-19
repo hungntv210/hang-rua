@@ -1,70 +1,98 @@
-# DB tên cầu thủ FC 26
+# Asset FC 26 — ba file, một nguồn, một lệnh
 
-`players.json` sinh ra bằng `npx tsx scripts/build-fc26-db.ts <players.csv>`.
+| file | cỡ | nội dung |
+| --- | --- | --- |
+| `names.json` | 764KB | kho tên 46.813 mục, `nameid → chữ` |
+| `world.json` | 312KB | CLB, giải, số áo, tên quốc gia, tập id roster gốc, danh sách Ultimate Team |
+| `formations.json` | 5KB | hình học 26 sơ đồ thực sự có đội dùng |
 
-**Nguồn:** [EAFC26-DataHub](https://github.com/ismailoksuz/EAFC26-DataHub),
-file `data/players.csv`, dữ liệu gốc từ sofifa.
+Cả ba sinh từ **một** lệnh:
 
-## Vì sao cần nó
+```bash
+npm run build:fc26     # dataset_fc26/ -> public/fc26/
+npm run check:fc26     # cổng kiểm đầu-cuối, chạy trên 4 file save thật
+```
 
-File save Career Mode **không chứa tên cầu thủ thật**. Đã tìm `Haaland`,
-`Bellingham`, `Saka`, `Foden`, `Kane` ở UTF-8, UTF-16 và chữ hoa — không mục nào
-tồn tại. EA giữ tên trong file cài game (superbundle Frostbite, nén Oodle); save
-chỉ lưu `playerId`.
+## Nguồn
 
-Tên cầu thủ **do career sinh ra** thì ngược lại: có sẵn trong save và không cần
-DB này. Hai nguồn bù nhau.
+Toàn bộ đến từ **bảng gốc của chính game**, chụp một lần bằng
+`scripts/fc26-dump-base.lua` (FC 26 Live Editor) vào `dataset_fc26/base/`:
+
+```
+playernames   dcplayernames   players      teamplayerlinks   teams
+leagues       leagueteamlinks nations      formations        default_teamsheets
+teamkits
+```
+
+Ngoại lệ duy nhất: `dataset_fc26/ut-ids.json` — 3.944 id nội dung Ultimate Team,
+**di sản** từ một dataset công khai. Bảng `players` của game là roster Career
+thuần (không có Icon nào), nên game không nói được id nào là nội dung ngoài
+Career. Không tái tạo được; nếu FC 27 đổi thì phải tìm nguồn khác.
+
+Trang **không** tải kèm cơ sở dữ liệu cầu thủ bên thứ ba nào.
 
 ## Ranh giới không được vượt
 
-DB này chỉ cấp **tên, CLB gốc, giải, quốc tịch**.
+**Asset chỉ cấp tên, CLB gốc, giải, quốc tịch, số áo, hình học sơ đồ.**
+Chỉ số, tiềm năng, tuổi, hạn hợp đồng — đọc hoặc tính từ chính file save.
 
-**Mọi chỉ số hiển thị đều đọc hoặc tính từ file save của người dùng.** Dataset là
-ảnh chụp lúc game phát hành; save đã qua nhiều title update và có thể có mod. Lấy
-chỉ số từ đây sẽ hiện số của một phiên bản game mà người dùng không chơi.
+Lý do: chỉ số đổi theo từng career. Lấy chúng từ asset nghĩa là hiện số liệu
+của career người khác. Đây là ranh giới đã phải gỡ bỏ một lần rồi (bảng đội hình
+xuất phát từng bị nướng vào `formations.json`), nên `build-fc26-assets.ts` cố ý
+**không** ghi cột `position` ra file, và `check-fc26-world.ts` có một phép kiểm
+canh đúng điều đó.
 
-Vì `playerId` của EA không đổi giữa các patch, phần tên vẫn đúng kể cả khi
-dataset lệch phiên bản.
+## Chụp lại khi nào
 
-## Tỉ lệ phủ, và cách nâng nó
+Khi EA ra bản game mới hoặc bản cập nhật đội hình lớn. Một lần, và:
 
-**81,1%** bản ghi trong save ghép được tên. Nhóm còn lại (~4.050) đã được xác
-minh là **không thể lấy tên từ save** — chi tiết ba phép thử trong spec.
+1. **Thoát về MENU CHÍNH** — không vào career nào.
+2. Live Editor → Lua Engine → chạy `scripts/fc26-dump-base.lua`.
+3. `npm run build:fc26` rồi `npm run check:fc26`.
 
-Nhóm còn thiếu chủ yếu là đội trẻ và đội dự bị: không trang thống kê nào liệt kê
-họ, vì họ không thi đấu ở giải nào.
+Bước 1 là bắt buộc, không phải khuyến nghị. Bản chụp khởi tạo lấy *trong* career
+đã làm 55 cầu thủ học viện của một người lọt vào `players.csv`, hai CLB người đó
+tự tạo lọt vào `teams.csv`. Riêng 55 cầu thủ kia còn làm hỏng cả một tính năng:
+chúng khiến `isShipped()` trả `true`, nên tab Cầu thủ trẻ loại nhầm đúng những
+người nó phải tìm. Phải viết một bộ lọc ở khâu gieo để vá — chạy đúng chỗ thì
+không có gì để vá.
 
-Đã đo từng nguồn công khai tìm được:
+`scripts/check-fc26-base.ts` canh điều này bằng ba bất biến theo **nội dung**
+(không phải theo tên file): không playerId nào ở dải học viện, không CLB tự tạo
+nào có cầu thủ, không còn CLB tự tạo nào. Nhưng chúng canh **một hình dạng
+nhiễm bẩn đã biết** (dải id ≥460.000), không canh mệnh đề tổng quát — bảo đảm
+thật sự vẫn là bước 1.
 
-| Nguồn | Cầu thủ | Nữ | Phủ save |
-| --- | --- | --- | --- |
-| sofifa | 18.405 | không | 73,5% |
-| Trang chính thức EA | 16.228 | không | 65,6% |
-| **api.msmc.cc** | 17.873 | **1.645** | 72,5% |
-| **Gộp cả ba** | **20.156** | có | **81,1%** |
+**Trên máy khác:** script Lua thử ghi vào
+`D:\Claude\projects\hang-rua\dataset_fc26\base` trước tiên. Không ghi được thì
+nó lùi về Desktop và vẫn chạy bình thường — khi đó phải **tự chép 11 file CSV**
+vào `dataset_fc26/base/` trước khi build. Hộp thoại kết luôn in ra thư mục nó
+đã ghi.
 
-`api.msmc.cc` là nguồn công khai **duy nhất có cầu thủ nữ** (Putellas, Bonmatí,
-Graham Hansen). FC 26 có đội nữ trong Career Mode nên thiếu nhóm này là thiếu
-hẳn một mảng. Riêng nó bù được ~1.500 cầu thủ mà sofifa không có.
+Hộp thoại kết cũng là thứ duy nhất báo **thiếu bảng**: một bảng trả `nil` thì
+file CŨ của bảng đó ở lại trong `base/` và mọi cổng vẫn xanh (file tồn tại, đủ
+dòng, đúng cột khoá), rồi bản dựng trộn 10 bảng phiên bản mới với một bảng
+phiên bản cũ. Tiêu đề hộp thoại đổi thành `THIEU n BANG` khi việc đó xảy ra —
+đọc nó trước khi chạy `build:fc26`.
 
-Tải lại bằng `npx tsx scripts/fetch-msmc-db.ts dataset_fc26/msmc-fc26.csv`.
-Script đó lọc sẵn hai cái bẫy của dữ liệu thô: endpoint trả lẫn cả `fc25`, và
-mỗi cầu thủ có nhiều bản `update` — phải lấy bản mới nhất.
+## Vì sao cần asset tên
 
-**Cách duy nhất phủ gần 100%: export thẳng từ game.** Xem
-`scripts/fc26-export-players.lua` — script chạy bằng FC 26 Live Editor, đọc bảng
-`players` trong bộ nhớ game nên có cả cầu thủ nữ, đội trẻ và đội dự bị mà không
-trang nào liệt kê.
+File save Career Mode **không chứa tên cầu thủ dạng chữ** cho cầu thủ có sẵn.
+Đã tìm `Haaland`, `Bellingham`, `Saka`, `Foden`, `Kane` ở UTF-8, UTF-16 và chữ
+hoa — không mục nào tồn tại. EA giữ tên trong file cài game (superbundle
+Frostbite, nén Oodle); save chỉ lưu **chỉ số tên** (`firstNameId`, `lastNameId`,
+`commonNameId`).
 
-Script gộp nhận nhiều file, ưu tiên file đứng trước:
+Ba chỉ số đó trỏ vào cùng một không gian id, trải trên **hai** bảng của game:
+`playernames` phủ 0–41.189 và `dcplayernames` phủ từ 44.000. Bản dựng cũ chỉ đọc
+bảng thứ nhất, nên 15% cầu thủ mất tên và phải nhờ một dataset công khai 1,9MB
+tra bù theo `playerId`. Gộp hai bảng thì không cần nữa.
 
-```bash
-npx tsx scripts/build-fc26-db.ts <export-tu-game>.csv <sofifa>.csv public/fc26/players.json
+Đo trên bốn file save thật, chỉ dùng save + kho tên:
+
 ```
-
-Xếp export từ game lên **trước** vì nó khớp đúng phiên bản và mod bạn đang chạy;
-sofifa đứng sau để bù các cột mà export không có.
-
-Trong lúc chưa có, nhóm thiếu tên vẫn đọc được đầy đủ chỉ số và được nhận dạng
-qua quốc tịch — mã quốc gia đọc thẳng từ save nên áp dụng cho mọi cầu thủ, kể cả
-người không có trong DB.
+2026-07-04   19.421/19.421 = 100,00%
+2026-07-29   19.468/19.469 =  99,99%   (người còn lại có firstNameId = 65535,
+2026-09-17   19.472/19.472 = 100,00%    tức chính game đánh dấu "không có tên")
+2026-09-19   19.448/19.448 = 100,00%
+```
