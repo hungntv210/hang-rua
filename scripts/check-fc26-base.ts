@@ -72,16 +72,15 @@ const teamsRows = readCsv(join(BASE_DIR, "teams.csv"));
  * như ở `teamplayerlinks` sẽ luôn báo 0 một cách vô nghĩa vì cột đó không tồn
  * tại — chính kiểu "trắng vì không hỏi đúng chỗ" mà bất biến này phải tránh.
  *
- * Đo trên bản dump hiện tại: `teamplayerlinks` 0 dòng dính — bản NGOÀI career
- * đã dùng đúng ý. Nhưng `default_teamsheets` KHÔNG có bản .KHONG-CO-CAREER để
- * thay (chỉ `teamplayerlinks` và `career_calendar` có), nên nó vẫn mang trạng
- * thái của career lúc chụp: 15 CLB THẬT (không phải 2 CLB tự tạo ở bất biến 2)
- * đang xếp một cầu thủ học viện vào đội hình mặc định — tức là career đó đã
- * cho mượn/chuyển nhượng regen của mình sang các CLB khác, và bản chụp
- * `default_teamsheets` giữ nguyên trạng thái đó. Phép kiểm này CỐ Ý báo FAIL
- * cho tới khi ai đó chụp lại bảng này ngoài career bằng
- * `scripts/fc26-dump-base.lua` — cho nó "đạt" bằng cách nới ngưỡng hay đổi
- * cột soi sẽ xoá đúng thứ cổng này được yêu cầu phải bắt.
+ * `default_teamsheets.csv` KHÔNG có bản `.KHONG-CO-CAREER` để thay (chỉ
+ * `teamplayerlinks` và `career_calendar` có) nên trước đây nó vẫn mang trạng
+ * thái của career lúc chụp — có lần đo được 15 CLB THẬT (không phải 2 CLB tự
+ * tạo ở bất biến 2) xếp một cầu thủ học viện vào đội hình mặc định, tức là
+ * career đó đã cho mượn/chuyển nhượng regen của mình sang CLB khác. Từ
+ * `scripts/seed-fc26-base.ts` vòng sửa sau, `default_teamsheets` được LỌC bỏ
+ * đúng những dòng đó trước khi ghi vào `dataset_fc26/base/` — bất biến này ở
+ * đây để giữ cho việc lọc đó không bao giờ lặng lẽ hỏng lại: cho nó "đạt"
+ * bằng cách nới ngưỡng hay đổi cột soi sẽ xoá đúng thứ cổng này phải bắt.
  */
 const ACADEMY_ID_FLOOR = 460_000;
 const dtsPlayerCols = defaultTeamsheetsRows.length
@@ -113,18 +112,16 @@ check(
 );
 
 /**
- * Bất biến 3: số CLB tự tạo phải nằm trong một NGƯỠNG, không phải bằng 0.
- * Bản dump khởi tạo hiện tại được chụp TRONG career nên mang sẵn CLB tự tạo
- * của chính save đó (đo hôm nay: 2) — vô hại vì không có cầu thủ (bất biến 2)
- * và bản dựng lọc tên bắt đầu bằng "*". Khi chụp lại NGOÀI career bằng
- * `fc26-dump-base.lua`, con số này phải về 0; nếu nó vọt lên thì nghĩa là vừa
- * có người chụp trong career một save có nhiều CLB tự tạo.
+ * Bất biến 3: số CLB tự tạo phải bằng 0.
+ *
+ * Trước khi `scripts/seed-fc26-base.ts` lọc theo dòng, bản dump khởi tạo mang
+ * sẵn CLB tự tạo của chính career lúc chụp (đo được: 2) nên ngưỡng ở đây từng
+ * phải là `<= 5` chứ không phải `=== 0`. Từ khi seed lọc bỏ đúng các dòng
+ * `teamname` bắt đầu bằng "*" (xem `filterRows("teams", …)`), không còn lý do
+ * gì để nới ngưỡng nữa — CLB tự tạo lọt qua seed là một lỗi thật, không phải
+ * một trạng thái "vô hại đã biết trước" như trước đây.
  */
-check(
-  "số CLB tự tạo trong ngưỡng chấp nhận được (<= 5)",
-  fakeTeamIds.size <= 5,
-  `${fakeTeamIds.size} CLB: ${[...fakeTeamIds].join(", ")}`,
-);
+check("không còn CLB tự tạo nào", fakeTeamIds.size === 0, `${fakeTeamIds.size} CLB: ${[...fakeTeamIds].join(", ")}`);
 
 console.log(failed === 0 ? "\nTất cả đều đạt." : `\n${failed} mục KHÔNG đạt.`);
 process.exit(failed ? 1 : 0);
