@@ -37,7 +37,6 @@ interface Packed {
   text: string[];
 }
 const pool = JSON.parse(readFileSync("public/fc26/names.json", "utf8")) as {
-  accuracy?: number;
   exact?: boolean;
   pool?: Packed;
   first?: Packed;
@@ -67,9 +66,11 @@ const commonMap = single ?? asMap(pool.common);
 const firstPool = { has: (id: number) => !!firstMap.get(id) };
 const lastPool = { has: (id: number) => !!lastMap.get(id) };
 const commonPool = { has: (id: number) => !!commonMap.get(id) };
+// Bảng gốc từ khi build-fc26-namepool.ts thay thế bản suy ra — không còn "độ
+// chính xác" nào để báo, nên bỏ hẳn nhánh đó thay vì giữ một giá trị chết.
 console.log(
   `kho tên: ${firstMap.size} tên, ${lastMap.size} họ, ${commonMap.size} tên thường dùng ` +
-    `(${pool.exact ? "bảng gốc, chính xác tuyệt đối" : `suy ra, ${((pool.accuracy ?? 0) * 100).toFixed(1)}%`})`,
+    `(${pool.exact ? "bảng gốc, chính xác tuyệt đối" : "suy ra"})`,
 );
 
 const buffer = readFileSync(savePath);

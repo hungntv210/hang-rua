@@ -3,31 +3,36 @@
  *
  * ─── VỊ TRÍ TRONG CHUỖI TRA TÊN ─────────────────────────────────────────────
  *
- * Đây là ĐƯỜNG LUI, không phải nguồn chính. Thứ tự ưu tiên:
- *
  *   1. tên do career sinh ra, đọc thẳng từ save   (chính xác tuyệt đối)
- *   2. `players.json` tra theo `playerId`          (nguyên văn từ game)
- *   3. kho tên này, tra theo chỉ số                (97,6% khớp từng chữ)
- *   4. `#playerId`
+ *   2. kho tên này, tra theo chỉ số                (bảng gốc của game)
+ *   3. `#playerId`
  *
- * Đặt sau `players.json` là có lý do: bản ghi ở đó là chuỗi nguyên văn game trả
- * về, còn ở đây là chữ ghép lại từ hai mảnh. Với cầu thủ có sẵn thì bước 2 luôn
- * đúng hơn. Kho tên tồn tại để cứu nhóm mà bước 2 không với tới — cầu thủ do
- * career sinh ra, thứ không có trong bất kỳ dataset nào.
+ * Trước đây có bốn bậc, và bậc 2 là một dataset công khai 1,9MB tra theo
+ * `playerId`. Kho tên xếp SAU nó vì lúc ấy kho là bản SUY RA — tách tên đầy đủ
+ * thành hai mảnh rồi bỏ phiếu, đạt 97,6%.
  *
- * Với nhóm đó thì nó đạt 100%: đo trên 55 cầu thủ regen của một career thật.
+ * Giờ kho tên lấy thẳng từ hai bảng gốc của game (`playernames` phủ nameid
+ * 0–41.189, `dcplayernames` phủ từ 44.000), nên nó KHÔNG còn là bản suy ra và
+ * lý do xếp sau không còn. Đo trên bốn save thật, chỉ save + kho tên:
+ * 100,00% / 99,99% / 100,00% / 100,00%.
+ *
+ * Người duy nhất không tra ra mang `firstNameId = 65535`, tức chính game đánh
+ * dấu "không có tên".
  */
 
 /**
  * Gộp tên bị lặp thành một.
  *
- * Cầu thủ chỉ có MỘT tên được lưu bằng cách đặt tên và họ bằng nhau, và điều
- * đó đi thẳng vào cả kho tên lẫn dataset công khai. Đo trên DB nhúng: 5/24.676
- * bản ghi mang tên kiểu "Zothanpuia Zothanpuia", "Zheng Zheng" — toàn cầu thủ
- * Ấn Độ và Trung Quốc vốn được gọi bằng một tên.
+ * Cầu thủ chỉ có MỘT tên được chính GAME lưu bằng cách đặt `firstnameid` và
+ * `lastnameid` bằng nhau. Bằng chứng trong bảng gốc: `#81379` có
+ * `first=40399 last=40399`, ghép máy móc ra "Zothanpuia Zothanpuia".
  *
- * Không trường hợp nào in hai lần là đúng, nên chuẩn hoá ở một chỗ dùng chung
- * thay vì sửa riêng từng nguồn — nguồn sau sẽ lại mang đúng đặc điểm đó.
+ * Trước đây chú thích ở đây nói đó là đặc điểm của dataset công khai. Sai —
+ * dataset công khai chỉ chép lại quy ước của game. Nên đây là chuẩn hoá vĩnh
+ * viễn: mọi nguồn lấy từ bảng gốc đều sẽ mang đúng đặc điểm này.
+ *
+ * Không trường hợp nào in hai lần là đúng: hoặc người đó thật sự một tên, hoặc
+ * dữ liệu có vấn đề — cả hai đều nên hiện một lần.
  */
 export function collapseDoubledName(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -44,21 +49,11 @@ interface Packed {
 
 interface Payload {
   builtAt: string;
-  /**
-   * Kho DUY NHẤT — cả ba chỉ số tên đều trỏ vào đây.
-   *
-   * Bản dựng cũ tách làm ba kho vì nó SUY RA kho tên bằng cách tách tên đầy đủ
-   * của cầu thủ. Bảng gốc của game thì chỉ có một: `playernames`, 41.189 mục.
-   */
-  pool?: Packed;
-  /** Đúng khi dựng từ bảng gốc, không phải suy ra. */
+  /** Kho DUY NHẤT — cả ba chỉ số tên đều trỏ vào đây. */
+  pool: Packed;
+  /** Luôn `true`: dựng từ bảng gốc, không phải suy ra. */
   exact?: boolean;
-
-  /** Ba kho của bản dựng cũ. Giữ để asset đã cache vẫn nạp được. */
-  accuracy?: number;
-  first?: Packed;
-  last?: Packed;
-  common?: Packed;
+  count?: number;
 }
 
 function unpack(p: Packed | undefined): Map<number, string> {
@@ -69,26 +64,10 @@ function unpack(p: Packed | undefined): Map<number, string> {
 }
 
 export class Fc26Names {
-  private readonly first: Map<number, string>;
-  private readonly last: Map<number, string>;
-  private readonly common: Map<number, string>;
-  readonly accuracy: number;
+  private readonly pool: Map<number, string>;
 
   private constructor(data: Payload) {
-    if (data.pool) {
-      // Một kho dùng chung cho cả ba chỉ số.
-      const all = unpack(data.pool);
-      this.first = all;
-      this.last = all;
-      this.common = all;
-      this.accuracy = 1;
-    } else {
-      // Asset cũ: ba kho riêng, dựng bằng suy diễn.
-      this.first = unpack(data.first);
-      this.last = unpack(data.last);
-      this.common = unpack(data.common);
-      this.accuracy = data.accuracy ?? 0;
-    }
+    this.pool = unpack(data.pool);
   }
 
   static fromPayload(data: Payload): Fc26Names {
@@ -110,11 +89,11 @@ export class Fc26Names {
     commonNameId: number | null,
   ): string | null {
     if (commonNameId) {
-      return this.common.get(commonNameId) ?? null;
+      return this.pool.get(commonNameId) ?? null;
     }
     if (firstNameId === null || lastNameId === null) return null;
-    const f = this.first.get(firstNameId);
-    const l = this.last.get(lastNameId);
+    const f = this.pool.get(firstNameId);
+    const l = this.pool.get(lastNameId);
     if (!f || !l) return null;
     /*
      * Tên và họ trùng nhau nghĩa là cầu thủ chỉ có MỘT tên.
