@@ -34,10 +34,10 @@ export default function SaveReaderPage() {
             đọc thẳng từ save.
           </strong>{" "}
           Chỉ số tổng là ngoại lệ: file không lưu nó, nên trang tính lại từ 31 chỉ
-          số thành phần và có sai số ±1. Tên cầu thủ có sẵn lấy từ một cơ sở dữ
-          liệu FC 26 nhúng theo <code>playerId</code>; tên cầu thủ do career sinh
-          ra thì nằm ngay trong save. Cầu thủ không tra được tên hiển thị theo ID
-          và được đánh dấu rõ.
+          số thành phần và có sai số ±1. Tên cầu thủ tra từ kho tên lấy thẳng
+          hai bảng gốc của game, theo đúng chỉ số tên mà file save mang theo —
+          nên cầu thủ có sẵn và cầu thủ do career sinh ra đều ra tên như nhau.
+          Cầu thủ không tra được tên hiển thị theo ID và được đánh dấu rõ.
         </p>
         <p className="max-w-3xl text-sm text-mist">
           Bấm vào một dòng để mở đủ <strong>31 chỉ số chi tiết</strong> theo nhóm,
@@ -47,7 +47,8 @@ export default function SaveReaderPage() {
           <strong>Chỉ cần một file save.</strong> Trang tự nhận ra câu lạc bộ, gắn{" "}
           <strong>số áo</strong> từ roster gốc của game, dựng sơ đồ đội hình, và lọc
           ra <strong>cầu thủ trẻ do career sinh ra</strong> ở tab riêng. Không phải
-          chạy công cụ nào kèm theo.
+          chạy công cụ nào kèm theo, và trang không tải kèm cơ sở dữ liệu cầu thủ
+          bên thứ ba nào — mọi thứ nó biết đều đến từ bảng gốc của chính game.
         </p>
         <p className="max-w-3xl text-sm text-mist">
           Hai thứ save KHÔNG lưu được: <em>đội hình bạn đã xếp</em> và{" "}
@@ -58,10 +59,10 @@ export default function SaveReaderPage() {
           đó thì nạp thêm bản export Live Editor ở mục tuỳ chọn trên tab Đội hình.{" "}
           <em>Giá trị chuyển nhượng</em> là trường hợp khác hẳn: game không lưu nó
           ở bất kỳ đâu — nó dựng lúc chạy rồi vứt — nên trang ước tính từ chỉ số,
-          tiềm năng và tuổi, và đánh dấu rõ là ước tính. Gần như mọi cầu thủ đều có tên: kho tên
-          lấy thẳng từ bảng gốc của game (41.189 mục), nên cả cầu thủ do career
-          sinh ra cũng tra được. Đo trên save thật còn 1–2 người trong hơn 19.000
-          chưa tra ra, và chỉ số của họ vẫn đọc được đầy đủ. Các tab còn lại bày
+          tiềm năng và tuổi, và đánh dấu rõ là ước tính. Mọi cầu thủ đều có tên: kho tên gộp hai
+          bảng gốc của game (46.813 mục). Đo trên bốn file save thật, ba save ra
+          đủ 100%, save còn lại thiếu đúng một người mà chính game đánh dấu là
+          không có tên. Các tab còn lại bày
           lớp field tự mô tả — phần sự kiện Career Mode — cùng những vùng byte chưa
           giải mã.
         </p>
