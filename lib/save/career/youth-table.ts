@@ -67,6 +67,19 @@ const MIN_KNOWN_SHARE = 0.8;
  */
 const MAX_ID_GAP = 200;
 
+/**
+ * Tỉ lệ tối đa được phép đã ở trong một khối đội hình.
+ *
+ * Học viện và đội một là hai bảng khác nhau; một dãy mà nửa số người đang đá
+ * đội một thì không phải học viện. Đo trên save thật, bộ dò từng bắt trúng
+ * khối `460000..460023` — cầu thủ do career TẠO của cả save — trong đó 10/25
+ * đang đá đội một và người già nhất 36 tuổi.
+ *
+ * Không đòi 0%: một cậu bé được đôn lên đội một vẫn có thể còn tên trong bảng
+ * học viện, và loại thẳng vì một người như thế sẽ vứt cả bảng thật.
+ */
+const MAX_SENIOR_SHARE = 0.1;
+
 export interface YouthTable {
   /** Offset byte của dòng đầu. Giữ lại để dò lại bằng hex editor khi cần. */
   offset: number;
@@ -83,7 +96,12 @@ export interface YouthTable {
  * Trả `null` khi không có bảng nào đạt ngưỡng. Với career vừa bắt đầu thì đó
  * là câu trả lời đúng, không phải lỗi.
  */
-export function findYouthTable(bytes: Uint8Array, youthIds: Set<number>): YouthTable | null {
+export function findYouthTable(
+  bytes: Uint8Array,
+  youthIds: Set<number>,
+  /** Ai đang nằm trong một khối đội hình. Xem `MAX_SENIOR_SHARE`. */
+  seniorIds: Set<number> = new Set(),
+): YouthTable | null {
   if (youthIds.size === 0) return null;
 
   const u32 = (o: number): number =>
@@ -118,7 +136,12 @@ export function findYouthTable(bytes: Uint8Array, youthIds: Set<number>): YouthT
 
     if (ids.length >= MIN_ROWS) {
       const known = ids.filter((id) => youthIds.has(id)).length;
-      if (known / ids.length >= MIN_KNOWN_SHARE && (!best || ids.length > best.playerIds.length)) {
+      const senior = ids.filter((id) => seniorIds.has(id)).length;
+      if (
+        known / ids.length >= MIN_KNOWN_SHARE &&
+        senior / ids.length <= MAX_SENIOR_SHARE &&
+        (!best || ids.length > best.playerIds.length)
+      ) {
         best = { offset: o, playerIds: ids };
       }
     }

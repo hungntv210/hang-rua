@@ -118,9 +118,28 @@ export function readCareerPlayers(
      */
     const careerBorn = new Set<number>();
     for (const p of players) {
-      if (p.playerId > 0 && !shippedIds.has(p.playerId)) careerBorn.add(p.playerId);
+      if (p.playerId <= 0 || shippedIds.has(p.playerId)) continue;
+      /*
+       * Bỏ nhánh nữ.
+       *
+       * Save chứa cả hai nhánh, và nhánh nữ cũng có học viện riêng do career
+       * sinh ra. Để lẫn vào thì bộ dò bắt trúng bảng học viện NỮ: đo trên một
+       * save thật, nó trả về 163 dòng mà 91 trong số đó là cầu thủ nữ — những
+       * người bị lọc khỏi danh sách hiển thị, nên giao diện im lặng bỏ qua họ
+       * và người dùng thấy một bảng cụt không hiểu vì sao.
+       */
+      if (p.gender === 1) continue;
+      careerBorn.add(p.playerId);
     }
-    academyIds = findYouthTable(bytes, careerBorn)?.playerIds ?? [];
+
+    /*
+     * Ai đã ở trong một khối đội hình. Học viện và đội một là hai bảng khác
+     * nhau — xem `MAX_SENIOR_SHARE` trong `./youth-table`.
+     */
+    const seniorIds = new Set<number>();
+    for (const block of squads) for (const id of block) seniorIds.add(id);
+
+    academyIds = findYouthTable(bytes, careerBorn, seniorIds)?.playerIds ?? [];
   }
 
   return {

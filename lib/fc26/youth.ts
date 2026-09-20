@@ -41,6 +41,15 @@ const MAX_AGE = 21;
  */
 const MIN_GROWTH = 1;
 
+/**
+ * Tỉ lệ tối thiểu của bảng học viện phải sống sót qua bộ lọc tuổi và đội một.
+ *
+ * Dưới ngưỡng này thì thứ tìm được gần như chắc chắn không phải bảng học
+ * viện, và hiển thị mẩu sót lại của nó dưới nhãn "đọc từ save" còn tệ hơn là
+ * thành thật rơi về suy luận.
+ */
+const MIN_SURVIVING_SHARE = 0.5;
+
 /** Chiều cao ngoài dải này là ô trống bị giải mã nhầm, không phải người. */
 const MIN_HEIGHT = 150;
 const MAX_HEIGHT = 215;
@@ -94,19 +103,54 @@ export function findYouthPlayers(
    * Vẫn sắp theo tiềm năng như nhánh kia, để hai chế độ nhìn giống nhau.
    */
   if (academyIds && academyIds.size > 0) {
-    const inTable = players.filter((p) => academyIds.has(p.playerId));
-    inTable.sort((a, b) => (b.potential ?? 0) - (a.potential ?? 0));
-    return {
-      players: inTable,
-      source: "bang",
-      stats: {
-        careerCreated: academyIds.size,
-        tooOld: 0,
-        implausible: 0,
-        // Người có trong bảng nhưng không còn trong danh sách cầu thủ đọc được.
-        inSenior: academyIds.size - inTable.length,
-      },
+    /*
+     * Bảng thu hẹp về ĐÚNG ĐỘI, nhưng không tự nó nói ai còn là cầu thủ trẻ.
+     *
+     * Bản trước tin bảng tuyệt đối — lọc đúng một điều kiện "có tên trong
+     * bảng". Đo trên một save thật, tab hiện ra người 36 tuổi và 10 người
+     * đang đá đội một, vì bộ dò bắt trúng khối cầu thủ do career TẠO chứ
+     * không phải bảng học viện.
+     *
+     * Bộ dò giờ đã chặt hơn, nhưng "chặt hơn" không phải "không bao giờ sai".
+     * Hai bộ lọc dưới đây là thứ quyết định nội dung thật sự hiển thị, và
+     * chúng giống hệt nhánh suy luận — bảng chỉ thêm một điều kiện nữa chứ
+     * không thay thế các điều kiện cũ.
+     */
+    const stats: YouthFilterStats = {
+      careerCreated: academyIds.size,
+      tooOld: 0,
+      implausible: 0,
+      inSenior: 0,
     };
+    const inTable: SavePlayer[] = [];
+    let doc = 0;
+    for (const p of players) {
+      if (!academyIds.has(p.playerId)) continue;
+      doc += 1;
+      if (seniorIds.has(p.playerId)) {
+        stats.inSenior += 1;
+        continue;
+      }
+      if (p.age === null || p.age < MIN_AGE || p.age > MAX_AGE) {
+        stats.tooOld += 1;
+        continue;
+      }
+      inTable.push(p);
+    }
+    // Người có trong bảng nhưng không đọc ngược được bản ghi.
+    stats.implausible = academyIds.size - doc;
+
+    /*
+     * Còn quá ít người sống sót nghĩa là bảng này không phải học viện.
+     *
+     * Thà rơi về suy luận với nhãn "suy luận · mọi CLB" — rộng hơn nhưng nói
+     * đúng những gì nó là — còn hơn hiện một danh sách ngắn mang nhãn "học
+     * viện của bạn · đọc từ save" mà thật ra là mẩu sót lại của một bảng khác.
+     */
+    if (inTable.length / academyIds.size >= MIN_SURVIVING_SHARE) {
+      inTable.sort((a, b) => (b.potential ?? 0) - (a.potential ?? 0));
+      return { players: inTable, source: "bang", stats };
+    }
   }
 
   const stats: YouthFilterStats = {

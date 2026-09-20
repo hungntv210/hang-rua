@@ -167,11 +167,24 @@ export function YouthList({ players, stats, jerseyOf, source }: Props) {
           Save có một bảng riêng liệt kê đúng những người thuộc học viện của bạn, và
           trang đọc bảng đó — không suy luận, không lẫn cầu thủ trẻ của câu lạc bộ
           khác. Bảng ghi {stats.careerCreated} người
-          {stats.inSenior > 0
-            ? `, trong đó ${stats.inSenior} người không còn trong danh sách cầu thủ đọc được (thường là đã lên đội một hoặc rời đi)`
-            : ""}
-          . Chỉ số tổng là số tính từ 31 chỉ số thành phần, sai số ±1; tiềm năng và
-          hạn hợp đồng thì đọc thẳng từ save.
+          {stats.inSenior > 0 || stats.tooOld > 0 || stats.implausible > 0 ? (
+            <>
+              , đã bỏ{" "}
+              {[
+                stats.inSenior > 0 ? `${stats.inSenior} người đã lên đội một` : null,
+                stats.tooOld > 0 ? `${stats.tooOld} người ngoài tuổi học viện` : null,
+                stats.implausible > 0
+                  ? `${stats.implausible} người không đọc được bản ghi`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(", ")}
+            </>
+          ) : null}
+          . Trang lọc tuổi và loại người đã lên đội một <em>ngay cả khi</em> bảng còn
+          ghi tên họ — bảng nói đúng ĐỘI, không nói ai còn là cầu thủ trẻ. Chỉ số tổng
+          là số tính từ 31 chỉ số thành phần, sai số ±1; tiềm năng và hạn hợp đồng thì
+          đọc thẳng từ save.
         </p>
       ) : (
         <p className="text-xs leading-relaxed text-mist">
