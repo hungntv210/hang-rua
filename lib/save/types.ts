@@ -271,6 +271,11 @@ export interface SaveCareer {
    * `lib/fc26/formations.ts`, nơi đối chiếu với bảng đội hình đã biết.
    */
   squads: number[][];
+  /**
+   * Cầu thủ trong HỌC VIỆN của đội người chơi, đọc thẳng từ bảng trong save.
+   * Rỗng khi career chưa có lứa nào, hoặc khi không truyền `shippedIds`.
+   */
+  academyIds: number[];
   /** Số bản ghi trong bảng, kể cả ô trống. */
   tableCount: number;
   tableOffset: number;
@@ -299,7 +304,7 @@ export interface SaveDocument {
 // Thông điệp giữa worker và UI
 // ────────────────────────────────────────────────────────────────────────────
 
-export type WorkerRequest = { kind: "parse"; file: File };
+export type WorkerRequest = { kind: "parse"; file: File; shippedIds?: number[] };
 
 export type WorkerResponse =
   | { kind: "progress"; ratio: number }

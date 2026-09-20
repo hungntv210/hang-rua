@@ -142,8 +142,19 @@ export function SaveReaderClient() {
    */
   const youth: YouthResult | null = useMemo(() => {
     if (!players || !shippedIds) return null;
-    return findYouthPlayers(players, shippedIds, new Set(lineup?.squadIds ?? []));
-  }, [players, shippedIds, lineup]);
+    /*
+     * Bảng học viện đọc thẳng từ save nếu tìm được — nó nói ai thuộc đội CỦA
+     * BẠN. Không có thì rơi về cách suy luận, vốn gom học viện của mọi câu lạc
+     * bộ trong save. `YouthList` nói rõ đang ở chế độ nào.
+     */
+    const academy = new Set(doc?.career?.academyIds ?? []);
+    return findYouthPlayers(
+      players,
+      shippedIds,
+      new Set(lineup?.squadIds ?? []),
+      academy.size > 0 ? academy : undefined,
+    );
+  }, [players, shippedIds, lineup, doc]);
 
   /**
    * Đối chiếu đội hình đọc từ save với bảng sơ đồ đã dựng sẵn.
@@ -303,7 +314,22 @@ export function SaveReaderClient() {
         workerRef.current = null;
       };
 
-      worker.postMessage({ kind: "parse", file });
+      /*
+       * Gui kem tap id roster goc.
+       *
+       * Worker can no de dinh vi bang hoc vien: bang do chi nhan ra duoc khi
+       * biet ai la cau thu do career sinh ra, ma dieu do song o `lib/fc26`.
+       * `world.json` da duoc tai san tu luc mo trang nen cho o day gan nhu
+       * khong ton thoi gian; hong thi gui undefined va tab Cau thu tre roi ve
+       * cach suy luan cu.
+       */
+      void loadFc26World().then((world) => {
+        worker.postMessage({
+          kind: "parse",
+          file,
+          shippedIds: world ? [...world.shippedIds()] : undefined,
+        });
+      });
     },
     [parseOnMainThread],
   );
@@ -433,6 +459,7 @@ function SaveResult({
           <YouthList
             players={youth.players}
             stats={youth.stats}
+            source={youth.source}
             jerseyOf={careerExport?.jerseyOf ?? club?.jerseyOf}
           />
         ) : (

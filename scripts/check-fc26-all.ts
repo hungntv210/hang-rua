@@ -121,6 +121,7 @@ run("lớp đọc", ["scripts/check-fc26-lib.ts"]);
 if (present.length >= MIN_SAVES) {
   run("kho tên trên save thật", ["scripts/check-fc26-names.ts", ...present]);
   run("CLB và số áo", ["scripts/check-fc26-club.ts", ...present]);
+  run("bảng học viện", ["scripts/check-youth-table.ts", ...present]);
   for (const p of present) run(`cầu thủ trẻ · ${p.split(/[\\/]/).pop()}`, ["scripts/check-youth.ts", p]);
 }
 

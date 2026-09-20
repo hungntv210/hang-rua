@@ -10,6 +10,7 @@ import { isValidRecordAt, locatePlayerTable } from "./locate";
 import { readNewgenNames, type NewgenName } from "./newgen-names";
 import { decodeAllPlayers, type RawPlayer } from "./players";
 import { findSquads } from "./squad";
+import { findYouthTable } from "./youth-table";
 
 /** Trần bản ghi. Vượt thì cắt và bật cờ `truncated` — không im lặng bỏ qua. */
 export const MAX_PLAYERS = 100_000;
@@ -25,11 +26,26 @@ export interface CareerPlayers {
    * cho main thread thì cố ý không giữ tham chiếu tới buffer vài chục MB.
    */
   squads: number[][];
+  /**
+   * Cầu thủ trong HỌC VIỆN của đội người chơi, đọc từ bảng riêng trong save.
+   *
+   * Rỗng khi không truyền `shippedIds`, hoặc khi career chưa có lứa nào —
+   * cả hai đều là trạng thái hợp lệ, không phải lỗi.
+   *
+   * Khác hẳn với việc lọc "do career sinh ra + tuổi học viện": cách lọc đó
+   * gom học viện của MỌI câu lạc bộ trong save. Đo trên một save thật: 45 so
+   * với 25.
+   */
+  academyIds: number[];
   truncated: boolean;
   issues: string[];
 }
 
-export function readCareerPlayers(buffer: ArrayBuffer): CareerPlayers {
+
+export function readCareerPlayers(
+  buffer: ArrayBuffer,
+  shippedIds?: Set<number>,
+): CareerPlayers {
   const bytes = new Uint8Array(buffer);
   const issues: string[] = [];
 
@@ -40,6 +56,7 @@ export function readCareerPlayers(buffer: ArrayBuffer): CareerPlayers {
       newgenNames: new Map(),
       table: null,
       squads: [],
+      academyIds: [],
       truncated: false,
       issues: [
         "Không định vị được bảng cầu thủ. File có thể thuộc phiên bản FC khác " +
@@ -72,10 +89,36 @@ export function readCareerPlayers(buffer: ArrayBuffer): CareerPlayers {
   for (const p of players) if (p.playerId > 0) validIds.add(p.playerId);
   const squads = findSquads(bytes, validIds).map((s) => s.playerIds);
 
+  /*
+   * Bảng học viện chỉ định vị được khi biết ai do career sinh ra, mà điều đó
+   * đến từ `shippedIds` ở tầng trên. Không có thì bỏ qua — mọi thứ khác vẫn
+   * đọc bình thường, và giao diện rơi về cách suy luận cũ.
+   */
+  let academyIds: number[] = [];
+  if (shippedIds) {
+    /*
+     * Chi loc theo "do career sinh ra", KHONG loc theo tuoi.
+     *
+     * Tuoi tinh tu `birthDay` cong mot moc tham chieu, va viec do nam o tang
+     * adapter. Nhan ban no xuong day de duoc mot bo loc chat hon la doi mot
+     * ban sao logic ngay — thu se lech im lang khi mot ben doi.
+     *
+     * Khong can thiet that: `findYouthTable` tu xac thuc bang chinh cau truc
+     * (ban ghi 16 byte lien tiep, id phan biet, phan lon la nguoi da biet),
+     * va cong kiem doi chieu tuoi o phia ngoai.
+     */
+    const careerBorn = new Set<number>();
+    for (const p of players) {
+      if (p.playerId > 0 && !shippedIds.has(p.playerId)) careerBorn.add(p.playerId);
+    }
+    academyIds = findYouthTable(bytes, careerBorn)?.playerIds ?? [];
+  }
+
   return {
     players,
     newgenNames,
     squads,
+    academyIds,
     table: { base: table.base, count: table.count, keyQuality: table.keyQuality },
     truncated,
     issues,

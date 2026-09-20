@@ -28,6 +28,10 @@ ctx.onmessage = async (event: MessageEvent<WorkerRequest>) => {
     const doc = parseSaveBuffer(buffer, {
       fileName: request.file.name,
       onProgress: (ratio) => ctx.postMessage({ kind: "progress", ratio }),
+      // Tap id roster goc do main thread gui sang: can no de dinh vi bang hoc
+      // vien. Gui dang mang roi dung Set o day, vi `structuredClone` cua Set
+      // khong duoc moi trinh duyet ho tro deu.
+      shippedIds: request.shippedIds ? new Set(request.shippedIds) : undefined,
     });
     ctx.postMessage({ kind: "done", doc });
   } catch (error) {

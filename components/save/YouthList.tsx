@@ -34,9 +34,15 @@ interface Props {
   stats: YouthFilterStats;
   /** Số áo nếu nhận ra được CLB. Cầu thủ trẻ hiếm khi có. */
   jerseyOf?: Map<number, number>;
+  /**
+   * Danh sách đến từ đâu. Hai chế độ cho hai mức tin cậy rất khác nhau, và
+   * người xem không có cách nào tự biết mình đang ở chế độ nào — nên bảng
+   * phải nói ra.
+   */
+  source: "bang" | "suy-luan";
 }
 
-export function YouthList({ players, stats, jerseyOf }: Props) {
+export function YouthList({ players, stats, jerseyOf, source }: Props) {
   if (players.length === 0) {
     return (
       <div className="space-y-3">
@@ -59,7 +65,9 @@ export function YouthList({ players, stats, jerseyOf }: Props) {
           {players.length} cầu thủ trẻ
         </h2>
         <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-mist-dim">
-          do career sinh ra · sắp theo tiềm năng
+          {source === "bang"
+            ? "học viện của bạn · đọc từ save · sắp theo tiềm năng"
+            : "suy luận · mọi CLB · sắp theo tiềm năng"}
         </span>
       </div>
 
@@ -153,17 +161,32 @@ export function YouthList({ players, stats, jerseyOf }: Props) {
         </table>
       </div>
 
-      <p className="text-xs leading-relaxed text-mist">
-        <strong>Danh sách này là suy luận, không phải đọc thẳng.</strong> File save
-        chứa toàn bộ roster của game và các CLB máy cũng sinh cầu thủ trẻ, nên không
-        có cách chắc chắn biết ai thuộc học viện của bạn. Trang lọc theo ba dấu hiệu:
-        cầu thủ <strong>không có trong dữ liệu gốc của game</strong> (tức do career
-        tạo ra), <strong>tuổi 14–21</strong>, và <strong>chưa nằm trong đội hình
-        chính</strong>. Từ {stats.careerCreated} cầu thủ do career sinh ra, đã loại{" "}
-        {stats.inSenior} người đã lên đội một, {stats.tooOld} người ngoài dải tuổi và{" "}
-        {stats.implausible} bản ghi không hợp lý. Chỉ số tổng là số tính từ 31 chỉ số
-        thành phần, sai số ±1; tiềm năng và hạn hợp đồng thì đọc thẳng từ save.
-      </p>
+      {source === "bang" ? (
+        <p className="text-xs leading-relaxed text-mist">
+          <strong>Đây là học viện của riêng đội bạn, đọc thẳng từ file save.</strong>{" "}
+          Save có một bảng riêng liệt kê đúng những người thuộc học viện của bạn, và
+          trang đọc bảng đó — không suy luận, không lẫn cầu thủ trẻ của câu lạc bộ
+          khác. Bảng ghi {stats.careerCreated} người
+          {stats.inSenior > 0
+            ? `, trong đó ${stats.inSenior} người không còn trong danh sách cầu thủ đọc được (thường là đã lên đội một hoặc rời đi)`
+            : ""}
+          . Chỉ số tổng là số tính từ 31 chỉ số thành phần, sai số ±1; tiềm năng và
+          hạn hợp đồng thì đọc thẳng từ save.
+        </p>
+      ) : (
+        <p className="text-xs leading-relaxed text-mist">
+          <strong>Danh sách này là suy luận, không phải đọc thẳng.</strong> Không tìm
+          thấy bảng học viện trong file save này, nên trang phải lọc theo dấu hiệu — và
+          cách đó <strong>gom cả cầu thủ trẻ của câu lạc bộ khác</strong>, vì save chứa
+          toàn bộ roster của game và CLB máy cũng sinh cầu thủ trẻ. Ba dấu hiệu dùng để
+          lọc: cầu thủ <strong>không có trong dữ liệu gốc của game</strong> (tức do
+          career tạo ra), <strong>tuổi 14–21</strong>, và <strong>chưa nằm trong đội
+          hình chính</strong>. Từ {stats.careerCreated} cầu thủ do career sinh ra, đã
+          loại {stats.inSenior} người đã lên đội một, {stats.tooOld} người ngoài dải
+          tuổi và {stats.implausible} bản ghi không hợp lý. Chỉ số tổng là số tính từ
+          31 chỉ số thành phần, sai số ±1.
+        </p>
+      )}
     </div>
   );
 }

@@ -59,6 +59,15 @@ export interface YouthFilterStats {
 export interface YouthResult {
   players: SavePlayer[];
   stats: YouthFilterStats;
+  /**
+   * `"bang"` khi danh sách đọc thẳng từ bảng học viện trong save — chính xác,
+   * đúng đội của người chơi. `"suy-luan"` khi không tìm thấy bảng và phải lọc
+   * theo dấu hiệu, khi đó danh sách gom cả học viện của câu lạc bộ khác.
+   *
+   * Giao diện PHẢI nói ra khác biệt này. Hai chế độ cho hai mức tin cậy rất
+   * khác nhau, và người xem không có cách nào tự biết mình đang ở chế độ nào.
+   */
+  source: "bang" | "suy-luan";
 }
 
 /**
@@ -72,7 +81,34 @@ export function findYouthPlayers(
   players: SavePlayer[],
   knownIds: Set<number>,
   seniorIds: Set<number>,
+  academyIds?: Set<number>,
 ): YouthResult {
+  /*
+   * Có bảng học viện thì dùng thẳng, bỏ qua mọi suy luận.
+   *
+   * Bảng nói ai thuộc học viện của ĐỘI NGƯỜI CHƠI. Cách suy luận bên dưới thì
+   * không phân biệt được đội: đo trên một save thật, nó gom 45 cầu thủ trẻ do
+   * career sinh ra trong khi học viện thật chỉ 25 người — phần dư là học viện
+   * của các câu lạc bộ khác.
+   *
+   * Vẫn sắp theo tiềm năng như nhánh kia, để hai chế độ nhìn giống nhau.
+   */
+  if (academyIds && academyIds.size > 0) {
+    const inTable = players.filter((p) => academyIds.has(p.playerId));
+    inTable.sort((a, b) => (b.potential ?? 0) - (a.potential ?? 0));
+    return {
+      players: inTable,
+      source: "bang",
+      stats: {
+        careerCreated: academyIds.size,
+        tooOld: 0,
+        implausible: 0,
+        // Người có trong bảng nhưng không còn trong danh sách cầu thủ đọc được.
+        inSenior: academyIds.size - inTable.length,
+      },
+    };
+  }
+
   const stats: YouthFilterStats = {
     careerCreated: 0,
     tooOld: 0,
@@ -113,5 +149,5 @@ export function findYouthPlayers(
   // câu hỏi luôn là "ai đáng giữ", và chỉ số hiện tại của một cậu bé 15 tuổi
   // gần như không nói gì về điều đó.
   out.sort((a, b) => (b.potential ?? 0) - (a.potential ?? 0));
-  return { players: out, stats };
+  return { players: out, stats, source: "suy-luan" };
 }

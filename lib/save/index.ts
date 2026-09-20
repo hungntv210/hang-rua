@@ -21,6 +21,17 @@ import type { SaveDocument } from "./types";
 export interface ParseOptions {
   fileName?: string;
   onProgress?: (ratio: number) => void;
+  /**
+   * Mọi playerId có trong roster xuất xưởng của game.
+   *
+   * Truyền vào để định vị được BẢNG HỌC VIỆN: bảng đó chỉ nhận ra được khi
+   * biết ai là cầu thủ do career sinh ra, mà điều đó nằm ở `lib/fc26` — tầng
+   * TRÊN tầng này. Nhận qua tham số thay vì import ngược lên, để `lib/save/*`
+   * vẫn chạy được bằng Node mà không kéo theo asset.
+   *
+   * Không truyền thì bỏ qua bảng học viện; mọi thứ khác đọc như cũ.
+   */
+  shippedIds?: Set<number>;
 }
 
 function now(): number {
@@ -77,7 +88,7 @@ export function parseSaveBuffer(
     // Bảng cầu thủ nằm ở lớp khác hẳn lớp field tự mô tả: nó là bảng nhị phân
     // đóng gói bit, không có tên field đi kèm. Hai lớp đọc độc lập nhau, và một
     // lớp hỏng không được kéo lớp kia theo.
-    const career = readCareerPlayers(buffer);
+    const career = readCareerPlayers(buffer, options.shippedIds);
 
     const doc = buildSaveDocument({
       reader,
