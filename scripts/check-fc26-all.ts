@@ -123,6 +123,7 @@ if (present.length >= MIN_SAVES) {
   run("CLB và số áo", ["scripts/check-fc26-club.ts", ...present]);
   run("bảng học viện", ["scripts/check-youth-table.ts", ...present]);
   run("sơ đồ đọc từ save", ["scripts/check-formation.ts", ...present]);
+  run("bộ lọc Scout", ["scripts/check-scout.ts", ...present]);
   for (const p of present) run(`cầu thủ trẻ · ${p.split(/[\\/]/).pop()}`, ["scripts/check-youth.ts", p]);
 }
 
