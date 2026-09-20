@@ -169,6 +169,7 @@ export function buildCareer(result: CareerPlayers): SaveCareer | null {
     players,
     squads: result.squads,
     academyIds: result.academyIds,
+    formationCoords: result.formationCoords,
     tableCount: result.table.count,
     tableOffset: result.table.base,
     newgenCount: result.newgenNames.size,

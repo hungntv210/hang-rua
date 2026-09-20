@@ -18,6 +18,7 @@ import { join } from "node:path";
 
 import { readCsv, num } from "./csv";
 import { BASE_DIR } from "./fc26-base-tables";
+import { shapeKey } from "../lib/fc26/lineup";
 
 const OUT_DIR = "public/fc26";
 const builtAt = new Date().toISOString().slice(0, 10);
@@ -300,55 +301,30 @@ function buildFormations() {
     })
     .filter((f) => f.name && f.name !== "-NONE-");
 
-  /** Tập mã vị trí đã sắp xếp → sơ đồ tiêu biểu. */
-  const byPositionSet = new Map<string, Formation>();
+  /*
+   * Gộp theo TẬP TOẠ ĐỘ, không lọc theo "đội nào đang dùng".
+   *
+   * Bản trước giữ lại những sơ đồ mà `default_teamsheets` dùng tới và ra 26
+   * hình dạng. Nhưng trang giờ đọc sơ đồ THẬT từ save người dùng, và người
+   * dùng đổi được sang bất kỳ sơ đồ nào trong game — 6 hình dạng bị bỏ sót sẽ
+   * làm sơ đồ biến mất đúng lúc người ta vừa đổi sang nó.
+   *
+   * Gộp theo toạ độ thay vì lọc theo usage cho ra 32 hình dạng: vừa ĐỦ, vừa
+   * nhỏ hơn 868 dòng gốc. 868 dòng chỉ là 32 hình dạng nhân với các bộ vai trò
+   * khác nhau — cùng toạ độ, cùng mã vị trí, chỉ khác `pos<i>role`.
+   */
+  const byShape = new Map<string, Formation>();
   for (const f of formations) {
-    const key = [...f.pos].sort((a, b) => a - b).join(",");
-    const cur = byPositionSet.get(key);
-    // Trùng tập thì chốt theo `weight` rồi tới id — miễn là TẤT ĐỊNH, vì hình
-    // học của hai sơ đồ cùng tập mã gần như giống hệt nhau.
+    const key = shapeKey(f.off.flat());
+    const cur = byShape.get(key);
+    // Trùng hình dạng thì chốt theo `weight` rồi tới id — miễn là TẤT ĐỊNH.
     if (!cur || f.weight > cur.weight || (f.weight === cur.weight && f.id < cur.id)) {
-      byPositionSet.set(key, f);
+      byShape.set(key, f);
     }
   }
 
-  /** playerId → (teamId → mã vị trí trong đội hình). */
-  const slotOf = new Map<number, Map<number, number>>();
-  for (const r of readCsv(base("teamplayerlinks"))) {
-    const pid = num(r.playerid);
-    const tid = num(r.teamid);
-    if (pid <= 0 || tid <= 0) continue;
-    if (!slotOf.has(pid)) slotOf.set(pid, new Map());
-    slotOf.get(pid)!.set(tid, n0(r.position));
-  }
-
-  const used = new Set<number>();
-  let unresolved = 0;
-  for (const r of readCsv(base("default_teamsheets"))) {
-    const team = num(r.teamid);
-    if (team <= 0) continue;
-    const slots: number[] = [];
-    let complete = true;
-    for (let i = 0; i < 11; i += 1) {
-      const pid = num(r[`playerid${i}`]);
-      const slot = slotOf.get(pid)?.get(team);
-      if (pid <= 0 || slot === undefined) {
-        complete = false;
-        break;
-      }
-      slots.push(slot);
-    }
-    if (!complete) continue;
-    const f = byPositionSet.get([...slots].sort((a, b) => a - b).join(","));
-    if (f) used.add(f.id);
-    else unresolved += 1;
-  }
-
-  const kept = formations.filter((f) => used.has(f.id));
-  console.log(
-    `sơ đồ: ${kept.length}/${formations.length} được dùng` +
-      (unresolved ? ` (${unresolved} đội không suy được sơ đồ)` : ""),
-  );
+  const kept = [...byShape.values()].sort((a, b) => a.id - b.id);
+  console.log(`sơ đồ: ${kept.length} hình dạng phân biệt từ ${formations.length} dòng`);
   write("formations.json", {
     builtAt,
     formations: kept.map((f) => ({ id: f.id, name: f.name, pos: f.pos, off: f.off })),

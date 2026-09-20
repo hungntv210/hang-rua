@@ -49,6 +49,21 @@ export interface FormationShape {
   off: Array<[number, number]>;
 }
 
+/**
+ * Khoá nhận dạng một hình dạng sân: 22 toạ độ đã sắp xếp.
+ *
+ * Sắp xếp vì thứ tự 22 số trong save KHÔNG khớp thứ tự ô của bảng — xem
+ * `lib/save/career/formation.ts`. Tập giá trị thì khớp chính xác, và phép thử
+ * âm tính cho thấy nó phân biệt thật: 709 cửa sổ 22 số ngẫu nhiên lấy quanh
+ * vùng đó, 0 cái khớp bất kỳ sơ đồ nào.
+ *
+ * Làm tròn 3 chữ số vì đó là độ chính xác của bảng gốc, và vì float32 đọc từ
+ * save trả 0,019999999552965164 cho một ô ghi 0,02.
+ */
+export function shapeKey(coords: number[]): string {
+  return [...coords].sort((a, b) => a - b).map((v) => v.toFixed(3)).join(",");
+}
+
 /** Tối thiểu cho một đội bóng thật. Xem `pickSquad`. */
 const MIN_SQUAD_SIZE = 16;
 const MIN_KEEPERS = 2;
@@ -76,10 +91,18 @@ export interface LineupSlot {
  * dữ liệu và vẽ ra cùng một sơ đồ, nhưng một cái là sự thật đọc được còn một
  * cái là phỏng đoán. Không phân biệt được ở tầng kiểu thì giao diện sẽ quên.
  */
-export type LineupSource = "export" | "suy-tu-save";
+export type LineupSource = "export" | "so-do-that" | "suy-tu-save";
 
 export interface Lineup {
   source: LineupSource;
+  /**
+   * Sơ đồ có phải đọc thẳng từ save không.
+   *
+   * Tách khỏi `source` vì hai câu hỏi khác nhau: "ai đá ô nào" và "sơ đồ nào".
+   * Với `so-do-that` thì sơ đồ là thật còn cách xếp người vẫn là gợi ý, và gộp
+   * hai thứ đó vào một cờ sẽ buộc giao diện nói quá hoặc nói thiếu.
+   */
+  formationIsReal: boolean;
   /** Tên team sheet, chỉ có khi nguồn là bản export. */
   sheetName?: string;
   formationName: string;
@@ -196,14 +219,24 @@ export function buildLineup(
   players: Map<number, LineupPlayer>,
   shapes: FormationShape[],
   positionName: (code: number) => string,
+  /**
+   * Sơ đồ ĐỌC ĐƯỢC từ save. Có thì dùng đúng nó và thôi đoán.
+   *
+   * Phép đoán bên dưới chọn sơ đồ mà đội xếp được đội hình mạnh nhất — nó chỉ
+   * nhìn danh sách cầu thủ, mà danh sách đó không đổi khi người chơi đổi sơ
+   * đồ. Nên trước đây đổi sơ đồ trong game rồi tải save mới lên thì trang vẫn
+   * vẽ y như cũ. Xem `lib/save/career/formation.ts`.
+   */
+  readShape?: FormationShape | null,
 ): Lineup | null {
   const squad = squadIds
     .map((id) => players.get(id))
     .filter((p): p is LineupPlayer => !!p);
-  if (squad.length < 11 || shapes.length === 0) return null;
+  const pool = readShape ? [readShape] : shapes;
+  if (squad.length < 11 || pool.length === 0) return null;
 
   let best: { shape: FormationShape; slots: LineupSlot[]; score: number } | null = null;
-  for (const shape of shapes) {
+  for (const shape of pool) {
     if (shape.pos.length !== 11) continue;
     const got = assign(shape, squad, positionName);
     if (!got) continue;
@@ -225,7 +258,8 @@ export function buildLineup(
     .map((p) => p.playerId);
 
   return {
-    source: "suy-tu-save",
+    source: readShape ? "so-do-that" : "suy-tu-save",
+    formationIsReal: !!readShape,
     formationName: best.shape.name,
     slots: best.slots,
     benchIds,
@@ -316,6 +350,8 @@ export function lineupFromSheet(
 
   return {
     source: "export",
+    // Bản export mang cả sơ đồ lẫn cách xếp người — cả hai đều là thật.
+    formationIsReal: true,
     formationName: shape.name,
     slots,
     benchIds,

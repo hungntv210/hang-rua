@@ -54,18 +54,17 @@ export default function SaveReaderPage() {
           bên thứ ba nào — mọi thứ nó biết đều đến từ bảng gốc của chính game.
         </p>
         <p className="max-w-3xl text-sm text-mist">
-          <strong>Sơ đồ trên trang là đội hình gợi ý</strong>, suy từ vị trí sở
-          trường và chỉ số — không phải đội hình bạn đã xếp trong game. Đổi sơ đồ
-          trong game thì nó không đổi theo.{" "}
+          <strong>Sơ đồ chiến thuật giờ đọc thẳng từ save.</strong> Trang tìm khối
+          22 toạ độ của team sheet bạn đang dùng rồi đối chiếu với bảng hình dạng
+          sân của game, nên đổi sơ đồ trong game và tải save mới lên thì hình vẽ
+          đổi theo. Đo trên sáu file save của hai career: sáu lần định vị đúng, và
+          hai cặp save trước/sau khi đổi sơ đồ cho ra đúng hai sơ đồ khác nhau.{" "}
           <em>
-            Sơ đồ thật CÓ nằm trong file save, nhưng chưa giải mã xong.
+            Nhưng ai đá ô nào thì vẫn là gợi ý
           </em>{" "}
-          Đo trên ba bản lưu liên tiếp của cùng một career — đổi 4-2-3-1 sang
-          4-2-2-2 rồi đổi ngược lại — có tám giá trị ở vị trí cố định đổi theo và
-          quay về chính xác từng số. Nên dữ liệu chắc chắn ở đó; điều chưa biết là
-          cách đọc nó. Bốn giả thuyết đã thử và bị bác bằng số liệu. Trang này từng
-          ghi rằng save không lưu đội hình — đó là kết luận sai, dựa trên cách dò
-          chỉ nhìn một file.{" "}
+          — chỗ đó save không lưu, nên trang xếp người vào các ô theo vị trí sở
+          trường và chỉ số. Đã dò tới tầng bit trong bản ghi cầu thủ 144 byte với
+          phép thử dương tính đạt 100%, và không có trường nào ghi ô đá.{" "}
           <em>Lương</em> thì vẫn chưa tìm được: nó nằm trong một bảng 45 dòng của
           riêng đội bạn cầm, quá nhỏ để định vị trong file 15MB. Muốn đội hình thật
           và lương ngay bây giờ thì nạp thêm bản export Live Editor ở mục tuỳ chọn

@@ -88,6 +88,11 @@ export function SquadHub({ lineup, players, jerseyOf, wageOf, clubName }: Props)
             <span className="text-jade">
               đội hình thật{lineup.sheetName ? ` · ${lineup.sheetName}` : ""}
             </span>
+          ) : lineup.formationIsReal ? (
+            <>
+              <span className="text-jade">sơ đồ thật</span>
+              {" · xếp người là gợi ý"}
+            </>
           ) : (
             "đội hình gợi ý"
           )}
@@ -158,6 +163,15 @@ export function SquadHub({ lineup, players, jerseyOf, wageOf, clubName }: Props)
                 <strong>11 suất đá chính là đội hình thật bạn đã xếp</strong>, đọc từ
                 bản export career và đã đối chiếu khớp với file save. Số áo và lương
                 cũng từ đó.{" "}
+              </>
+            ) : lineup.formationIsReal ? (
+              <>
+                <strong>Sơ đồ {lineup.formationName} là sơ đồ thật bạn đang dùng</strong>,
+                đọc thẳng từ team sheet trong file save — đổi sơ đồ trong game rồi tải
+                save mới lên thì hình vẽ đổi theo.{" "}
+                <strong>Nhưng ai đá ô nào thì vẫn là gợi ý:</strong> save không lưu
+                điều đó, nên trang tự xếp người vào các ô theo vị trí sở trường và chỉ
+                số.{" "}
               </>
             ) : (
               <>

@@ -9,6 +9,7 @@ import { BitRecordReader } from "../bitreader";
 import { isValidRecordAt, locatePlayerTable } from "./locate";
 import { readNewgenNames, type NewgenName } from "./newgen-names";
 import { decodeAllPlayers, type RawPlayer } from "./players";
+import { findFormationCoords } from "./formation";
 import { findSquads } from "./squad";
 import { findYouthTable } from "./youth-table";
 
@@ -37,6 +38,13 @@ export interface CareerPlayers {
    * với 25.
    */
   academyIds: number[];
+  /**
+   * 22 toạ độ sơ đồ của team sheet đang dùng, đọc thẳng từ save.
+   *
+   * Thứ tự ở đây KHÔNG phải thứ tự ô — `lib/fc26/formations.ts` đối chiếu bằng
+   * tập giá trị rồi lấy toạ độ có thứ tự từ bảng. Xem `./formation.ts`.
+   */
+  formationCoords: number[] | null;
   truncated: boolean;
   issues: string[];
 }
@@ -57,6 +65,7 @@ export function readCareerPlayers(
       table: null,
       squads: [],
       academyIds: [],
+      formationCoords: null,
       truncated: false,
       issues: [
         "Không định vị được bảng cầu thủ. File có thể thuộc phiên bản FC khác " +
@@ -119,12 +128,14 @@ export function readCareerPlayers(
     newgenNames,
     squads,
     academyIds,
+    formationCoords: findFormationCoords(bytes)?.coords ?? null,
     table: { base: table.base, count: table.count, keyQuality: table.keyQuality },
     truncated,
     issues,
   };
 }
 
+export { findFormationCoords } from "./formation";
 export { locatePlayerTable } from "./locate";
 export { readNewgenNames } from "./newgen-names";
 export { decodePlayer, decodeAllPlayers } from "./players";

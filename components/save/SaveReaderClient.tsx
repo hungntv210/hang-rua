@@ -230,7 +230,15 @@ export function SaveReaderClient() {
           setExportGate(null);
         }
 
-        setLineup(buildLineup(squad, byId, table.shapes, schema.positionName));
+        /*
+         * Sơ đồ đọc thẳng từ save — thôi đoán khi nhận ra được.
+         *
+         * `matchByCoords` là lưới an toàn: bộ dò trong `lib/save` chỉ kiểm dải
+         * giá trị, còn phép đối chiếu tập toạ độ mới phân biệt được sơ đồ thật.
+         * Không khớp thì `null`, và trang rơi về phép đoán như trước.
+         */
+        const readShape = table.matchByCoords(doc.career?.formationCoords);
+        setLineup(buildLineup(squad, byId, table.shapes, schema.positionName, readShape));
     });
     return () => {
       alive = false;

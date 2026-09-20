@@ -276,6 +276,11 @@ export interface SaveCareer {
    * Rỗng khi career chưa có lứa nào, hoặc khi không truyền `shippedIds`.
    */
   academyIds: number[];
+  /**
+   * 22 toạ độ sơ đồ của team sheet người chơi đang dùng, đọc thẳng từ save.
+   * `null` khi không tìm thấy. Đối chiếu ở `lib/fc26/formations.ts`.
+   */
+  formationCoords: number[] | null;
   /** Số bản ghi trong bảng, kể cả ô trống. */
   tableCount: number;
   tableOffset: number;

@@ -19,7 +19,7 @@
  * Đội hình giờ dựng từ chính save — xem `lib/fc26/lineup.ts`.
  */
 
-import type { FormationShape } from "./lineup";
+import { shapeKey, type FormationShape } from "./lineup";
 
 interface Payload {
   builtAt: string;
@@ -36,12 +36,31 @@ interface Payload {
 export class Fc26Formations {
   readonly shapes: FormationShape[];
   readonly builtAt: string;
+  private readonly byShape: Map<string, FormationShape>;
 
   private constructor(data: Payload) {
     this.shapes = (data.formations ?? []).filter(
       (f) => Array.isArray(f.pos) && f.pos.length === 11,
     );
     this.builtAt = data.builtAt ?? "";
+    this.byShape = new Map(this.shapes.map((f) => [shapeKey(f.off.flat()), f]));
+  }
+
+  /**
+   * Nhận ra sơ đồ từ 22 toạ độ đọc thẳng trong save.
+   *
+   * Trả `null` khi không khớp hình dạng nào — asset cũ hơn game, hoặc khối đọc
+   * được không phải team sheet. Đó là lưới an toàn cuối của cả đường đi: bộ dò
+   * trong `lib/save` chỉ kiểm dải giá trị, còn phép đối chiếu này mới là thứ
+   * phân biệt được sơ đồ thật với 22 số bất kỳ.
+   *
+   * Toạ độ CÓ THỨ TỰ thì lấy từ bảng, không lấy từ save: thứ tự trong save
+   * không phải thứ tự ô, nhưng mọi dòng cùng hình dạng đều có cùng toạ độ và
+   * cùng mã vị trí, nên bảng trả lời được đầy đủ.
+   */
+  matchByCoords(coords: number[] | null | undefined): FormationShape | null {
+    if (!coords || coords.length !== 22) return null;
+    return this.byShape.get(shapeKey(coords)) ?? null;
   }
 
   static fromPayload(data: Payload): Fc26Formations {
