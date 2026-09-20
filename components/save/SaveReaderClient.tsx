@@ -323,12 +323,17 @@ export function SaveReaderClient() {
        * cach suy luan cu.
        */
       /*
-       * Lưu file lại cho lần sau. Không chờ kết quả: lưu hỏng (ẩn danh, hết
-       * dung lượng) không được làm chậm hay chặn việc đọc.
+       * Lưu file lại cho lần sau. Không chặn việc đọc — nhưng CHỜ kết quả để
+       * biết có thật sự lưu được không.
+       *
+       * Bản trước đặt tên file vào trạng thái ngay lập tức, nên ở chế độ ẩn
+       * danh hoặc khi hết dung lượng, trang hiện "Đang giữ … — nằm trên máy
+       * bạn" trong khi chẳng giữ gì. Nói sai về chuyện mình đang giữ file của
+       * người khác thì tệ hơn hẳn việc không giữ được.
        */
       if (options?.persist !== false) {
-        void file.arrayBuffer().then((bytes) => {
-          void putSave(bytes, file.name);
+        void putSave(file).then((ok) => {
+          if (!ok) return;
           setSavedName(file.name);
           setSavedAt(Date.now());
         });
@@ -363,7 +368,7 @@ export function SaveReaderClient() {
       setSavedName(got.fileName);
       setSavedAt(got.savedAt);
       setRestoring(false);
-      handleFile(new File([got.bytes], got.fileName), { persist: false });
+      handleFile(new File([got.blob], got.fileName), { persist: false });
     });
     return () => {
       alive = false;
@@ -374,7 +379,10 @@ export function SaveReaderClient() {
 
   return (
     <div className="space-y-6">
-      <SaveDropZone onFile={handleFile} busy={progress !== null || restoring} progress={progress} />
+      {/* `restoring` cố ý KHÔNG khoá ô thả file: nếu `getSave()` không bao giờ
+          trả lời — IndexedDB hỏng, origin store lỗi — thì người dùng vẫn phải
+          tự chọn được file, chứ không bị kẹt vĩnh viễn ở ô bị vô hiệu hoá. */}
+      <SaveDropZone onFile={handleFile} busy={progress !== null} progress={progress} />
 
       {savedName ? (
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-mist">

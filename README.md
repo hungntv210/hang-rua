@@ -92,7 +92,6 @@ thread ranh nen tab khong dung hinh.
 
 ```bash
 npx tsx scripts/probe-save.ts                  # tu kiem tren fixture
-npx tsx scripts/check-export.ts                # tu kiem phan xuat CSV/JSON
 npm run check:fc26                             # gom moi cong: asset, 4 save that, 2 script Lua
 npx tsx scripts/probe-save.ts <duong-dan-save> # do file that
 npx tsx scripts/hex-probe.ts <file> str "PlayerID"
@@ -149,8 +148,8 @@ Ba diem trong khao sat hex ban dau **sai**, da sua theo byte that:
 Ket qua tren file that: 855 field, 369 ten khac nhau, do phu **0,2%**. Do phu
 thap la ban chat dinh dang chu khong phai loi: lop field co ten chi chua phan su
 kien Career Mode (chuyen nhuong, email, cot moc cau thu). 8,2MB dau file la bang
-nhi phan cau thu/doi, khong co ten field di kem - ten doi ("Fluminense") chi lo
-ra qua tab Chuoi roi. Trang noi ro dieu nay, neu khong nguoi dung tuong no hong.
+nhi phan cau thu/doi, khong co ten field di kem. Ten cau thu va ten doi vi the
+phai ghep tu kho ten nhung trong `public/fc26/`, khong doc thang tu save.
 
 ### Quet & tai dong bo
 
