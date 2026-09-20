@@ -23,13 +23,28 @@ import { Fc26World } from "../lib/fc26/world";
 import { parseSaveBuffer } from "../lib/save";
 
 const SAVE_DIR = join(homedir(), "AppData", "Local", "EA SPORTS FC 26", "settings");
-/** Chỉ đọc file bắt đầu bằng `Cm` trong thư mục settings của game. */
-const SAVES = [
-  "CmMgrC20260704192007839",
-  "CmMgrC20260729233455335",
-  "CmMgrC20260917112651768",
-  "CmMgrC20260919231841418",
-].map((f) => join(SAVE_DIR, f));
+
+/*
+ * TỰ TÌM save, không ghim tên file.
+ *
+ * Bản đầu liệt kê bốn tên cụ thể. Nhưng game đặt tên save theo dấu thời gian và
+ * THAY THẾ bản cũ, nên cứ mỗi lần người dùng lưu game là danh sách lệch và cổng
+ * đỏ vì một lý do không liên quan gì tới đúng/sai của code. Một cổng đỏ vì lý do
+ * sai là cổng sẽ bị bỏ qua.
+ *
+ * Đòi TỐI THIỂU ba save thay vì một con số cố định: đủ để phép kiểm có ý nghĩa
+ * (một save không chứng minh được tính tổng quát — cả kế hoạch này sinh ra từ
+ * đúng bài học đó), mà không vỡ khi người dùng chơi tiếp.
+ *
+ * Chỉ đọc file bắt đầu bằng `Cm`, theo đúng ràng buộc của dự án.
+ */
+const MIN_SAVES = 3;
+const SAVES = existsSync(SAVE_DIR)
+  ? readdirSync(SAVE_DIR)
+      .filter((f) => f.startsWith("Cm"))
+      .sort()
+      .map((f) => join(SAVE_DIR, f))
+  : [];
 
 let failed = 0;
 const check = (label: string, ok: boolean, detail = "") => {
@@ -82,13 +97,11 @@ const run = (label: string, args: string[]) => {
  * đó tôi sửa đường vận chuyển; bên tiêu thụ vẫn fail-open, nên bất kỳ lý do
  * nào khác làm mất save đều cho ra cùng một màu xanh.
  */
-const present = SAVES.filter((p) => existsSync(p));
+const present = SAVES;
 check(
-  `nhận đủ ${SAVES.length} file save để kiểm`,
-  present.length === SAVES.length,
-  `${present.length}/${SAVES.length} — thiếu: ${SAVES.filter((p) => !existsSync(p))
-    .map((p) => p.split(/[\\/]/).pop())
-    .join(", ") || "không"}`,
+  `tìm được ít nhất ${MIN_SAVES} file save để kiểm`,
+  present.length >= MIN_SAVES,
+  `${present.length} save trong ${SAVE_DIR}`,
 );
 
 run("CSV", ["scripts/check-csv.ts"]);
@@ -105,7 +118,7 @@ runNode("script Lua chup career", ["scripts/check-lua-career.mjs"]);
 run("dataset_fc26/base", ["scripts/check-fc26-base.ts"]);
 run("world.json", ["scripts/check-fc26-world.ts"]);
 run("lớp đọc", ["scripts/check-fc26-lib.ts"]);
-if (present.length) {
+if (present.length >= MIN_SAVES) {
   run("kho tên trên save thật", ["scripts/check-fc26-names.ts", ...present]);
   run("CLB và số áo", ["scripts/check-fc26-club.ts", ...present]);
   for (const p of present) run(`cầu thủ trẻ · ${p.split(/[\\/]/).pop()}`, ["scripts/check-youth.ts", p]);
@@ -171,7 +184,7 @@ check(
 const w = Fc26World.fromPayload(JSON.parse(readFileSync("public/fc26/world.json", "utf8")));
 const EXPECT: Record<string, number> = {
   CmMgrC20260917112651768: 19_405,
-  CmMgrC20260919231841418: 19_331,
+  CmMgrC20260919235736377: 19_331,
 };
 for (const [file, want] of Object.entries(EXPECT)) {
   const path = join(SAVE_DIR, file);
