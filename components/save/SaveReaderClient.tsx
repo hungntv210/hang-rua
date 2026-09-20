@@ -6,11 +6,6 @@ import { Notice } from "@/components/Notice";
 import { PlayerTable } from "@/components/save/PlayerTable";
 import { CareerExportDrop } from "@/components/save/CareerExportDrop";
 import { SaveDropZone } from "@/components/save/SaveDropZone";
-import { SaveFieldTable } from "@/components/save/SaveFieldTable";
-import { SaveNameList } from "@/components/save/SaveNameList";
-import { SaveStats } from "@/components/save/SaveStats";
-import { SaveStringList } from "@/components/save/SaveStringList";
-import { SaveUnknownList } from "@/components/save/SaveUnknownList";
 import { SquadHub } from "@/components/save/SquadHub";
 import { YouthList } from "@/components/save/YouthList";
 import { TabBar, TabPanel, type TabItem } from "@/components/TabBar";
@@ -26,19 +21,16 @@ import {
   playersToJson,
 } from "@/lib/save/career/export";
 import { formatBytes, formatCount } from "@/lib/save/format";
+import { clearSave, getSave, putSave } from "@/lib/save/store";
 import { FILE_LIMITS } from "@/lib/save/heuristics";
 import type { SaveDocument, SavePlayer, WorkerResponse } from "@/lib/save/types";
 
-type Tab = "lineup" | "youth" | "players" | "fields" | "names" | "strings" | "unknown";
+type Tab = "lineup" | "youth" | "scout";
 
 const TABS: TabItem<Tab>[] = [
   { id: "lineup", label: "Đội hình", labelJp: "布陣" },
   { id: "youth", label: "Cầu thủ trẻ", labelJp: "育成" },
-  { id: "players", label: "Cầu thủ", labelJp: "選手" },
-  { id: "fields", label: "Field" },
-  { id: "names", label: "Tên field" },
-  { id: "strings", label: "Chuỗi rời" },
-  { id: "unknown", label: "Vùng chưa giải mã" },
+  { id: "scout", label: "Scout cầu thủ", labelJp: "発掘" },
 ];
 
 /**
@@ -65,6 +57,10 @@ export function SaveReaderClient() {
   /** Mọi playerId có trong roster xuất xưởng — để nhận ra ai do career sinh ra. */
   const [shippedIds, setShippedIds] = useState<Set<number> | null>(null);
   const [iconCount, setIconCount] = useState(0);
+  /** Đã thử khôi phục xong chưa — để không nháy ô thả file rồi mới hiện dữ liệu. */
+  const [restoring, setRestoring] = useState(true);
+  const [savedName, setSavedName] = useState<string | null>(null);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
   const workerRef = useRef<Worker | null>(null);
 
   // Tải DB tên ngay khi trang mở, song song với việc người dùng chọn file: 1,5MB
@@ -265,7 +261,7 @@ export function SaveReaderClient() {
   }, []);
 
   const handleFile = useCallback(
-    (file: File) => {
+    (file: File, options?: { persist?: boolean }) => {
       setDoc(null);
       setError(null);
       setProgress(0);
@@ -331,6 +327,18 @@ export function SaveReaderClient() {
        * khong ton thoi gian; hong thi gui undefined va tab Cau thu tre roi ve
        * cach suy luan cu.
        */
+      /*
+       * Lưu file lại cho lần sau. Không chờ kết quả: lưu hỏng (ẩn danh, hết
+       * dung lượng) không được làm chậm hay chặn việc đọc.
+       */
+      if (options?.persist !== false) {
+        void file.arrayBuffer().then((bytes) => {
+          void putSave(bytes, file.name);
+          setSavedName(file.name);
+          setSavedAt(Date.now());
+        });
+      }
+
       void loadFc26World().then((world) => {
         worker.postMessage({
           kind: "parse",
@@ -342,9 +350,60 @@ export function SaveReaderClient() {
     [parseOnMainThread],
   );
 
+  /*
+   * Mở lại file của lần trước.
+   *
+   * Dựng lại `File` rồi đi đúng đường mà một lượt tải tay đi — không có nhánh
+   * phân tích thứ hai để lệch khỏi nhánh chính. `persist: false` vì file này
+   * vừa đọc RA từ kho, ghi lại là thừa.
+   */
+  useEffect(() => {
+    let alive = true;
+    void getSave().then((got) => {
+      if (!alive) return;
+      if (!got) {
+        setRestoring(false);
+        return;
+      }
+      setSavedName(got.fileName);
+      setSavedAt(got.savedAt);
+      setRestoring(false);
+      handleFile(new File([got.bytes], got.fileName), { persist: false });
+    });
+    return () => {
+      alive = false;
+    };
+    // Chỉ chạy một lần lúc mở trang.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="space-y-6">
-      <SaveDropZone onFile={handleFile} busy={progress !== null} progress={progress} />
+      <SaveDropZone onFile={handleFile} busy={progress !== null || restoring} progress={progress} />
+
+      {savedName ? (
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-mist">
+          <span>
+            Đang giữ <strong className="text-ghost">{savedName}</strong>
+            {savedAt ? ` · lưu lúc ${new Date(savedAt).toLocaleString("vi-VN")}` : ""}
+          </span>
+          <span className="text-mist-dim">— nằm trên máy bạn, không gửi đi đâu.</span>
+          <button
+            type="button"
+            className="tab"
+            onClick={() => {
+              void clearSave();
+              setSavedName(null);
+              setSavedAt(null);
+              setDoc(null);
+            }}
+          >
+            Xoá
+          </button>
+        </p>
+      ) : restoring ? (
+        <p className="text-xs text-mist-dim">Đang tìm file của lần trước…</p>
+      ) : null}
 
       {largeFileNotice && progress !== null ? (
         <Notice title="File lớn">{largeFileNotice}</Notice>
@@ -400,10 +459,14 @@ function SaveResult({
   youth: YouthResult | null;
   iconCount: number;
 }) {
+  /* Đội của người chơi đã có nguyên một tab riêng — Scout là để tìm người NGOÀI đội. */
+  const squadIds = useMemo(
+    () => (lineup ? new Set(lineup.squadIds) : undefined),
+    [lineup],
+  );
+
   return (
     <div className="space-y-6">
-      <SaveStats doc={doc} />
-
       {doc.issues.map((issue) => (
         <Notice
           key={issue.message}
@@ -428,8 +491,12 @@ function SaveResult({
           group="save-reader"
           ariaLabel="Các lớp dữ liệu trong file save"
         />
-        <ExportButtons doc={doc} players={players} />
       </div>
+
+      {/* Giữ phản hồi tốc độ, bỏ bốn thẻ lớn. */}
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-mist-dim">
+        {formatCount(players?.length ?? 0)} cầu thủ · đọc trong {Math.round(doc.meta.parseMs)}ms
+      </p>
 
       <TabPanel tabKey={tab}>
       {tab === "lineup" ? (
@@ -477,11 +544,12 @@ function SaveResult({
           </Notice>
         )
       ) : null}
-      {tab === "players" ? (
+      {tab === "scout" ? (
         players && players.length > 0 ? (
           <PlayerTable
             players={players}
             skipped={{ icons: iconCount, women: doc.career?.womenCount ?? 0 }}
+            excludeIds={squadIds}
           />
         ) : (
           <Notice tone="error" title="Không đọc được danh sách cầu thủ">
@@ -491,96 +559,7 @@ function SaveResult({
           </Notice>
         )
       ) : null}
-      {tab === "fields" ? (
-        <SaveFieldTable fields={doc.fields} fieldStats={doc.fieldStats} />
-      ) : null}
-      {tab === "names" ? <SaveNameList stats={doc.fieldStats} /> : null}
-      {tab === "strings" ? (
-        <SaveStringList tokens={doc.stringTokens} strings={doc.looseStrings} />
-      ) : null}
-      {tab === "unknown" ? <SaveUnknownList regions={doc.unknownRegions} /> : null}
       </TabPanel>
-    </div>
-  );
-}
-
-/**
- * Ba bản xuất, mỗi bản một lý do tồn tại rõ ràng và không chồng lên nhau.
- *
- * Bản trước có hai nút, "tóm tắt" và "đầy đủ", và cả hai đều hỏng theo cùng một
- * cách: chúng chỉ nhận `doc`, trong khi tên cầu thủ được ghép vào state `players`
- * riêng ở component cha. Nên "đầy đủ" xuất ra 21.000 cầu thủ `name: null`, còn
- * "tóm tắt" thì không có danh sách cầu thủ nào cả — tức là thứ chính của trang
- * không xuất ra được bằng cách nào.
- *
- * Giờ `players` là tham số bắt buộc, và CSV đứng trước JSON vì phần lớn người
- * dùng trang này muốn mở bằng Excel chứ không muốn đọc JSON.
- */
-function ExportButtons({
-  doc,
-  players,
-}: {
-  doc: SaveDocument;
-  players: SavePlayer[] | null;
-}) {
-  function download(text: string, suffix: string, mime: string) {
-    const base = doc.meta.fileName.replace(/[^\w.-]+/g, "_") || "save";
-    const blob = new Blob([text], { type: mime });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${base}.${suffix}`;
-    link.click();
-    // Thu hồi ở nhịp sau: Safari đọc blob bất đồng bộ sau `click()`, thu hồi
-    // ngay trong cùng nhịp thì file tải về rỗng.
-    setTimeout(() => URL.revokeObjectURL(url), 0);
-  }
-
-  const count = players?.length ?? 0;
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      {players && count > 0 ? (
-        <>
-          <button
-            type="button"
-            onClick={() =>
-              download(playersToCsv(players), "cau-thu.csv", "text/csv;charset=utf-8")
-            }
-            className="tab"
-            title="Mở được bằng Excel hoặc Google Sheets"
-          >
-            Cầu thủ (CSV, {formatCount(count)})
-          </button>
-          <button
-            type="button"
-            onClick={() =>
-              download(
-                JSON.stringify(playersToJson(doc, players), null, 2),
-                "cau-thu.json",
-                "application/json",
-              )
-            }
-            className="tab"
-          >
-            Cầu thủ (JSON)
-          </button>
-        </>
-      ) : null}
-      <button
-        type="button"
-        onClick={() =>
-          download(
-            JSON.stringify(diagnosticsToJson(doc), null, 2),
-            "chan-doan.json",
-            "application/json",
-          )
-        }
-        className="tab"
-        title="Mọi thứ trừ danh sách cầu thủ — để gửi kèm khi báo lỗi đọc file"
-      >
-        Chẩn đoán (JSON)
-      </button>
     </div>
   );
 }
