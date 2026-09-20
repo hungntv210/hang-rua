@@ -5,6 +5,8 @@ import { Fragment, useDeferredValue, useMemo, useState } from "react";
 import { Notice } from "@/components/Notice";
 import { OVR_ACCURACY } from "@/lib/save/career/ovr-model";
 import { ATTRIBUTE_GROUPS, ATTRIBUTE_ORDER } from "@/lib/save/career/schema";
+import { GROUP_LABEL, GROUP_ORDER } from "@/lib/fc26/positions";
+import { EMPTY_CRITERIA, filterPlayers, type ScoutCriteria } from "@/lib/fc26/scout";
 import type { SavePlayer } from "@/lib/save/types";
 
 /** Vị trí trong mảng `attributes`, tra một lần thay vì `indexOf` mỗi ô. */
@@ -93,6 +95,34 @@ const SORTS: { id: SortKey; label: string }[] = [
 /** Số dòng dựng ra mỗi lần. Bảng có hơn 20.000 cầu thủ nên không thể render hết. */
 const PAGE = 100;
 
+/** Ô số cho một ngưỡng lọc. Để trống nghĩa là KHÔNG lọc, không phải lọc bằng 0. */
+function NumberFilter({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number | null;
+  onChange: (v: number | null) => void;
+}) {
+  return (
+    <label className="flex items-center gap-1.5">
+      <span className="text-mist-dim">{label}</span>
+      <input
+        type="number"
+        inputMode="numeric"
+        value={value ?? ""}
+        onChange={(e) => {
+          const raw = e.target.value.trim();
+          const n = Number(raw);
+          onChange(raw === "" || !Number.isFinite(n) ? null : n);
+        }}
+        className="focus-ring w-16 rounded-sm border border-grid bg-void-soft px-2 py-1 text-sm tabular-nums text-ghost"
+      />
+    </label>
+  );
+}
+
 function growth(p: SavePlayer): number {
   if (p.overall === null || p.potential === null) return -1;
   return p.potential - p.overall;
@@ -109,33 +139,30 @@ export interface SkippedGroups {
 export function PlayerTable({
   players,
   skipped,
+  excludeIds,
 }: {
   players: SavePlayer[];
   skipped?: SkippedGroups;
+  /** Đội của người chơi — tab Scout loại họ ra, họ đã có tab riêng. */
+  excludeIds?: Set<number>;
 }) {
-  const [query, setQuery] = useState("");
+  const [criteria, setCriteria] = useState<ScoutCriteria>(EMPTY_CRITERIA);
   const [sort, setSort] = useState<SortKey>("potential");
-  const [onlyNewgen, setOnlyNewgen] = useState(false);
-  const [maxAge, setMaxAge] = useState<number | null>(null);
   const [visible, setVisible] = useState(PAGE);
   const [openId, setOpenId] = useState<number | null>(null);
 
+  const set = <K extends keyof ScoutCriteria>(key: K, value: ScoutCriteria[K]) => {
+    setCriteria((c) => ({ ...c, [key]: value }));
+    setVisible(PAGE);
+  };
+
   // Lọc chạy trên hơn 20.000 dòng nên bám thẳng vào ô nhập sẽ giật khi gõ.
-  const deferredQuery = useDeferredValue(query);
+  const deferredCriteria = useDeferredValue(criteria);
 
   const rows = useMemo(() => {
-    const needle = deferredQuery.trim().toLowerCase();
-    const filtered = players.filter((p) => {
-      if (onlyNewgen && p.nameSource !== "newgen") return false;
-      if (maxAge !== null && (p.age === null || p.age > maxAge)) return false;
-      if (!needle) return true;
-      return (
-        (p.name?.toLowerCase().includes(needle) ?? false) ||
-        (p.club?.toLowerCase().includes(needle) ?? false) ||
-        (p.nation?.toLowerCase().includes(needle) ?? false) ||
-        p.position.toLowerCase() === needle ||
-        String(p.playerId) === needle
-      );
+    const filtered = filterPlayers(players, {
+      ...deferredCriteria,
+      excludeIds: excludeIds ?? null,
     });
 
     const cmp: Record<SortKey, (a: SavePlayer, b: SavePlayer) => number> = {
@@ -146,7 +173,7 @@ export function PlayerTable({
       name: (a, b) => (a.name ?? "").localeCompare(b.name ?? ""),
     };
     return [...filtered].sort(cmp[sort]);
-  }, [players, deferredQuery, sort, onlyNewgen, maxAge]);
+  }, [players, deferredCriteria, excludeIds, sort]);
 
   const shown = rows.slice(0, visible);
   const unnamed = useMemo(() => players.filter((p) => p.name === null).length, [players]);
@@ -193,11 +220,8 @@ export function PlayerTable({
       <div className="flex flex-wrap items-center gap-3">
         <input
           type="search"
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setVisible(PAGE);
-          }}
+          value={criteria.query}
+          onChange={(e) => set("query", e.target.value)}
           placeholder="Tìm theo tên, CLB gốc, quốc tịch, vị trí hoặc ID…"
           className="focus-ring min-w-[16rem] flex-1 rounded-sm border border-grid bg-void-soft px-3 py-2 text-sm text-ghost placeholder:text-mist-dim"
         />
@@ -222,28 +246,53 @@ export function PlayerTable({
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
-            checked={onlyNewgen}
-            onChange={(e) => {
-              setOnlyNewgen(e.target.checked);
-              setVisible(PAGE);
-            }}
+            checked={criteria.onlyNewgen}
+            onChange={(e) => set("onlyNewgen", e.target.checked)}
           />
           Chỉ cầu thủ do career sinh ra
         </label>
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={maxAge !== null}
-            onChange={(e) => {
-              setMaxAge(e.target.checked ? 21 : null);
-              setVisible(PAGE);
-            }}
-          />
-          Chỉ cầu thủ từ 21 tuổi trở xuống
-        </label>
         <span className="opacity-70">
-          {rows.length.toLocaleString("vi-VN")} / {players.length.toLocaleString("vi-VN")} cầu thủ
+          {rows.length.toLocaleString("vi-VN")} /{" "}
+          {(players.length - (excludeIds?.size ?? 0)).toLocaleString("vi-VN")} cầu thủ
         </span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-mist-dim">Tuyến</span>
+          {GROUP_ORDER.map((g) => {
+            const on = criteria.groups.includes(g);
+            return (
+              <button
+                key={g}
+                type="button"
+                onClick={() =>
+                  set(
+                    "groups",
+                    on ? criteria.groups.filter((x) => x !== g) : [...criteria.groups, g],
+                  )
+                }
+                className={`tab ${on ? "tab-active" : ""}`}
+              >
+                {GROUP_LABEL[g].vi}
+              </button>
+            );
+          })}
+        </div>
+
+        <NumberFilter label="Tuổi từ" value={criteria.minAge} onChange={(v) => set("minAge", v)} />
+        <NumberFilter label="đến" value={criteria.maxAge} onChange={(v) => set("maxAge", v)} />
+        <NumberFilter label="CS ≥" value={criteria.minOverall} onChange={(v) => set("minOverall", v)} />
+        <NumberFilter label="TN ≥" value={criteria.minPotential} onChange={(v) => set("minPotential", v)} />
+        <NumberFilter
+          label="Còn tăng ≥"
+          value={criteria.minGrowth}
+          onChange={(v) => set("minGrowth", v)}
+        />
+
+        <button type="button" onClick={() => setCriteria(EMPTY_CRITERIA)} className="tab">
+          Xoá lọc
+        </button>
       </div>
 
       <div className="overflow-x-auto">
