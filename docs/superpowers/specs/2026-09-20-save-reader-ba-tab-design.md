@@ -156,9 +156,9 @@ Bốn tab chẩn đoán và năm component chỉ phục vụ chúng:
 - `components/save/SaveUnknownList.tsx`
 - `components/save/SaveStats.tsx`
 
-Nút xuất: **giữ "Cầu thủ (CSV)"** — nó phục vụ đúng việc scout, lọc tiếp bằng
-Excel. Bỏ "Cầu thủ (JSON)" và "Chẩn đoán (JSON)": cái sau chỉ có nghĩa khi còn
-các tab chẩn đoán.
+Cả ba nút xuất — "Cầu thủ (CSV)", "Cầu thủ (JSON)", "Chẩn đoán (JSON)" — bỏ
+hết. Bộ lọc trong tab Scout thay được việc xuất ra Excel lọc tay, và "Chẩn đoán
+(JSON)" chỉ có nghĩa khi còn các tab chẩn đoán.
 
 Parser không đụng tới. Nó vẫn đọc field, chuỗi và vùng chưa giải mã như cũ —
 chỉ là giao diện thôi hiển thị. Cắt phần đó khỏi parser là việc khác, và chưa
