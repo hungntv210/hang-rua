@@ -135,8 +135,6 @@ function buildUnknownRegions(
   }));
 }
 
-/** Dưới ngưỡng này thì giải thích rõ vì sao độ phủ thấp là bình thường. */
-const LOW_COVERAGE_THRESHOLD = 0.05;
 
 function buildIssues(
   container: RawContainer,
@@ -163,17 +161,16 @@ function buildIssues(
     issues.push({
       level: "error",
       message:
-        "Không nhận ra field nào. Hoặc file không dùng cấu trúc token mà parser nhận biết, hoặc toàn bộ đã bị nén — xem tab Vùng chưa giải mã.",
-    });
-  } else if (coverage < LOW_COVERAGE_THRESHOLD) {
-    // Đây là chuyện BÌNH THƯỜNG với save FC 26, không phải lỗi. Nói thẳng ra,
-    // nếu không người dùng sẽ tưởng parser hỏng khi thấy độ phủ 0,2%.
-    issues.push({
-      level: "info",
-      message:
-        "Độ phủ thấp là đúng với định dạng này, không phải parser hỏng: lớp field có tên chỉ bao phủ phần sự kiện Career Mode (chuyển nhượng, email, cột mốc cầu thủ). Phần lớn dung lượng file là bảng nhị phân cố định — cầu thủ, đội, lịch thi đấu — không có tên field đi kèm nên chưa bóc được. Tên đội và tên cầu thủ trong các bảng đó xuất hiện ở tab Chuỗi rời.",
+        "Không nhận ra field nào. Hoặc file không dùng cấu trúc token mà parser nhận biết, hoặc toàn bộ đã bị nén.",
     });
   }
+
+  /*
+   * Trước đây ở đây có một ghi chú "độ phủ thấp là bình thường". Nó tồn tại để
+   * giải thích con số độ phủ 0,2% trên thẻ thống kê — mà thẻ đó đã bị gỡ cùng
+   * các tab chẩn đoán. Một lời giải thích cho con số không còn ai thấy chỉ là
+   * nhiễu, và nó còn trỏ người đọc tới "tab Chuỗi rời" cũng không còn nữa.
+   */
 
   const highEntropy = unknownRegions.filter(
     (region) => region.entropy >= HIGH_ENTROPY_THRESHOLD,

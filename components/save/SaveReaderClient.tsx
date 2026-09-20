@@ -15,11 +15,6 @@ import { loadFc26Formations } from "@/lib/fc26/formations";
 import { buildLineup, lineupFromSheets, pickSquad, type Lineup } from "@/lib/fc26/lineup";
 import { bestGate, gateSheets, type CareerExport, type GateResult } from "@/lib/fc26/career-export";
 import { loadFc26Names } from "@/lib/fc26/names";
-import {
-  diagnosticsToJson,
-  playersToCsv,
-  playersToJson,
-} from "@/lib/save/career/export";
 import { formatBytes, formatCount } from "@/lib/save/format";
 import { clearSave, getSave, putSave } from "@/lib/save/store";
 import { FILE_LIMITS } from "@/lib/save/heuristics";
