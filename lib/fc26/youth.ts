@@ -69,12 +69,19 @@ export interface YouthResult {
   players: SavePlayer[];
   stats: YouthFilterStats;
   /**
-   * `"bang"` khi danh sách đọc thẳng từ bảng học viện trong save — chính xác,
-   * đúng đội của người chơi. `"suy-luan"` khi không tìm thấy bảng và phải lọc
-   * theo dấu hiệu, khi đó danh sách gom cả học viện của câu lạc bộ khác.
+   * `"bang"` khi danh sách đọc thẳng từ bảng học viện trong save — đúng đội của
+   * người chơi, KHÔNG lẫn câu lạc bộ khác. `"suy-luan"` khi không tìm thấy bảng
+   * và phải lọc theo dấu hiệu, khi đó danh sách gom cả học viện CLB khác.
    *
-   * Giao diện PHẢI nói ra khác biệt này. Hai chế độ cho hai mức tin cậy rất
-   * khác nhau, và người xem không có cách nào tự biết mình đang ở chế độ nào.
+   * ─── `"bang"` KHÔNG có nghĩa là "đúng bằng Đội trẻ" ────────────────────────
+   *
+   * Bảng chứa cả cầu thủ đã ký lẫn cầu thủ trưởng đoàn scout mới tìm thấy, và
+   * không có trường nào đánh dấu ai đã ký. Đo trên một career thật: bảng 25
+   * người = 16 đã ký + 9 đang scout, xác nhận bằng ảnh chụp màn hình Đội trẻ và
+   * bằng tên bốn người đọc được. Đã dò 12 byte chưa giải mã của từng dòng, dò
+   * khối đội hình, và dò mọi vùng chứa đúng 16 người — không hướng nào tách được.
+   *
+   * Giao diện PHẢI nói ra cả hai điều: nguồn nào, và rằng con số lớn hơn Đội trẻ.
    */
   source: "bang" | "suy-luan";
 }
