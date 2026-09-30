@@ -13,6 +13,7 @@ import { readFileSync } from "node:fs";
 import { Fc27FormatError, unpackSave } from "../lib/fc27/container.ts";
 import { findTable, firstDbOffset, openDatabases, readString } from "../lib/fc27/fifadb.ts";
 import { readLinks, readPlayers, readTeams } from "../lib/fc27/read-tables.ts";
+import { readLoans, readSectionIndex, sectionDelta } from "../lib/fc27/sections.ts";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = ""): void {
@@ -70,6 +71,22 @@ const utd = new Set(links.filter((l) => l.teamId === 11).map((l) => l.playerId))
 check("Man Utd có 39 cầu thủ", utd.size === 39, String(utd.size));
 const potBelow = [...players.values()].filter((p) => p.potential < p.overall).length;
 check("POT ≥ OVR ở mọi cầu thủ", potBelow === 0, String(potBelow));
+
+console.log("\n=== loans ===");
+const index = readSectionIndex(SAMPLE, blob);
+check("mục lục có khối msnl", index.has("msnl"));
+check("độ lệch mục lục suy ra = 1600", sectionDelta(SAMPLE, blob) === 1600, String(sectionDelta(SAMPLE, blob)));
+const loans = readLoans(blob, index);
+check("msnl có 733 mục", loans.length === 733, String(loans.length));
+const utdLoans = loans.filter((l) => l.ownerTeamId === 11).map((l) => `${l.playerId}@${l.until}`).sort();
+check(
+  "cho mượn của Man Utd = Onana + Koné, hết hạn 2027-06-30",
+  utdLoans.join(",") === "226753@2027-06-30,77403@2027-06-30",
+  utdLoans.join(","),
+);
+const broken = blob.slice();
+broken[(index.get("msnl") as number) + 25 + 4 * 20 + 9] = 0x07; // hỏng dấu 01 của mục thứ 5
+check("msnl sai dấu thì ném lỗi, không đọc rác", throws(() => readLoans(broken, index)));
 
 console.log(failures === 0 ? "\nTẤT CẢ ĐẠT." : `\n${failures} MỤC KHÔNG ĐẠT.`);
 process.exitCode = failures === 0 ? 0 : 1;
