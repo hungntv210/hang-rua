@@ -30,16 +30,22 @@ export function SquadTab({ career, lineup, players, byId, jerseyOf }: Props) {
   const starterIds = useMemo(() => new Set(lineup?.slots.map((s) => s.playerId) ?? []), [lineup]);
   const captain = career.lineup?.captainId ? byId.get(career.lineup.captainId) : null;
 
-  if (career.errors.squad) {
+  // Không có CLB thì không có gì để hiện; lỗi riêng phần sơ đồ thì vẫn hiện cả đội.
+  if (!career.club) {
     return (
       <Notice tone="error" title="Không đọc được đội hình">
-        {career.errors.squad}
+        {career.errors.squad ?? "Không xác định được CLB người chơi."}
       </Notice>
     );
   }
 
   return (
     <div className="space-y-4">
+      {career.errors.squad ? (
+        <Notice tone="error" title="Không đọc được sơ đồ đội hình ra sân">
+          {career.errors.squad} Danh sách cả đội bên dưới vẫn đọc đúng.
+        </Notice>
+      ) : null}
       {career.warnings.squad?.map((w) => (
         <Notice key={w} title="Cần lưu ý">
           {w}

@@ -44,8 +44,9 @@ export function Fc27Client() {
   const [error, setError] = useState<{ message: string; notFc27: boolean } | null>(null);
   const [saved, setSaved] = useState<{ name: string; at: number } | null>(null);
   const [tab, setTab] = useState<Tab>("squad");
-  const [ref, setRef] = useState<Fc27Ref | null>(null);
-  const [fc26, setFc26] = useState<Fc26Names | null>(null);
+  // `undefined` = đang tải, `null` = tải hỏng. Hỏng thì vẫn hiển thị, tên thành #id.
+  const [ref, setRef] = useState<Fc27Ref | null | undefined>(undefined);
+  const [fc26, setFc26] = useState<Fc26Names | null | undefined>(undefined);
   const workerRef = useRef<Worker | null>(null);
 
   useEffect(() => {
@@ -108,11 +109,11 @@ export function Fc27Client() {
   }, [parse]);
 
   const names = useMemo(
-    () => (career && ref && fc26 ? Fc27Names.fromRef(ref, fc26, career.players) : null),
+    () => (career && ref !== undefined && fc26 !== undefined ? Fc27Names.fromRef(ref, fc26, career.players) : null),
     [career, ref, fc26],
   );
   const players = useMemo(
-    () => (career && names && ref ? toSavePlayers(career, names, ref.nations) : null),
+    () => (career && names ? toSavePlayers(career, names, ref?.nations ?? {}) : null),
     [career, names, ref],
   );
   const byId = useMemo(() => new Map((players ?? []).map((p) => [p.playerId, p])), [players]);
@@ -164,6 +165,11 @@ export function Fc27Client() {
 
       {career && players ? (
         <div className="space-y-6">
+          {ref === null || fc26 === null ? (
+            <Notice title="Không tải được kho tên">
+              Dữ liệu đọc từ save vẫn đầy đủ, nhưng tên cầu thủ hiện dưới dạng #mã. Tải lại trang để thử lại.
+            </Notice>
+          ) : null}
           <TabBar tabs={TABS} active={tab} onChange={setTab} group="save-reader-fc27" ariaLabel="Các phần của save FC27" />
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-mist-dim">
             {players.length.toLocaleString("vi-VN")} cầu thủ · giải nén {career.timings.unzipMs}ms · đọc{" "}
@@ -177,7 +183,7 @@ export function Fc27Client() {
             ) : tab === "loans" ? (
               <LoansTab career={career} byId={byId} />
             ) : (
-              <ScoutTab players={scoutPlayers} />
+              <ScoutTab players={scoutPlayers} career={career} />
             )}
           </TabPanel>
         </div>

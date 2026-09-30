@@ -11,13 +11,13 @@ export interface RawPlayer {
   potential: number;
   positionCode: number;
   birthDay: number;
-  joinedDay: number;
-  nationalityId: number;
-  firstNameId: number;
-  lastNameId: number;
-  commonNameId: number;
+  joinedDay: number | null;
+  nationalityId: number | null;
+  firstNameId: number | null;
+  lastNameId: number | null;
+  commonNameId: number | null;
   /** 0 nam, 1 nữ. */
-  gender: number;
+  gender: number | null;
 }
 
 export interface Link {
@@ -47,13 +47,26 @@ export function tableReader(blob: Uint8Array, tables: DbTable[], name: string) {
     table: t,
     field,
     int: (row: number, spec: FieldSpec): number => readInt(blob, t, row, field(spec)) + spec.add,
+    /** Trường phụ: thiếu thì `null` thay vì ném. */
+    has: (spec: FieldSpec): boolean => t.fields.has(spec.code),
     str: (row: number, spec: FieldSpec): string => readString(blob, t, row, field(spec)),
   };
 }
 
-export function readPlayers(blob: Uint8Array, tables: DbTable[], s: Fc27Schema = FC27): Map<number, RawPlayer> {
+/**
+ * id, OVR, POT, vị trí, ngày sinh là bắt buộc (thiếu thì ném). Các trường còn lại
+ * là phụ: title update bỏ một trường phụ thì cột đó để trống và mã thiếu được
+ * đẩy vào `missing`, thay vì làm sập mọi tab.
+ */
+export function readPlayers(
+  blob: Uint8Array, tables: DbTable[], s: Fc27Schema = FC27, missing: string[] = [],
+): Map<number, RawPlayer> {
   const p = s.players;
   const r = tableReader(blob, tables, p.table);
+  for (const spec of [p.id, p.overall, p.potential, p.position, p.birthDay]) r.field(spec);
+  const optional = [p.joinedDay, p.nationality, p.firstNameId, p.lastNameId, p.commonNameId, p.gender];
+  for (const spec of optional) if (!r.has(spec)) missing.push(spec.code);
+  const opt = (row: number, spec: FieldSpec): number | null => (r.has(spec) ? r.int(row, spec) : null);
   const out = new Map<number, RawPlayer>();
   for (let i = 0; i < r.table.nValid; i += 1) {
     const id = r.int(i, p.id);
@@ -63,12 +76,12 @@ export function readPlayers(blob: Uint8Array, tables: DbTable[], s: Fc27Schema =
       potential: r.int(i, p.potential),
       positionCode: r.int(i, p.position),
       birthDay: r.int(i, p.birthDay),
-      joinedDay: r.int(i, p.joinedDay),
-      nationalityId: r.int(i, p.nationality),
-      firstNameId: r.int(i, p.firstNameId),
-      lastNameId: r.int(i, p.lastNameId),
-      commonNameId: r.int(i, p.commonNameId),
-      gender: r.int(i, p.gender),
+      joinedDay: opt(i, p.joinedDay),
+      nationalityId: opt(i, p.nationality),
+      firstNameId: opt(i, p.firstNameId),
+      lastNameId: opt(i, p.lastNameId),
+      commonNameId: opt(i, p.commonNameId),
+      gender: opt(i, p.gender),
     });
   }
   return out;

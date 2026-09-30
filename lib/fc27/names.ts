@@ -36,7 +36,9 @@ export class Fc27Names {
     private readonly bridge: Map<number, string>,
   ) {}
 
-  static fromRef(ref: Fc27Ref, fc26: Fc26Names, players: RawPlayer[]): Fc27Names {
+  /** Thiếu asset (tải hỏng) vẫn dựng được: mọi tên thành `#id`, trang không kẹt. */
+  static fromRef(ref: Fc27Ref | null, fc26: Fc26Names | null, players: RawPlayer[]): Fc27Names {
+    if (!ref || !fc26) return new Fc27Names(new Map(), new Map());
     const refMap = new Map<number, RefPlayer>();
     let id = 0;
     for (let i = 0; i + 4 < ref.players.length; i += 5) {
@@ -54,14 +56,14 @@ export class Fc27Names {
       if (!r || r.birthDay !== p.birthDay) continue;
       const full = fc26.resolve(r.fn, r.ln, r.cn || null);
       if (full) exact.set(p.id, full);
-      const pairs: [number, number][] = [[p.firstNameId, r.fn], [p.lastNameId, r.ln]];
+      const pairs: [number, number][] = [[p.firstNameId ?? 0, r.fn], [p.lastNameId ?? 0, r.ln]];
       for (const [id27, id26] of pairs) {
         const w = word(id26);
         if (id27 > 0 && w && !bridge.has(id27)) bridge.set(id27, w);
       }
-      if (p.commonNameId > 0 && r.cn > 0) {
+      if ((p.commonNameId ?? 0) > 0 && r.cn > 0) {
         const c = fc26.resolve(null, null, r.cn);
-        if (c && !bridge.has(p.commonNameId)) bridge.set(p.commonNameId, c);
+        if (c && !bridge.has(p.commonNameId!)) bridge.set(p.commonNameId!, c);
       }
     }
     return new Fc27Names(exact, bridge);
@@ -70,12 +72,12 @@ export class Fc27Names {
   nameOf(p: RawPlayer): { name: string; source: NameSource } {
     const e = this.exact.get(p.id);
     if (e) return { name: e, source: "exact" };
-    if (p.commonNameId > 0) {
-      const c = this.bridge.get(p.commonNameId);
+    if ((p.commonNameId ?? 0) > 0) {
+      const c = this.bridge.get(p.commonNameId!);
       if (c) return { name: c, source: "bridge" };
     }
-    const f = this.bridge.get(p.firstNameId);
-    const l = this.bridge.get(p.lastNameId);
+    const f = this.bridge.get(p.firstNameId ?? 0);
+    const l = this.bridge.get(p.lastNameId ?? 0);
     if (!f && !l) return { name: `#${p.id}`, source: null };
     const name = f && l ? (f === l ? f : `${f} ${l}`) : `${f ?? "?"} ${l ?? "?"}`;
     return { name, source: "bridge" };

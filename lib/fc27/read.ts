@@ -52,10 +52,18 @@ export interface ReadOptions {
 const now = (): number => (typeof performance !== "undefined" ? performance.now() : Date.now());
 const message = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
-/** Chỉ số dòng team sheet của CLB người chơi, bỏ đội tuyển; `null` nếu không có. */
+/**
+ * Chỉ số dòng team sheet của CLB người chơi; `null` khi không chắc — KHÔNG đoán.
+ *
+ * Một dòng duy nhất là của người chơi. Nhiều dòng (CLB + đội tuyển) thì bỏ dòng
+ * mang tên quốc gia và phải còn đúng một; không có danh sách quốc gia thì không
+ * phân biệt được, nên cũng trả `null`.
+ */
 export function pickClubRow(rows: { teamId: number; name: string }[], nationNames: Set<string>): number | null {
-  const i = rows.findIndex((r) => r.name !== "" && !nationNames.has(r.name));
-  return i >= 0 ? i : null;
+  if (rows.length === 1) return rows[0].name !== "" ? 0 : null;
+  if (nationNames.size === 0) return null;
+  const clubs = rows.flatMap((r, i) => (r.name !== "" && !nationNames.has(r.name) ? [i] : []));
+  return clubs.length === 1 ? clubs[0] : null;
 }
 
 const shapeKey = (xs: number[], ys: number[]): string =>
@@ -88,7 +96,11 @@ export function buildCareer(raw: Uint8Array, blob: Uint8Array, options: ReadOpti
   let players = new Map<number, RawPlayer>();
   let teams = new Map<number, string>();
   try {
-    players = readPlayers(blob, tables, s);
+    const missing: string[] = [];
+    players = readPlayers(blob, tables, s, missing);
+    if (missing.length > 0) {
+      warn("scout", `Save thiếu trường ${missing.join(", ")} trong bảng ${s.players.table} — các cột liên quan để trống.`);
+    }
     teams = readTeams(blob, tables, s);
     career.links = readLinks(blob, tables, s);
   } catch (e) {
@@ -98,7 +110,7 @@ export function buildCareer(raw: Uint8Array, blob: Uint8Array, options: ReadOpti
   }
   career.players = [...players.values()];
   career.teams = [...teams];
-  career.refDay = career.players.reduce((m, p) => Math.max(m, p.joinedDay), 0);
+  career.refDay = career.players.reduce((m, p) => Math.max(m, p.joinedDay ?? 0), 0);
   if (career.players.some((p) => p.potential < p.overall)) warn("scout", "Có cầu thủ POT thấp hơn OVR — dữ liệu có thể đọc lệch.");
 
   try {
@@ -150,7 +162,7 @@ function readClub(
     return { teamId, name: teams.get(teamId) ?? "" };
   });
   const i = pickClubRow(rows, nations);
-  if (i === null) throw new Error("Không xác định được CLB người chơi.");
+  if (i === null) throw new Error("Không xác định được CLB người chơi (save có nhiều team sheet mà không phân biệt được CLB với đội tuyển).");
   return rows[i];
 }
 

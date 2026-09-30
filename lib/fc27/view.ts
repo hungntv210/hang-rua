@@ -36,7 +36,7 @@ export function toSavePlayers(c: Fc27Career, names: Fc27Names, nations: Record<s
       nameSource: n.source === "exact" ? "database" : n.source === "bridge" ? "namePool" : null,
       club: clubOf.get(p.id) ?? null,
       league: null,
-      nation: nations[String(p.nationalityId)] ?? null,
+      nation: p.nationalityId === null ? null : nations[String(p.nationalityId)] ?? null,
       position: positionName(p.positionCode),
       overall: p.overall,
       potential: p.potential,
@@ -53,7 +53,7 @@ export function toSavePlayers(c: Fc27Career, names: Fc27Names, nations: Record<s
       commonNameId: p.commonNameId,
       gender: p.gender,
       contractUntil: null,
-      joinedDate: isoOf(p.joinedDay),
+      joinedDate: isoOf(p.joinedDay ?? 0),
       valueEstimate: null,
       attributes: [],
     };
@@ -90,5 +90,6 @@ export function toLineup(c: Fc27Career): Lineup | null {
  */
 export function scoutPool(players: SavePlayer[], c: Fc27Career): SavePlayer[] {
   const mine = new Set([...c.squad.map((l) => l.playerId), ...c.youthIds]);
-  return players.filter((p) => p.gender === 0 && !mine.has(p.playerId));
+  // `gender !== 1`: save thiếu trường giới tính thì không loại ai, thay vì loại hết.
+  return players.filter((p) => p.gender !== 1 && !mine.has(p.playerId));
 }

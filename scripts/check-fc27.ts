@@ -162,6 +162,25 @@ check("Scout loại cầu thủ nữ", pool.every((p) => p.gender === 0));
 check("Scout loại cả đội lẫn học viện của bạn",
   !pool.some((p) => p.playerId === 212198 || p.playerId === 460012));
 
+console.log("\n=== review fixes ===");
+// I2: asset tên hỏng → vẫn dựng được tên (#id), không kẹt.
+const noAssets = Fc27Names.fromRef(null, null, career.players);
+check("không có asset tên → #id, không ném", noAssets.nameOf(byId.get(212198)!).name === "#212198");
+// I3: không đoán CLB.
+check("hai CLB không phải đội tuyển → không chọn", pickClubRow([{ teamId: 1, name: "A" }, { teamId: 2, name: "B" }], new Set(["X"])) === null);
+check("nhiều dòng mà thiếu danh sách quốc gia → không chọn",
+  pickClubRow([{ teamId: 1354, name: "Portugal" }, { teamId: 11, name: "Man Utd" }], new Set()) === null);
+check("chỉ một team sheet → chính là CLB", pickClubRow([{ teamId: 11, name: "Man Utd" }], new Set()) === 0);
+// I4: trường phụ của bảng cầu thủ thiếu → chỉ cảnh báo, không sập tab.
+const noGender = structuredClone(FC27);
+noGender.players.gender = { code: "ZZZZ", add: 0 };
+const g = readFc27(SAMPLE, { nationNames, schema: noGender });
+check("thiếu trường giới tính → không tab nào lỗi", Object.keys(g.errors).length === 0, JSON.stringify(g.errors));
+check("… và Scout được cảnh báo nêu mã", (g.warnings.scout ?? []).some((w) => w.includes("ZZZZ")), JSON.stringify(g.warnings));
+check("… cầu thủ vẫn đủ", g.players.length === career.players.length);
+check("… scoutPool không loại hết khi thiếu giới tính",
+  scoutPool(toSavePlayers(g, Fc27Names.fromRef(null, null, g.players), ref.nations), g).length > 20_000);
+
 console.log("\n=== timing (chỉ in, không kiểm) ===");
 {
   const t = performance.now();
