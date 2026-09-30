@@ -199,6 +199,18 @@ console.log("\n=== rút gọn tên trên sân ===");
 check("≈ sống sót khi rút gọn họ", surnameOf("≈ Neymar Junior", "?") === "≈Junior");
 check("tên FC26 không đổi", surnameOf("Lionel Messi", "?") === "Messi" && surnameOf(null, "#1") === "#1");
 
+console.log("\n=== save thứ hai (tuỳ chọn, tham số 3) ===");
+const secondPath = process.argv[4];
+if (!secondPath) {
+  console.log("bỏ qua — không truyền save thứ hai");
+} else {
+  const second = readFc27(new Uint8Array(readFileSync(secondPath)), { nationNames });
+  check("CLB = Sunderland", second.club?.name === "Sunderland", JSON.stringify(second.club));
+  check("toạ độ khớp nhiều tên → phân biệt bằng vị trí: 4-3-3", second.lineup?.formationName === "4-3-3", String(second.lineup?.formationName));
+  check("đội hình 31 người", second.squad.length === 31, String(second.squad.length));
+  check("không lỗi", Object.keys(second.errors).length === 0, JSON.stringify(second.errors));
+}
+
 console.log("\n=== timing (chỉ in, không kiểm) ===");
 {
   const t = performance.now();

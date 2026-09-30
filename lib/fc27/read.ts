@@ -193,7 +193,7 @@ function readLineup(blob: Uint8Array, tables: DbTable[], s: Fc27Schema, teamId: 
 
   return {
     sheetName: ts.str(row, s.teamsheets.name),
-    formationName: formationName(blob, tables, s, shapeKey(xs, ys)),
+    formationName: formationName(blob, tables, s, xs, ys, sh.has(s.sheetShape.fullNameId) ? sh.int(shapeRow, s.sheetShape.fullNameId) : null),
     captainId: captain >= 0 ? captain : null,
     slots: ids.map((playerId, i) => ({
       playerId,
@@ -204,16 +204,36 @@ function readLineup(blob: Uint8Array, tables: DbTable[], s: Fc27Schema, teamId: 
   };
 }
 
-/** Tên sơ đồ có cùng tập toạ độ trong bảng formations của chính save; phải duy nhất. */
-function formationName(blob: Uint8Array, tables: DbTable[], s: Fc27Schema, key: string): string | null {
+/**
+ * Tên sơ đồ, theo thứ tự tin cậy:
+ *
+ *  1. Toạ độ khớp đúng MỘT tên trong bảng formations của save.
+ *  2. Toạ độ khớp nhiều tên — có thật: "4-3-3" và "4-2-3-1" dùng cùng 11 toạ độ và
+ *     cùng mã vị trí — thì team sheet mang `fullNameId`, khoá tên của game. Tên là
+ *     tên chiếm đa số (≥ 90%) trong các dòng bảng có cùng `fullNameId`.
+ *
+ * Không chắc thì `null`; không đoán.
+ */
+function formationName(
+  blob: Uint8Array, tables: DbTable[], s: Fc27Schema, xs: number[], ys: number[], fullNameId: number | null,
+): string | null {
   const f = tableReader(blob, tables, s.formations.table);
-  const names = new Set<string>();
+  const key = shapeKey(xs, ys);
+  const byCoords = new Set<string>();
+  const byId = new Map<string, number>();
+  const hasId = fullNameId !== null && f.has(s.formations.fullNameId);
   for (let i = 0; i < f.table.nValid; i += 1) {
-    const xs = s.offsetX.map((c) => readFloat(blob, f.table, i, f.field(c)));
-    const ys = s.offsetY.map((c) => readFloat(blob, f.table, i, f.field(c)));
-    if (shapeKey(xs, ys) === key) names.add(f.str(i, s.formations.name));
+    const name = f.str(i, s.formations.name);
+    const rx = s.offsetX.map((c) => readFloat(blob, f.table, i, f.field(c)));
+    const ry = s.offsetY.map((c) => readFloat(blob, f.table, i, f.field(c)));
+    if (shapeKey(rx, ry) === key) byCoords.add(name);
+    if (hasId && f.int(i, s.formations.fullNameId) === fullNameId) byId.set(name, (byId.get(name) ?? 0) + 1);
   }
-  return names.size === 1 ? [...names][0] : null;
+  if (byCoords.size === 1) return [...byCoords][0];
+  // Chỉ xét tên đã khớp toạ độ; đa số tính trên toàn bảng theo mã tên.
+  const total = [...byId.values()].reduce((a, n) => a + n, 0);
+  const top = [...byId].filter(([n]) => byCoords.has(n)).sort((a, b) => b[1] - a[1])[0];
+  return top && total > 0 && top[1] / total >= 0.9 ? top[0] : null;
 }
 
 function readYouth(blob: Uint8Array, tables: DbTable[], s: Fc27Schema): number[] {

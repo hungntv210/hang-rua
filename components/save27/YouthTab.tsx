@@ -36,7 +36,7 @@ export function YouthTab({ career, byId }: { career: Fc27Career; byId: Map<numbe
         Học viện của <strong className="text-ghost">{career.club?.name}</strong> ({youth.length} cầu thủ)
         <span className="text-mist-dim"> — danh sách thật đọc từ save, chỉ gồm học viện CLB bạn quản lý.</span>
       </p>
-      <Fc27Table players={youth} empty="Học viện chưa có cầu thủ nào." />
+      <Fc27Table players={youth} empty="Bảng học viện (career_youthplayers) trong file save này không có dòng nào. Thường gặp khi career vừa bắt đầu; nếu học viện của bạn đang có cầu thủ trong game, hãy báo lại kèm file save." />
       <TableNotes />
     </div>
   );

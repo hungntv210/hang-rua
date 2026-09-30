@@ -38,7 +38,7 @@ export const FC27 = {
   },
   links: { table: "RrqT", playerId: f("ykFq", -1), teamId: f("mCXg", -1), jersey: f("JFiY", 1) },
   teams: { table: "lyxL", teamId: f("mCXg", -1), name: f("AUsv") },
-  formations: { table: "mDGw", name: f("LGsF") },
+  formations: { table: "mDGw", name: f("LGsF"), fullNameId: f("nFPu") },
   teamsheets: {
     table: "zdMM",
     teamId: f("mCXg", -1),
@@ -51,6 +51,8 @@ export const FC27 = {
   sheetShape: {
     table: "emmj",
     teamId: f("mCXg", -1),
+    /** Mã tên đầy đủ của sơ đồ — cùng mã ở bảng `formations`. */
+    fullNameId: f("nFPu"),
     positions: ["ZzVx", "CEZz", "nNch", "cGsr", "aCho", "BBlW", "ksMI", "fvcy", "TMpL", "sPtx", "FuLD"].map((c) => f(c, -1)),
   },
   /** Toạ độ ô 0..10 — cùng mã ở bảng `formations` và `sheetShape`. */
