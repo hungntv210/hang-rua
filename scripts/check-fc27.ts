@@ -11,6 +11,7 @@
 import { readFileSync } from "node:fs";
 
 import { Fc27FormatError, unpackSave } from "../lib/fc27/container.ts";
+import { findTable, firstDbOffset, openDatabases, readString } from "../lib/fc27/fifadb.ts";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = ""): void {
@@ -40,6 +41,19 @@ check("giải nén đúng kích thước khai báo", blob.length === 17_632_769,
 check("save FC26 bị từ chối", throws(() => unpackSave(FC26SAVE), Fc27FormatError));
 check("file rác bị từ chối", throws(() => unpackSave(new Uint8Array(1000)), Fc27FormatError));
 check("file cụt ném lỗi, không treo", throws(() => unpackSave(SAMPLE.subarray(0, 3_000_000))));
+
+console.log("\n=== fifadb ===");
+const tables = openDatabases(blob);
+const czum = findTable(tables, "CZUM");
+check("players (CZUM) bản ghi 156 byte", czum?.recordSize === 156, String(czum?.recordSize));
+check("players có ≥ 21.000 dòng hợp lệ", (czum?.nValid ?? 0) >= 21_000, String(czum?.nValid));
+check("players có trường ykFq", czum?.fields.has("ykFq") === true);
+check("DB đầu tiên ở 212.023", firstDbOffset(blob) === 212_023, String(firstDbOffset(blob)));
+const czum26 = findTable(openDatabases(FC26SAVE), "CZUM");
+check("cùng bộ đọc mở được save FC26 (144 byte)", czum26?.recordSize === 144, String(czum26?.recordSize));
+const lyxl = findTable(tables, "lyxL");
+const teamName0 = lyxl ? readString(blob, lyxl, 0, lyxl.fields.get("AUsv")!) : "";
+check("readString đọc được tên đội", teamName0.length > 0, teamName0);
 
 console.log(failures === 0 ? "\nTẤT CẢ ĐẠT." : `\n${failures} MỤC KHÔNG ĐẠT.`);
 process.exitCode = failures === 0 ? 0 : 1;
