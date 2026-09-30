@@ -37,6 +37,8 @@ export interface Fc27Career {
   links: Link[];
   /** Ngày gia nhập CLB muộn nhất toàn bảng — mốc tính tuổi (ngày hiện tại ≥ mốc). */
   refDay: number;
+  /** Bản ghi đã loại khỏi `players`: nữ, icon/hero, bản ghi giữ chỗ OVR ≤ 1. */
+  excluded: { women: number; icons: number; junk: number };
   errors: Partial<Record<Tab, string>>;
   warnings: Partial<Record<Tab, string[]>>;
   timings: { unzipMs: number; readMs: number };
@@ -90,7 +92,8 @@ export function buildCareer(raw: Uint8Array, blob: Uint8Array, options: ReadOpti
 
   const career: Fc27Career = {
     club: null, lineup: null, squad: [], youthIds: [], loans: [],
-    players: [], teams: [], links: [], refDay: 0, errors, warnings, timings: { unzipMs, readMs: 0 },
+    players: [], teams: [], links: [], refDay: 0, excluded: { women: 0, icons: 0, junk: 0 },
+    errors, warnings, timings: { unzipMs, readMs: 0 },
   };
 
   let players = new Map<number, RawPlayer>();
@@ -108,6 +111,8 @@ export function buildCareer(raw: Uint8Array, blob: Uint8Array, options: ReadOpti
     career.timings.readMs = Math.round(now() - t0);
     return career;
   }
+  players = keepPlayable(players, teams, career.links, nations, s, career.excluded);
+  career.links = career.links.filter((l) => players.has(l.playerId));
   career.players = [...players.values()];
   career.teams = [...teams];
   career.refDay = career.players.reduce((m, p) => Math.max(m, p.joinedDay ?? 0), 0);
@@ -223,4 +228,41 @@ function readClubLoans(
       );
       return { ...l, atTeamId: at?.teamId ?? null, atTeamName: at ? teams.get(at.teamId) ?? null : null };
     });
+}
+
+/**
+ * Chỉ giữ cầu thủ nam dùng được trong career: bỏ nữ, bản ghi giữ chỗ (OVR ≤ 1)
+ * và icon/hero — người chỉ nằm trong đội biểu diễn, không gắn CLB thật nào.
+ * Đếm từng nhóm vào `excluded`, mỗi người chỉ tính một nhóm.
+ */
+function keepPlayable(
+  players: Map<number, RawPlayer>, teams: Map<number, string>, links: Link[], nations: Set<string>,
+  s: Fc27Schema, excluded: Fc27Career["excluded"],
+): Map<number, RawPlayer> {
+  const x = s.exclusions;
+  const teamsOf = new Map<number, string[]>();
+  for (const l of links) {
+    const name = teams.get(l.teamId);
+    if (name) teamsOf.set(l.playerId, [...(teamsOf.get(l.playerId) ?? []), name]);
+  }
+  const out = new Map<number, RawPlayer>();
+  for (const [id, p] of players) {
+    if (p.gender === 1) {
+      excluded.women += 1;
+      continue;
+    }
+    if (p.overall <= x.junkMaxOverall) {
+      excluded.junk += 1;
+      continue;
+    }
+    const names = teamsOf.get(id) ?? [];
+    const inExhibition = names.some((n) => x.exhibitionTeam.test(n));
+    const hasClub = names.some((n) => !x.exhibitionTeam.test(n) && !x.notAClub.test(n) && !nations.has(n));
+    if (inExhibition && !hasClub) {
+      excluded.icons += 1;
+      continue;
+    }
+    out.set(id, p);
+  }
+  return out;
 }

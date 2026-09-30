@@ -85,11 +85,10 @@ export function toLineup(c: Fc27Career): Lineup | null {
 }
 
 /**
- * Nhóm cầu thủ cho tab Scout: bỏ nhánh nữ (giống FC26) và bỏ người của chính CLB —
- * cả đội một lẫn học viện, vốn đã có tab riêng.
+ * Nhóm cầu thủ cho tab Scout: bỏ người của chính CLB — cả đội một lẫn học viện,
+ * vốn đã có tab riêng. Nữ, icon và bản ghi rác đã bị loại ở tầng đọc (`read.ts`).
  */
 export function scoutPool(players: SavePlayer[], c: Fc27Career): SavePlayer[] {
   const mine = new Set([...c.squad.map((l) => l.playerId), ...c.youthIds]);
-  // `gender !== 1`: save thiếu trường giới tính thì không loại ai, thay vì loại hết.
-  return players.filter((p) => p.gender !== 1 && !mine.has(p.playerId));
+  return players.filter((p) => !mine.has(p.playerId));
 }

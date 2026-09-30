@@ -175,6 +175,12 @@ export function Fc27Client() {
             {players.length.toLocaleString("vi-VN")} cầu thủ · giải nén {career.timings.unzipMs}ms · đọc{" "}
             {career.timings.readMs}ms
           </p>
+          <p className="text-xs text-mist-dim">
+            Chỉ gồm cầu thủ nam dùng được trong career — đã bỏ{" "}
+            {career.excluded.women.toLocaleString("vi-VN")} cầu thủ nữ,{" "}
+            {career.excluded.icons.toLocaleString("vi-VN")} icon/hero (nội dung Ultimate Team, không dùng được trong
+            career) và {career.excluded.junk.toLocaleString("vi-VN")} bản ghi giữ chỗ.
+          </p>
           <TabPanel tabKey={tab}>
             {tab === "squad" ? (
               <SquadTab career={career} lineup={lineup} players={players} byId={byId} jerseyOf={jerseyOf} />

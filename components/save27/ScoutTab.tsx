@@ -15,7 +15,7 @@ const SHOW = 300;
 
 const toNum = (v: string): number | null => (v.trim() === "" || Number.isNaN(Number(v)) ? null : Number(v));
 
-/** `players` đã được lọc bằng `scoutPool`: không có nhánh nữ, không có người của CLB bạn. */
+/** `players` đã được lọc bằng `scoutPool`: không có người của CLB bạn. */
 export function ScoutTab({ players, career }: { players: SavePlayer[]; career: Fc27Career }) {
   const [c, setC] = useState<ScoutCriteria>(EMPTY_CRITERIA);
   const result = useMemo(
@@ -82,7 +82,7 @@ export function ScoutTab({ players, career }: { players: SavePlayer[]; career: F
         </div>
       </div>
       <p className="text-xs text-mist-dim">
-        {result.length.toLocaleString("vi-VN")} cầu thủ khớp (đã bỏ đội một, học viện của bạn và nhánh nữ)
+        {result.length.toLocaleString("vi-VN")} cầu thủ khớp (không gồm đội một và học viện của bạn)
         {result.length > SHOW ? ` · hiện ${SHOW} người POT cao nhất` : ""}. CLB là CLB hiện tại trong save.
       </p>
       <Fc27Table

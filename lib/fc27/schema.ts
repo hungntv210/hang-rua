@@ -57,6 +57,22 @@ export const FC27 = {
   offsetX: ["XjPa", "yMyn", "pFxE", "wKsR", "TzCW", "usnj", "ZBMA", "gWJN", "DahS", "uBQf", "jIiE"],
   offsetY: ["Eozk", "NPOx", "mytG", "PJwT", "Iwmo", "RnDB", "CCIK", "fdNX", "MhRc", "lCgp", "cLmS"],
   youth: { table: "IOmq", playerId: f("ykFq", 0) },
+  /**
+   * Bản ghi có trong DB nhưng không phải cầu thủ dùng được trong career.
+   *
+   * Icon/hero (nội dung Ultimate Team) nằm trong các ĐỘI BIỂU DIỄN ("… XI",
+   * "Soccer Aid"). Chỉ loại người KHÔNG gắn với CLB thật nào: đo trên save mẫu,
+   * 19/189 người trong đội biểu diễn đang đá cho CLB thật (Courtois, Kane…) và
+   * phải giữ. Danh sách ID Ultimate Team của FC26 KHÔNG dùng lại được: nó chứa
+   * cả cầu thủ đang thi đấu.
+   */
+  exclusions: {
+    exhibitionTeam: /(^| )XI$|^Soccer Aid$/,
+    /** Đội không phải CLB: tên dạng khoá dịch "*…" và nhóm cầu thủ tự do. */
+    notAClub: /^\*|^Free Agents$/,
+    /** OVR ≤ mức này là bản ghi giữ chỗ, không phải cầu thủ. */
+    junkMaxOverall: 1,
+  },
   /** Khối career ngoài FIFA DB. */
   sections: { dbAnchorTag: "gsbd", loans: "msnl" },
 };

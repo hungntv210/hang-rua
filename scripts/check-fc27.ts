@@ -152,9 +152,9 @@ check("SavePlayer Bruno: CLB hiện tại + POT thô", brunoView?.club === "Man 
   JSON.stringify({ club: brunoView?.club, pot: brunoView?.potential, age: brunoView?.age }));
 
 console.log("\n=== scout ===");
-const caicedo = views.find((p) => p.name === "Linda Caicedo");
-check("đọc giới tính: Linda Caicedo là nữ", caicedo?.gender === 1, String(caicedo?.gender));
-check("Lamine Yamal là nam", views.find((p) => p.name === "Lamine Yamal")?.gender === 0);
+check("không còn cầu thủ nữ nào", views.every((p) => p.gender === 0));
+check("Linda Caicedo (nữ) đã bị loại", !views.some((p) => p.name === "Linda Caicedo"));
+check("Lamine Yamal (nam) vẫn còn", views.some((p) => p.name === "Lamine Yamal"));
 const academyView = views.find((p) => p.playerId === 460012);
 check("CLB dạng khoá dịch '*…' không hiện ra", !(academyView?.club ?? "").startsWith("*"), String(academyView?.club));
 const pool = scoutPool(views, career);
@@ -177,9 +177,22 @@ noGender.players.gender = { code: "ZZZZ", add: 0 };
 const g = readFc27(SAMPLE, { nationNames, schema: noGender });
 check("thiếu trường giới tính → không tab nào lỗi", Object.keys(g.errors).length === 0, JSON.stringify(g.errors));
 check("… và Scout được cảnh báo nêu mã", (g.warnings.scout ?? []).some((w) => w.includes("ZZZZ")), JSON.stringify(g.warnings));
-check("… cầu thủ vẫn đủ", g.players.length === career.players.length);
+check("… không lọc được nữ nên không loại ai vì giới tính, tổng vẫn khớp",
+  g.excluded.women === 0 && g.players.length + g.excluded.icons + g.excluded.junk === 21_623,
+  JSON.stringify({ n: g.players.length, ...g.excluded }));
 check("… scoutPool không loại hết khi thiếu giới tính",
   scoutPool(toSavePlayers(g, Fc27Names.fromRef(null, null, g.players), ref.nations), g).length > 20_000);
+
+console.log("\n=== lọc cầu thủ không dùng được ===");
+const ids = new Set(career.players.map((p) => p.id));
+check("đã bỏ 2.267 cầu thủ nữ", career.excluded.women === 2267, String(career.excluded.women));
+check("đã bỏ 170 icon/hero", career.excluded.icons === 170, String(career.excluded.icons));
+check("đã bỏ bản ghi rác OVR ≤ 1", career.excluded.junk >= 4 && career.players.every((p) => p.overall > 1), String(career.excluded.junk));
+check("icon Cole (27) bị loại", !ids.has(27));
+check("Courtois (192119) ở đội biểu diễn nhưng đang đá cho CLB → giữ", ids.has(192119));
+check("Bruno vẫn còn", ids.has(212198));
+check("tổng khớp: còn lại + đã bỏ = 21.623",
+  career.players.length + career.excluded.women + career.excluded.icons + career.excluded.junk === 21_623);
 
 console.log("\n=== timing (chỉ in, không kiểm) ===");
 {
