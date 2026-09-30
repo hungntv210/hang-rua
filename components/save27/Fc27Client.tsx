@@ -9,11 +9,12 @@ import { TabBar, TabPanel, type TabItem } from "@/components/TabBar";
 import { loadFc26Names, type Fc26Names } from "@/lib/fc26/names";
 import { Fc27Names, type Fc27Ref } from "@/lib/fc27/names";
 import type { Fc27WorkerRequest, Fc27WorkerResponse } from "@/lib/fc27/parse.worker";
-import type { Fc27Career } from "@/lib/fc27/read";
+import { isCurrentCareer, type Fc27Career } from "@/lib/fc27/read";
 import { scoutPool, toLineup, toSavePlayers } from "@/lib/fc27/view";
 import { clearSave, getSave, putSave } from "@/lib/save/store";
 
 import { LoansTab } from "./LoansTab";
+import { ResultBoundary } from "./ResultBoundary";
 import { ScoutTab } from "./ScoutTab";
 import { SquadTab } from "./SquadTab";
 import { YouthTab } from "./YouthTab";
@@ -43,7 +44,6 @@ export function Fc27Client() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ message: string; notFc27: boolean } | null>(null);
   const [saved, setSaved] = useState<{ name: string; at: number } | null>(null);
-  const [tab, setTab] = useState<Tab>("squad");
   // `undefined` = đang tải, `null` = tải hỏng. Hỏng thì vẫn hiển thị, tên thành #id.
   const [ref, setRef] = useState<Fc27Ref | null | undefined>(undefined);
   const [fc26, setFc26] = useState<Fc26Names | null | undefined>(undefined);
@@ -83,13 +83,23 @@ export function Fc27Client() {
       worker.onmessage = (event: MessageEvent<Fc27WorkerResponse>) => {
         const msg = event.data;
         if (msg.kind !== "done") return fail(msg.message, msg.notFc27);
+        if (!isCurrentCareer(msg.career)) {
+          return fail(
+            "Bộ đọc file trong trình duyệt là bản cũ, không khớp với giao diện hiện tại (thường xảy ra ngay sau khi cập nhật code). Nhấn Ctrl+Shift+R để tải lại sạch rồi thả file lại.",
+            false,
+          );
+        }
         worker.terminate();
         if (!current()) return resolve(false);
         setBusy(false);
         setCareer(msg.career);
         resolve(true);
       };
-      worker.onerror = () => fail("Worker đọc file gặp lỗi bất ngờ.", false);
+      worker.onerror = () =>
+        fail(
+          "Không chạy được bộ đọc file (Web Worker). Nếu máy chủ dev vừa khởi động lại hoặc vừa build, hãy tải lại trang bằng Ctrl+Shift+R rồi thử lại.",
+          false,
+        );
       const request: Fc27WorkerRequest = { kind: "parse", file, nationNames };
       worker.postMessage(request);
     });
@@ -125,19 +135,6 @@ export function Fc27Client() {
     setCareer(null);
     setError(null);
   }, []);
-
-  const names = useMemo(
-    () => (career && ref !== undefined && fc26 !== undefined ? Fc27Names.fromRef(ref, fc26, career.players) : null),
-    [career, ref, fc26],
-  );
-  const players = useMemo(
-    () => (career && names ? toSavePlayers(career, names, ref?.nations ?? {}) : null),
-    [career, names, ref],
-  );
-  const byId = useMemo(() => new Map((players ?? []).map((p) => [p.playerId, p])), [players]);
-  const lineup = useMemo(() => (career ? toLineup(career) : null), [career]);
-  const scoutPlayers = useMemo(() => (career && players ? scoutPool(players, career) : []), [career, players]);
-  const jerseyOf = useMemo(() => new Map((career?.squad ?? []).map((l) => [l.playerId, l.jersey])), [career]);
 
   return (
     <div className="space-y-6">
@@ -177,39 +174,74 @@ export function Fc27Client() {
         </Notice>
       ) : null}
 
-      {career && players ? (
-        <div className="space-y-6">
-          {ref === null || fc26 === null ? (
-            <Notice title="Không tải được kho tên">
-              Dữ liệu đọc từ save vẫn đầy đủ, nhưng tên cầu thủ hiện dưới dạng #mã. Tải lại trang để thử lại.
-            </Notice>
-          ) : null}
-          <TabBar tabs={TABS} active={tab} onChange={setTab} group="save-reader-fc27" ariaLabel="Các phần của save FC27" />
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-mist-dim">
-            {players.length.toLocaleString("vi-VN")} cầu thủ · giải nén {career.timings.unzipMs}ms · đọc{" "}
-            {career.timings.readMs}ms
-          </p>
-          <p className="text-xs text-mist-dim">
-            Chỉ gồm cầu thủ nam dùng được trong career — đã bỏ{" "}
-            {career.excluded.women.toLocaleString("vi-VN")} cầu thủ nữ,{" "}
-            {career.excluded.icons.toLocaleString("vi-VN")} icon/hero (nội dung Ultimate Team, không dùng được trong
-            career) và {career.excluded.junk.toLocaleString("vi-VN")} bản ghi giữ chỗ.
-          </p>
-          <TabPanel tabKey={tab}>
-            {tab === "squad" ? (
-              <SquadTab career={career} lineup={lineup} players={players} byId={byId} jerseyOf={jerseyOf} />
-            ) : tab === "youth" ? (
-              <YouthTab career={career} byId={byId} />
-            ) : tab === "loans" ? (
-              <LoansTab career={career} byId={byId} />
-            ) : (
-              <ScoutTab players={scoutPlayers} career={career} />
-            )}
-          </TabPanel>
-        </div>
-      ) : career ? (
-        <p className="text-xs text-mist-dim">Đang nạp kho tên…</p>
+      {career ? (
+        <ResultBoundary resetKey={career}>
+          <Fc27Result career={career} refData={ref} fc26={fc26} />
+        </ResultBoundary>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * Toàn bộ phần dựng dữ liệu hiển thị và vẽ kết quả nằm ở ĐÂY, bên trong
+ * `ResultBoundary`. Biểu thức JSX của component cha được tính ở lần vẽ của cha,
+ * nên một lỗi như `career.excluded.women` thiếu trường sẽ văng ra NGOÀI khung nếu
+ * còn nằm ở cha — đã tái hiện đúng như vậy.
+ */
+function Fc27Result({
+  career,
+  refData,
+  fc26,
+}: {
+  career: Fc27Career;
+  refData: Fc27Ref | null | undefined;
+  fc26: Fc26Names | null | undefined;
+}) {
+  const [tab, setTab] = useState<Tab>("squad");
+  const names = useMemo(
+    () => (refData !== undefined && fc26 !== undefined ? Fc27Names.fromRef(refData, fc26, career.players) : null),
+    [career, refData, fc26],
+  );
+  const players = useMemo(
+    () => (names ? toSavePlayers(career, names, refData?.nations ?? {}) : null),
+    [career, names, refData],
+  );
+  const byId = useMemo(() => new Map((players ?? []).map((p) => [p.playerId, p])), [players]);
+  const lineup = useMemo(() => toLineup(career), [career]);
+  const scoutPlayers = useMemo(() => (players ? scoutPool(players, career) : []), [career, players]);
+  const jerseyOf = useMemo(() => new Map(career.squad.map((l) => [l.playerId, l.jersey])), [career]);
+
+  if (!players) return <p className="text-xs text-mist-dim">Đang nạp kho tên…</p>;
+
+  return (
+    <div className="space-y-6">
+      {refData === null || fc26 === null ? (
+        <Notice title="Không tải được kho tên">
+          Dữ liệu đọc từ save vẫn đầy đủ, nhưng tên cầu thủ hiện dưới dạng #mã. Tải lại trang để thử lại.
+        </Notice>
+      ) : null}
+      <TabBar tabs={TABS} active={tab} onChange={setTab} group="save-reader-fc27" ariaLabel="Các phần của save FC27" />
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-mist-dim">
+        {players.length.toLocaleString("vi-VN")} cầu thủ · giải nén {career.timings.unzipMs}ms · đọc{" "}
+        {career.timings.readMs}ms
+      </p>
+      <p className="text-xs text-mist-dim">
+        Chỉ gồm cầu thủ nam dùng được trong career — đã bỏ {career.excluded.women.toLocaleString("vi-VN")} cầu thủ nữ,{" "}
+        {career.excluded.icons.toLocaleString("vi-VN")} icon/hero (nội dung Ultimate Team, không dùng được trong
+        career) và {career.excluded.junk.toLocaleString("vi-VN")} bản ghi giữ chỗ.
+      </p>
+      <TabPanel tabKey={tab}>
+        {tab === "squad" ? (
+          <SquadTab career={career} lineup={lineup} players={players} byId={byId} jerseyOf={jerseyOf} />
+        ) : tab === "youth" ? (
+          <YouthTab career={career} byId={byId} />
+        ) : tab === "loans" ? (
+          <LoansTab career={career} byId={byId} />
+        ) : (
+          <ScoutTab players={scoutPlayers} career={career} />
+        )}
+      </TabPanel>
     </div>
   );
 }

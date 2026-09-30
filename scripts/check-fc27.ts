@@ -14,7 +14,7 @@ import { Fc27FormatError, unpackSave } from "../lib/fc27/container.ts";
 import { findTable, firstDbOffset, openDatabases, readString } from "../lib/fc27/fifadb.ts";
 import { readLinks, readPlayers, readTeams } from "../lib/fc27/read-tables.ts";
 import { readLoans, readSectionIndex, sectionDelta } from "../lib/fc27/sections.ts";
-import { buildCareer, pickClubRow, readFc27 } from "../lib/fc27/read.ts";
+import { buildCareer, CAREER_VERSION, isCurrentCareer, pickClubRow, readFc27 } from "../lib/fc27/read.ts";
 import { FC27 } from "../lib/fc27/schema.ts";
 import { Fc27Names, type Fc27Ref } from "../lib/fc27/names.ts";
 import { scoutPool, toLineup, toSavePlayers } from "../lib/fc27/view.ts";
@@ -199,17 +199,36 @@ console.log("\n=== rút gọn tên trên sân ===");
 check("≈ sống sót khi rút gọn họ", surnameOf("≈ Neymar Junior", "?") === "≈Junior");
 check("tên FC26 không đổi", surnameOf("Lionel Messi", "?") === "Messi" && surnameOf(null, "#1") === "#1");
 
-console.log("\n=== save thứ hai (tuỳ chọn, tham số 3) ===");
-const secondPath = process.argv[4];
-if (!secondPath) {
-  console.log("bỏ qua — không truyền save thứ hai");
-} else {
-  const second = readFc27(new Uint8Array(readFileSync(secondPath)), { nationNames });
-  check("CLB = Sunderland", second.club?.name === "Sunderland", JSON.stringify(second.club));
-  check("toạ độ khớp nhiều tên → phân biệt bằng vị trí: 4-3-3", second.lineup?.formationName === "4-3-3", String(second.lineup?.formationName));
-  check("đội hình 31 người", second.squad.length === 31, String(second.squad.length));
-  check("không lỗi", Object.keys(second.errors).length === 0, JSON.stringify(second.errors));
+console.log("\n=== quét mọi save đưa thêm vào (tham số 3 trở đi) ===");
+// Bất biến chung, KHÔNG ghim số liệu của một save: game xoay và đổi file liên tục.
+const extras = process.argv.slice(4);
+if (extras.length === 0) console.log("bỏ qua — không truyền save nào thêm");
+for (const path of extras) {
+  const label = path.split(/[\\/]/).pop();
+  let c;
+  try {
+    c = readFc27(new Uint8Array(readFileSync(path)), { nationNames });
+  } catch (e) {
+    check(`${label}: đọc được`, false, (e as Error).message);
+    continue;
+  }
+  const xi = c.lineup?.slots.map((s) => s.playerId) ?? [];
+  const squad = new Set(c.squad.map((l) => l.playerId));
+  check(`${label}: xác định được CLB`, c.club !== null, JSON.stringify(c.club));
+  check(`${label}: có tên sơ đồ`, c.lineup?.formationName != null, String(c.lineup?.formationName));
+  check(`${label}: 11 người ra sân, không lặp, đều thuộc đội`,
+    xi.length === 11 && new Set(xi).size === 11 && xi.every((id) => squad.has(id)));
+  check(`${label}: không lỗi, không cảnh báo`,
+    Object.keys(c.errors).length === 0 && Object.keys(c.warnings).length === 0,
+    JSON.stringify({ e: c.errors, w: c.warnings }));
+  check(`${label}: POT ≥ OVR mọi cầu thủ`, c.players.every((p) => p.potential >= p.overall));
+  check(`${label}: chỉ nam`, c.players.every((p) => p.gender !== 1));
+  console.log(`      ${c.club?.name} · ${c.lineup?.formationName} · đội ${c.squad.length} · học viện ${c.youthIds.length} · mượn ${c.loans.length} · ${c.players.length} cầu thủ`);
 }
+
+console.log("\n=== phiên bản kết quả ===");
+check("kết quả mang đúng số phiên bản", career.version === CAREER_VERSION, `${career.version} vs ${CAREER_VERSION}`);
+check("kết quả cũ (thiếu phiên bản) bị nhận diện", !isCurrentCareer({ ...career, version: undefined }) && !isCurrentCareer(null) && isCurrentCareer(career));
 
 console.log("\n=== timing (chỉ in, không kiểm) ===");
 {
