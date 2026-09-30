@@ -33,6 +33,8 @@ export const FC27 = {
     firstNameId: f("tHlO"),
     lastNameId: f("QCfa"),
     commonNameId: f("HDYx"),
+    /** 0 nam, 1 nữ. */
+    gender: f("EveZ"),
   },
   links: { table: "RrqT", playerId: f("ykFq", -1), teamId: f("mCXg", -1), jersey: f("JFiY", 1) },
   teams: { table: "lyxL", teamId: f("mCXg", -1), name: f("AUsv") },

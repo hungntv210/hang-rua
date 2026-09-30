@@ -17,7 +17,7 @@ import { readLoans, readSectionIndex, sectionDelta } from "../lib/fc27/sections.
 import { buildCareer, pickClubRow, readFc27 } from "../lib/fc27/read.ts";
 import { FC27 } from "../lib/fc27/schema.ts";
 import { Fc27Names, type Fc27Ref } from "../lib/fc27/names.ts";
-import { toLineup, toSavePlayers } from "../lib/fc27/view.ts";
+import { scoutPool, toLineup, toSavePlayers } from "../lib/fc27/view.ts";
 import { Fc26Names } from "../lib/fc26/names.ts";
 
 let failures = 0;
@@ -149,6 +149,17 @@ const views = toSavePlayers(career, names, ref.nations);
 const brunoView = views.find((p) => p.playerId === 212198);
 check("SavePlayer Bruno: CLB hiện tại + POT thô", brunoView?.club === "Man Utd" && brunoView?.potential === 90,
   JSON.stringify({ club: brunoView?.club, pot: brunoView?.potential, age: brunoView?.age }));
+
+console.log("\n=== scout ===");
+const caicedo = views.find((p) => p.name === "Linda Caicedo");
+check("đọc giới tính: Linda Caicedo là nữ", caicedo?.gender === 1, String(caicedo?.gender));
+check("Lamine Yamal là nam", views.find((p) => p.name === "Lamine Yamal")?.gender === 0);
+const academyView = views.find((p) => p.playerId === 460012);
+check("CLB dạng khoá dịch '*…' không hiện ra", !(academyView?.club ?? "").startsWith("*"), String(academyView?.club));
+const pool = scoutPool(views, career);
+check("Scout loại cầu thủ nữ", pool.every((p) => p.gender === 0));
+check("Scout loại cả đội lẫn học viện của bạn",
+  !pool.some((p) => p.playerId === 212198 || p.playerId === 460012));
 
 console.log(failures === 0 ? "\nTẤT CẢ ĐẠT." : `\n${failures} MỤC KHÔNG ĐẠT.`);
 process.exitCode = failures === 0 ? 0 : 1;

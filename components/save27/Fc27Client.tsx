@@ -10,10 +10,13 @@ import { loadFc26Names, type Fc26Names } from "@/lib/fc26/names";
 import { Fc27Names, type Fc27Ref } from "@/lib/fc27/names";
 import type { Fc27WorkerRequest, Fc27WorkerResponse } from "@/lib/fc27/parse.worker";
 import type { Fc27Career } from "@/lib/fc27/read";
-import { toLineup, toSavePlayers } from "@/lib/fc27/view";
+import { scoutPool, toLineup, toSavePlayers } from "@/lib/fc27/view";
 import { clearSave, getSave, putSave } from "@/lib/save/store";
 
+import { LoansTab } from "./LoansTab";
+import { ScoutTab } from "./ScoutTab";
 import { SquadTab } from "./SquadTab";
+import { YouthTab } from "./YouthTab";
 
 type Tab = "squad" | "youth" | "loans" | "scout";
 
@@ -114,6 +117,7 @@ export function Fc27Client() {
   );
   const byId = useMemo(() => new Map((players ?? []).map((p) => [p.playerId, p])), [players]);
   const lineup = useMemo(() => (career ? toLineup(career) : null), [career]);
+  const scoutPlayers = useMemo(() => (career && players ? scoutPool(players, career) : []), [career, players]);
   const jerseyOf = useMemo(() => new Map((career?.squad ?? []).map((l) => [l.playerId, l.jersey])), [career]);
 
   return (
@@ -168,8 +172,12 @@ export function Fc27Client() {
           <TabPanel tabKey={tab}>
             {tab === "squad" ? (
               <SquadTab career={career} lineup={lineup} players={players} byId={byId} jerseyOf={jerseyOf} />
+            ) : tab === "youth" ? (
+              <YouthTab career={career} byId={byId} />
+            ) : tab === "loans" ? (
+              <LoansTab career={career} byId={byId} />
             ) : (
-              <Notice title="Đang hoàn thiện">Phần này sẽ có ở bước tiếp theo.</Notice>
+              <ScoutTab players={scoutPlayers} />
             )}
           </TabPanel>
         </div>

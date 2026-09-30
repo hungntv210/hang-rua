@@ -24,7 +24,8 @@ export function toSavePlayers(c: Fc27Career, names: Fc27Names, nations: Record<s
   const clubOf = new Map<number, string>();
   for (const l of c.links) {
     const name = teams.get(l.teamId);
-    if (name && !nationNames.has(name) && !clubOf.has(l.playerId)) clubOf.set(l.playerId, name);
+    // Tên bắt đầu bằng "*" là khoá dịch chưa thay chữ (đội trẻ, đội dự bị), không phải tên CLB.
+    if (name && !name.startsWith("*") && !nationNames.has(name) && !clubOf.has(l.playerId)) clubOf.set(l.playerId, name);
   }
 
   return c.players.map((p) => {
@@ -50,7 +51,7 @@ export function toSavePlayers(c: Fc27Career, names: Fc27Names, nations: Record<s
       firstNameId: p.firstNameId,
       lastNameId: p.lastNameId,
       commonNameId: p.commonNameId,
-      gender: null,
+      gender: p.gender,
       contractUntil: null,
       joinedDate: isoOf(p.joinedDay),
       valueEstimate: null,
@@ -81,4 +82,13 @@ export function toLineup(c: Fc27Career): Lineup | null {
     squadIds,
     exactCount: slots.filter((s) => s.fit === "exact").length,
   };
+}
+
+/**
+ * Nhóm cầu thủ cho tab Scout: bỏ nhánh nữ (giống FC26) và bỏ người của chính CLB —
+ * cả đội một lẫn học viện, vốn đã có tab riêng.
+ */
+export function scoutPool(players: SavePlayer[], c: Fc27Career): SavePlayer[] {
+  const mine = new Set([...c.squad.map((l) => l.playerId), ...c.youthIds]);
+  return players.filter((p) => p.gender === 0 && !mine.has(p.playerId));
 }

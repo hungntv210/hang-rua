@@ -16,6 +16,8 @@ export interface RawPlayer {
   firstNameId: number;
   lastNameId: number;
   commonNameId: number;
+  /** 0 nam, 1 nữ. */
+  gender: number;
 }
 
 export interface Link {
@@ -66,6 +68,7 @@ export function readPlayers(blob: Uint8Array, tables: DbTable[], s: Fc27Schema =
       firstNameId: r.int(i, p.firstNameId),
       lastNameId: r.int(i, p.lastNameId),
       commonNameId: r.int(i, p.commonNameId),
+      gender: r.int(i, p.gender),
     });
   }
   return out;

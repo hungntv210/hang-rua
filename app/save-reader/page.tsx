@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { SaveReaderClient } from "@/components/save/SaveReaderClient";
 
@@ -26,6 +27,13 @@ export default function SaveReaderPage() {
         <p className="max-w-3xl text-mist">
           Đọc file save Career Mode của EA Sports FC 26 ngay trên máy bạn. Không
           byte nào được gửi lên server.
+        </p>
+        <p className="text-sm text-mist">
+          Chơi FC 27?{" "}
+          <Link href="/save-reader/fc27" className="underline">
+            Mở Save Reader FC 27
+          </Link>
+          .
         </p>
       </header>
 
