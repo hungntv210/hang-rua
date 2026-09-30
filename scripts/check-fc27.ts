@@ -14,6 +14,8 @@ import { Fc27FormatError, unpackSave } from "../lib/fc27/container.ts";
 import { findTable, firstDbOffset, openDatabases, readString } from "../lib/fc27/fifadb.ts";
 import { readLinks, readPlayers, readTeams } from "../lib/fc27/read-tables.ts";
 import { readLoans, readSectionIndex, sectionDelta } from "../lib/fc27/sections.ts";
+import { buildCareer, pickClubRow, readFc27 } from "../lib/fc27/read.ts";
+import { FC27 } from "../lib/fc27/schema.ts";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = ""): void {
@@ -87,6 +89,44 @@ check(
 const broken = blob.slice();
 broken[(index.get("msnl") as number) + 25 + 4 * 20 + 9] = 0x07; // hỏng dấu 01 của mục thứ 5
 check("msnl sai dấu thì ném lỗi, không đọc rác", throws(() => readLoans(broken, index)));
+
+console.log("\n=== career ===");
+const world = JSON.parse(readFileSync("public/fc26/world.json", "utf8")) as { nationNames: Record<string, string> };
+const nationNames = new Set(Object.values(world.nationNames));
+const career = readFc27(SAMPLE, { nationNames });
+check("CLB = Man Utd (11)", career.club?.teamId === 11 && career.club?.name === "Man Utd", JSON.stringify(career.club));
+check("sơ đồ 4-2-3-1", career.lineup?.formationName === "4-2-3-1", String(career.lineup?.formationName));
+const xi = career.lineup?.slots.map((s) => s.playerId).join(",");
+check(
+  "XI đúng thứ tự ô",
+  xi === "254803,236401,269087,203263,205988,216393,269136,243014,240243,212198,260592",
+  xi,
+);
+check("vị trí ô 0 là GK (0), ô 10 là ST (25)", career.lineup?.slots[0].positionCode === 0 && career.lineup?.slots[10].positionCode === 25);
+check("đội trưởng Bruno", career.lineup?.captainId === 212198, String(career.lineup?.captainId));
+check("cả đội 39 người", career.squad.length === 39, String(career.squad.length));
+const expectYouth = Array.from({ length: 10 }, (_, i) => 460003 + i).join(",");
+check("học viện 460003…460012", [...career.youthIds].sort((a, b) => a - b).join(",") === expectYouth, career.youthIds.join(","));
+const loanView = career.loans.map((l) => `${l.playerId}→${l.atTeamName}`).sort().join(",");
+check("cho mượn kèm CLB đang mượn", loanView === "226753→Trabzonspor,77403→Lausanne-Sport", loanView);
+check("không cảnh báo, không lỗi", Object.keys(career.warnings).length === 0 && Object.keys(career.errors).length === 0,
+  JSON.stringify({ w: career.warnings, e: career.errors }));
+check("pickClubRow bỏ đội tuyển",
+  pickClubRow([{ teamId: 1354, name: "Portugal" }, { teamId: 11, name: "Man Utd" }], new Set(["Portugal"])) === 1);
+const badSchema = structuredClone(FC27);
+badSchema.teamsheets.slots[0] = { code: "ZZZZ", add: -1 };
+const partial = readFc27(SAMPLE, { nationNames, schema: badSchema });
+check("thiếu mã trường → chỉ tab Đội hình lỗi, nêu mã",
+  (partial.errors.squad ?? "").includes("ZZZZ") && partial.errors.scout === undefined, JSON.stringify(partial.errors));
+check("save FC26 bị từ chối ở readFc27", throws(() => readFc27(FC26SAVE), Fc27FormatError));
+const noYouth = blob.slice();
+const iomq = findTable(openDatabases(noYouth), "IOmq")!;
+const iomqHeader = iomq.dataOffset - 36 - iomq.fields.size * 16;
+noYouth[iomqHeader + 18] = 0;
+noYouth[iomqHeader + 19] = 0;
+const emptyAcademy = buildCareer(SAMPLE, noYouth, { nationNames });
+check("học viện 0 dòng → rỗng, không lỗi", emptyAcademy.youthIds.length === 0 && emptyAcademy.errors.youth === undefined);
+console.log(`thời gian: giải nén ${career.timings.unzipMs} ms, đọc ${career.timings.readMs} ms`);
 
 console.log(failures === 0 ? "\nTẤT CẢ ĐẠT." : `\n${failures} MỤC KHÔNG ĐẠT.`);
 process.exitCode = failures === 0 ? 0 : 1;
