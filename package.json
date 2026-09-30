@@ -8,10 +8,12 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "build:fc26": "npx tsx scripts/build-fc26-assets.ts",
-    "check:fc26": "npx tsx scripts/check-fc26-all.ts"
+    "check:fc26": "npx tsx scripts/check-fc26-all.ts",
+    "check:fc27": "npx tsx scripts/check-fc27.ts"
   },
   "dependencies": {
     "framer-motion": "^13.3.0",
+    "fzstd": "0.1.1",
     "next": "14.2.35",
     "react": "18.3.1",
     "react-dom": "18.3.1",
