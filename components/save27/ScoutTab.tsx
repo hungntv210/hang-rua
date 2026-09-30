@@ -82,7 +82,7 @@ export function ScoutTab({ players, career }: { players: SavePlayer[]; career: F
         </div>
       </div>
       <p className="text-xs text-mist-dim">
-        {result.length.toLocaleString("vi-VN")} cầu thủ khớp (không gồm đội một và học viện của bạn)
+        {result.length.toLocaleString("vi-VN")} cầu thủ khớp{career.club ? " (không gồm đội một và học viện của bạn)" : ""}
         {result.length > SHOW ? ` · hiện ${SHOW} người POT cao nhất` : ""}. CLB là CLB hiện tại trong save.
       </p>
       <Fc27Table

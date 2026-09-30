@@ -127,6 +127,8 @@ export function buildCareer(raw: Uint8Array, blob: Uint8Array, options: ReadOpti
 
   if (club) {
     career.squad = career.links.filter((l) => l.teamId === club.teamId);
+    // Link trỏ tới người đã bị loại (nữ, icon…) không thuộc đội bạn: không tính vào cỡ đội.
+    career.squad = career.squad.filter((l) => players.has(l.playerId));
     try {
       career.lineup = readLineup(blob, tables, s, club.teamId);
       const squadIds = new Set(career.squad.map((l) => l.playerId));
@@ -148,6 +150,9 @@ export function buildCareer(raw: Uint8Array, blob: Uint8Array, options: ReadOpti
 
     try {
       career.loans = readClubLoans(raw, blob, club.teamId, career.links, teams, nations);
+      const gone = career.loans.filter((l) => !players.has(l.playerId)).length;
+      career.loans = career.loans.filter((l) => players.has(l.playerId));
+      if (gone > 0) warn("loans", `${gone} cầu thủ cho mượn không tìm thấy trong bảng cầu thủ nên không hiển thị.`);
       if (career.loans.some((l) => l.atTeamId === null)) warn("loans", "Có cầu thủ cho mượn không rõ CLB đang mượn.");
     } catch (e) {
       errors.loans = message(e);

@@ -20,6 +20,7 @@ import { Fc27Names, type Fc27Ref } from "../lib/fc27/names.ts";
 import { scoutPool, toLineup, toSavePlayers } from "../lib/fc27/view.ts";
 import { Fc26Names } from "../lib/fc26/names.ts";
 import { parseSaveBuffer } from "../lib/save/index.ts";
+import { surnameOf } from "../components/save/squad-shared.tsx";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = ""): void {
@@ -193,6 +194,10 @@ check("Courtois (192119) ở đội biểu diễn nhưng đang đá cho CLB → 
 check("Bruno vẫn còn", ids.has(212198));
 check("tổng khớp: còn lại + đã bỏ = 21.623",
   career.players.length + career.excluded.women + career.excluded.icons + career.excluded.junk === 21_623);
+
+console.log("\n=== rút gọn tên trên sân ===");
+check("≈ sống sót khi rút gọn họ", surnameOf("≈ Neymar Junior", "?") === "≈Junior");
+check("tên FC26 không đổi", surnameOf("Lionel Messi", "?") === "Messi" && surnameOf(null, "#1") === "#1");
 
 console.log("\n=== timing (chỉ in, không kiểm) ===");
 {

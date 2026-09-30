@@ -48,6 +48,8 @@ export function Fc27Client() {
   const [ref, setRef] = useState<Fc27Ref | null | undefined>(undefined);
   const [fc26, setFc26] = useState<Fc26Names | null | undefined>(undefined);
   const workerRef = useRef<Worker | null>(null);
+  /** Số lượt đọc đã bắt đầu; kết quả của lượt cũ (đã bị lượt mới hoặc "Xoá" thay thế) bị bỏ. */
+  const runRef = useRef(0);
 
   useEffect(() => {
     void loadRef().then(setRef);
@@ -55,33 +57,39 @@ export function Fc27Client() {
     return () => workerRef.current?.terminate();
   }, []);
 
-  const parse = useCallback(async (file: File): Promise<boolean> => {
+  /** `keepOnError`: file người dùng vừa thả mà hỏng thì giữ nguyên kết quả đang hiển thị. */
+  const parse = useCallback(async (file: File, keepOnError: boolean): Promise<boolean> => {
+    const run = (runRef.current += 1);
+    const current = (): boolean => runRef.current === run;
     setBusy(true);
     setError(null);
     const nationNames = Object.values((await loadRef())?.nations ?? {});
+    if (!current()) return false;
     workerRef.current?.terminate();
     const worker = new Worker(new URL("../../lib/fc27/parse.worker.ts", import.meta.url));
     workerRef.current = worker;
     return new Promise<boolean>((resolve) => {
-      worker.onmessage = (event: MessageEvent<Fc27WorkerResponse>) => {
-        const msg = event.data;
+      const fail = (message: string, notFc27: boolean): void => {
         worker.terminate();
+        if (!current()) return resolve(false);
         setBusy(false);
-        if (msg.kind === "done") {
-          setCareer(msg.career);
-          resolve(true);
-        } else {
+        if (!keepOnError) {
           setCareer(null);
-          setError({ message: msg.message, notFc27: msg.notFc27 });
-          resolve(false);
+          setSaved(null);
         }
-      };
-      worker.onerror = () => {
-        worker.terminate();
-        setBusy(false);
-        setError({ message: "Worker đọc file gặp lỗi bất ngờ.", notFc27: false });
+        setError({ message, notFc27 });
         resolve(false);
       };
+      worker.onmessage = (event: MessageEvent<Fc27WorkerResponse>) => {
+        const msg = event.data;
+        if (msg.kind !== "done") return fail(msg.message, msg.notFc27);
+        worker.terminate();
+        if (!current()) return resolve(false);
+        setBusy(false);
+        setCareer(msg.career);
+        resolve(true);
+      };
+      worker.onerror = () => fail("Worker đọc file gặp lỗi bất ngờ.", false);
       const request: Fc27WorkerRequest = { kind: "parse", file, nationNames };
       worker.postMessage(request);
     });
@@ -89,7 +97,7 @@ export function Fc27Client() {
 
   const handleFile = useCallback(
     (file: File) => {
-      void parse(file).then((ok) => {
+      void parse(file, true).then((ok) => {
         if (!ok) return;
         void putSave(file, STORE_KEY).then((stored) => {
           if (stored) setSaved({ name: file.name, at: Date.now() });
@@ -99,14 +107,24 @@ export function Fc27Client() {
     [parse],
   );
 
-  // Khôi phục file của lần trước.
+  // Khôi phục file của lần trước — bỏ qua nếu người dùng đã thả file khác trong lúc chờ IndexedDB.
   useEffect(() => {
     void getSave(STORE_KEY).then((got) => {
-      if (!got) return;
+      if (!got || runRef.current !== 0) return;
       setSaved({ name: got.fileName, at: got.savedAt });
-      void parse(new File([got.blob], got.fileName));
+      void parse(new File([got.blob], got.fileName), false);
     });
   }, [parse]);
+
+  const clear = useCallback(() => {
+    runRef.current += 1;
+    workerRef.current?.terminate();
+    void clearSave(STORE_KEY);
+    setBusy(false);
+    setSaved(null);
+    setCareer(null);
+    setError(null);
+  }, []);
 
   const names = useMemo(
     () => (career && ref !== undefined && fc26 !== undefined ? Fc27Names.fromRef(ref, fc26, career.players) : null),
@@ -135,11 +153,7 @@ export function Fc27Client() {
           <button
             type="button"
             className="tab"
-            onClick={() => {
-              void clearSave(STORE_KEY);
-              setSaved(null);
-              setCareer(null);
-            }}
+            onClick={clear}
           >
             Xoá
           </button>

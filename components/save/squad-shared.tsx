@@ -205,8 +205,10 @@ export function shortName(name: string | null, fallback: string): string {
  */
 export function surnameOf(name: string | null, fallback: string): string {
   if (!name) return fallback;
-  const parts = name.trim().split(/\s+/);
-  return parts[parts.length - 1];
+  // Dấu "≈" (tên suy ra, chỉ FC27) phải sống sót qua việc rút gọn.
+  const approx = name.startsWith("≈ ");
+  const parts = (approx ? name.slice(2) : name).trim().split(/\s+/);
+  return (approx ? "≈" : "") + parts[parts.length - 1];
 }
 
 /** Nhãn hợp đồng. Save chỉ cho biết NĂM, nên không bịa ra ngày. */

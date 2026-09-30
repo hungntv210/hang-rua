@@ -34,18 +34,19 @@ const u32 = (b: Uint8Array, o: number): number =>
 const tag = (b: Uint8Array, o: number): string =>
   String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
 
-function signatures(blob: Uint8Array): number[] {
+function signatures(blob: Uint8Array, first = false): number[] {
   const out: number[] = [];
   for (let i = 0; i + 4 <= blob.length; i += 1) {
     if (blob[i] === SIG[0] && blob[i + 1] === SIG[1] && blob[i + 2] === SIG[2] && blob[i + 3] === SIG[3]) {
       out.push(i);
+      if (first) break;
     }
   }
   return out;
 }
 
 export function firstDbOffset(blob: Uint8Array): number {
-  return signatures(blob)[0] ?? -1;
+  return signatures(blob, true)[0] ?? -1;
 }
 
 function parseDb(blob: Uint8Array, at: number): DbTable[] {
