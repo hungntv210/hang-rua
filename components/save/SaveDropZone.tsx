@@ -10,6 +10,8 @@ interface Props {
   busy: boolean;
   /** 0–1 khi đang quét, null khi rảnh. */
   progress: number | null;
+  /** Thư mục chứa save; mặc định là của FC 26. */
+  folder?: string;
 }
 
 /**
@@ -18,7 +20,7 @@ interface Props {
  * Không đặt `accept` cho input: file save không có phần mở rộng cố định
  * (`CmMgrC...` trần trụi), lọc theo đuôi chỉ tổ khiến file thật không chọn được.
  */
-export function SaveDropZone({ onFile, busy, progress }: Props) {
+export function SaveDropZone({ onFile, busy, progress, folder = "Documents\\FC 26\\settings" }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [rejected, setRejected] = useState<string | null>(null);
@@ -59,7 +61,7 @@ export function SaveDropZone({ onFile, busy, progress }: Props) {
         </p>
         <p className="mt-2 text-sm text-mist">
           Tên file thường có dạng <code className="font-mono">CmMgrC…</code>,
-          nằm trong thư mục <code className="font-mono">Documents\FC 26\settings</code>.
+          nằm trong thư mục <code className="font-mono">{folder}</code>.
         </p>
 
         <button

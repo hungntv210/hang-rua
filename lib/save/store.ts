@@ -120,14 +120,14 @@ function run<T>(
 }
 
 /** Trả `false` khi không lưu được — người gọi PHẢI xử lý, xem chú thích đầu file. */
-export async function putSave(file: File): Promise<boolean> {
+export async function putSave(file: File, key: string = KEY): Promise<boolean> {
   const value: SavedFile = { blob: file, fileName: file.name, savedAt: Date.now() };
-  const { ok } = await run("readwrite", (s) => s.put(value, KEY));
+  const { ok } = await run("readwrite", (s) => s.put(value, key));
   return ok;
 }
 
-export async function getSave(): Promise<SavedFile | null> {
-  const { value } = await run<SavedFile>("readonly", (s) => s.get(KEY));
+export async function getSave(key: string = KEY): Promise<SavedFile | null> {
+  const { value } = await run<SavedFile>("readonly", (s) => s.get(key));
   /*
    * Bản ghi của phiên bản cũ lưu `bytes: ArrayBuffer` và không có `blob`. Coi
    * như không có: người dùng tải lại file một lần, rẻ hơn nhiều so với việc
@@ -138,6 +138,6 @@ export async function getSave(): Promise<SavedFile | null> {
   return value;
 }
 
-export async function clearSave(): Promise<void> {
-  await run("readwrite", (s) => s.delete(KEY));
+export async function clearSave(key: string = KEY): Promise<void> {
+  await run("readwrite", (s) => s.delete(key));
 }
