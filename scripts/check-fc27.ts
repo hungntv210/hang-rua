@@ -16,6 +16,9 @@ import { readLinks, readPlayers, readTeams } from "../lib/fc27/read-tables.ts";
 import { readLoans, readSectionIndex, sectionDelta } from "../lib/fc27/sections.ts";
 import { buildCareer, pickClubRow, readFc27 } from "../lib/fc27/read.ts";
 import { FC27 } from "../lib/fc27/schema.ts";
+import { Fc27Names, type Fc27Ref } from "../lib/fc27/names.ts";
+import { toLineup, toSavePlayers } from "../lib/fc27/view.ts";
+import { Fc26Names } from "../lib/fc26/names.ts";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = ""): void {
@@ -127,6 +130,25 @@ noYouth[iomqHeader + 19] = 0;
 const emptyAcademy = buildCareer(SAMPLE, noYouth, { nationNames });
 check("học viện 0 dòng → rỗng, không lỗi", emptyAcademy.youthIds.length === 0 && emptyAcademy.errors.youth === undefined);
 console.log(`thời gian: giải nén ${career.timings.unzipMs} ms, đọc ${career.timings.readMs} ms`);
+
+console.log("\n=== names ===");
+const ref = JSON.parse(readFileSync("public/fc27/ref.json", "utf8")) as Fc27Ref;
+const fc26Names = Fc26Names.fromPayload(JSON.parse(readFileSync("public/fc26/names.json", "utf8")));
+const names = Fc27Names.fromRef(ref, fc26Names, career.players);
+const byId = new Map(career.players.map((p) => [p.id, p]));
+const lam = names.nameOf(byId.get(254803)!);
+check("Lammens: tên chính xác", lam.name === "Senne Lammens" && lam.source === "exact", JSON.stringify(lam));
+check("Bruno: tên chính xác", names.nameOf(byId.get(212198)!).name === "Bruno Fernandes");
+const youthNames = career.youthIds.map((id) => names.nameOf(byId.get(id)!));
+check("học viện không có tên 'exact'", youthNames.every((n) => n.source !== "exact"), youthNames.map((n) => n.name).join(" | "));
+const ghost = { ...byId.get(212198)!, id: 999_999, birthDay: 1, firstNameId: 65_000, lastNameId: 65_001, commonNameId: 0 };
+check("không ra tên → #id", names.nameOf(ghost).name === "#999999", names.nameOf(ghost).name);
+const lineup = toLineup(career);
+check("toLineup: 11 ô, sơ đồ 4-2-3-1", lineup?.slots.length === 11 && lineup?.formationName === "4-2-3-1");
+const views = toSavePlayers(career, names, ref.nations);
+const brunoView = views.find((p) => p.playerId === 212198);
+check("SavePlayer Bruno: CLB hiện tại + POT thô", brunoView?.club === "Man Utd" && brunoView?.potential === 90,
+  JSON.stringify({ club: brunoView?.club, pot: brunoView?.potential, age: brunoView?.age }));
 
 console.log(failures === 0 ? "\nTẤT CẢ ĐẠT." : `\n${failures} MỤC KHÔNG ĐẠT.`);
 process.exitCode = failures === 0 ? 0 : 1;
