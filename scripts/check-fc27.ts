@@ -19,6 +19,7 @@ import { FC27 } from "../lib/fc27/schema.ts";
 import { Fc27Names, type Fc27Ref } from "../lib/fc27/names.ts";
 import { scoutPool, toLineup, toSavePlayers } from "../lib/fc27/view.ts";
 import { Fc26Names } from "../lib/fc26/names.ts";
+import { parseSaveBuffer } from "../lib/save/index.ts";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = ""): void {
@@ -160,6 +161,17 @@ const pool = scoutPool(views, career);
 check("Scout loại cầu thủ nữ", pool.every((p) => p.gender === 0));
 check("Scout loại cả đội lẫn học viện của bạn",
   !pool.some((p) => p.playerId === 212198 || p.playerId === 460012));
+
+console.log("\n=== timing (chỉ in, không kiểm) ===");
+{
+  const t = performance.now();
+  const c = readFc27(SAMPLE, { nationNames });
+  console.log(`FC27 (lượt 2): tổng ${Math.round(performance.now() - t)} ms — giải nén ${c.timings.unzipMs} ms, đọc ${c.timings.readMs} ms`);
+  const buf = FC26SAVE.buffer.slice(FC26SAVE.byteOffset, FC26SAVE.byteOffset + FC26SAVE.byteLength) as ArrayBuffer;
+  const t26 = performance.now();
+  parseSaveBuffer(buf, { fileName: "fc26" });
+  console.log(`FC26 parseSaveBuffer: ${Math.round(performance.now() - t26)} ms`);
+}
 
 console.log(failures === 0 ? "\nTẤT CẢ ĐẠT." : `\n${failures} MỤC KHÔNG ĐẠT.`);
 process.exitCode = failures === 0 ? 0 : 1;
