@@ -12,6 +12,7 @@ import { readFileSync } from "node:fs";
 
 import { Fc27FormatError, unpackSave } from "../lib/fc27/container.ts";
 import { findTable, firstDbOffset, openDatabases, readString } from "../lib/fc27/fifadb.ts";
+import { readLinks, readPlayers, readTeams } from "../lib/fc27/read-tables.ts";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = ""): void {
@@ -54,6 +55,21 @@ check("cùng bộ đọc mở được save FC26 (144 byte)", czum26?.recordSize
 const lyxl = findTable(tables, "lyxL");
 const teamName0 = lyxl ? readString(blob, lyxl, 0, lyxl.fields.get("AUsv")!) : "";
 check("readString đọc được tên đội", teamName0.length > 0, teamName0);
+
+console.log("\n=== tables ===");
+const players = readPlayers(blob, tables);
+const teams = readTeams(blob, tables);
+const links = readLinks(blob, tables);
+check("teamid 11 = Man Utd (mỏ neo ngoài)", teams.get(11) === "Man Utd", teams.get(11));
+check("teamid 13 = Newcastle (mỏ neo ngoài)", (teams.get(13) ?? "").includes("Newcastle"), teams.get(13));
+const bruno = players.get(212198);
+check("Bruno POT 90, OVR 89", bruno?.potential === 90 && bruno?.overall === 89, `${bruno?.potential}/${bruno?.overall}`);
+check("Mainoo POT 87", players.get(269136)?.potential === 87);
+check("Lammens POT 88", players.get(254803)?.potential === 88);
+const utd = new Set(links.filter((l) => l.teamId === 11).map((l) => l.playerId));
+check("Man Utd có 39 cầu thủ", utd.size === 39, String(utd.size));
+const potBelow = [...players.values()].filter((p) => p.potential < p.overall).length;
+check("POT ≥ OVR ở mọi cầu thủ", potBelow === 0, String(potBelow));
 
 console.log(failures === 0 ? "\nTẤT CẢ ĐẠT." : `\n${failures} MỤC KHÔNG ĐẠT.`);
 process.exitCode = failures === 0 ? 0 : 1;
