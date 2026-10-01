@@ -21,7 +21,7 @@ export interface Fc27Ref {
   players: number[];
 }
 
-export type NameSource = "exact" | "bridge" | null;
+export type NameSource = "exact" | "newgen" | "bridge" | null;
 
 interface RefPlayer {
   birthDay: number;
@@ -34,11 +34,15 @@ export class Fc27Names {
   private constructor(
     private readonly exact: Map<number, string>,
     private readonly bridge: Map<number, string>,
+    /** Tên thật đọc từ chữ trong save; thắng cầu nối nhưng thua tên FC26 trùng ngày sinh. */
+    private readonly plain: Map<number, string> = new Map(),
   ) {}
 
   /** Thiếu asset (tải hỏng) vẫn dựng được: mọi tên thành `#id`, trang không kẹt. */
-  static fromRef(ref: Fc27Ref | null, fc26: Fc26Names | null, players: RawPlayer[]): Fc27Names {
-    if (!ref || !fc26) return new Fc27Names(new Map(), new Map());
+  static fromRef(
+    ref: Fc27Ref | null, fc26: Fc26Names | null, players: RawPlayer[], plain: Map<number, string> = new Map(),
+  ): Fc27Names {
+    if (!ref || !fc26) return new Fc27Names(new Map(), new Map(), plain);
     const refMap = new Map<number, RefPlayer>();
     let id = 0;
     for (let i = 0; i + 4 < ref.players.length; i += 5) {
@@ -66,12 +70,14 @@ export class Fc27Names {
         if (c && !bridge.has(p.commonNameId!)) bridge.set(p.commonNameId!, c);
       }
     }
-    return new Fc27Names(exact, bridge);
+    return new Fc27Names(exact, bridge, plain);
   }
 
   nameOf(p: RawPlayer): { name: string; source: NameSource } {
     const e = this.exact.get(p.id);
     if (e) return { name: e, source: "exact" };
+    const t = this.plain.get(p.id);
+    if (t) return { name: t, source: "newgen" };
     if ((p.commonNameId ?? 0) > 0) {
       const c = this.bridge.get(p.commonNameId!);
       if (c) return { name: c, source: "bridge" };

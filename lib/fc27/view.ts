@@ -33,7 +33,7 @@ export function toSavePlayers(c: Fc27Career, names: Fc27Names, nations: Record<s
     return {
       playerId: p.id,
       name: n.source === "bridge" ? `≈ ${n.name}` : n.name,
-      nameSource: n.source === "exact" ? "database" : n.source === "bridge" ? "namePool" : null,
+      nameSource: n.source === "exact" ? "database" : n.source === "newgen" ? "newgen" : n.source === "bridge" ? "namePool" : null,
       club: clubOf.get(p.id) ?? null,
       league: null,
       nation: p.nationalityId === null ? null : nations[String(p.nationalityId)] ?? null,

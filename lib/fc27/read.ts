@@ -10,6 +10,7 @@ import { Fc27FormatError, unpackSave } from "./container";
 import { openDatabases, readFloat, type DbTable } from "./fifadb";
 import { readLinks, readPlayers, readTeams, tableReader, type Link, type RawPlayer } from "./read-tables";
 import { FC27, type Fc27Schema } from "./schema";
+import { assignNames, readNameRecords } from "./newgen-names";
 import { readLoans, readSectionIndex, type LoanRecord } from "./sections";
 
 export type Tab = "squad" | "youth" | "loans" | "scout";
@@ -31,7 +32,7 @@ export interface Fc27Loan extends LoanRecord {
  * lúc dev (hoặc cache trình duyệt) có thể chạy giao diện mới với worker cũ, và kết
  * quả cũ thiếu trường sẽ làm sập trang. Giao diện so số này để báo rõ thay vì sập.
  */
-export const CAREER_VERSION = 3;
+export const CAREER_VERSION = 4;
 
 export function isCurrentCareer(c: unknown): c is Fc27Career {
   return typeof c === "object" && c !== null && (c as { version?: unknown }).version === CAREER_VERSION;
@@ -43,6 +44,8 @@ export interface Fc27Career {
   lineup: LineupRead | null;
   squad: Link[];
   youthIds: number[];
+  /** Tên thật đọc từ chữ trong save (cầu thủ học viện): [mã, "Tên Họ"]. */
+  newgenNames: [number, string][];
   loans: Fc27Loan[];
   players: RawPlayer[];
   teams: [number, string][];
@@ -104,7 +107,7 @@ export function buildCareer(raw: Uint8Array, blob: Uint8Array, options: ReadOpti
 
   const career: Fc27Career = {
     version: CAREER_VERSION,
-    club: null, lineup: null, squad: [], youthIds: [], loans: [],
+    club: null, lineup: null, squad: [], youthIds: [], newgenNames: [], loans: [],
     players: [], teams: [], links: [], refDay: 0, excluded: { women: 0, icons: 0, junk: 0 },
     errors, warnings, timings: { unzipMs, readMs: 0 },
   };
@@ -157,6 +160,7 @@ export function buildCareer(raw: Uint8Array, blob: Uint8Array, options: ReadOpti
     try {
       career.youthIds = readYouth(blob, tables, s);
       if (career.youthIds.some((id) => !players.has(id))) warn("youth", "Có cầu thủ học viện không tìm thấy trong bảng cầu thủ.");
+      career.newgenNames = [...assignNames(readNameRecords(blob), career.youthIds)];
     } catch (e) {
       errors.youth = message(e);
     }

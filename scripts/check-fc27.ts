@@ -221,9 +221,34 @@ for (const path of extras) {
   check(`${label}: không lỗi, không cảnh báo`,
     Object.keys(c.errors).length === 0 && Object.keys(c.warnings).length === 0,
     JSON.stringify({ e: c.errors, w: c.warnings }));
+  {
+    const nm = Fc27Names.fromRef(ref, fc26Names, c.players, new Map(c.newgenNames));
+    const pById = new Map(c.players.map((p) => [p.id, p]));
+    const unnamed = c.youthIds.filter((id) => nm.nameOf(pById.get(id)!).source !== "newgen");
+    check(`${label}: mọi cầu thủ học viện có tên thật từ save`, unnamed.length === 0, unnamed.join(","));
+  }
   check(`${label}: POT ≥ OVR mọi cầu thủ`, c.players.every((p) => p.potential >= p.overall));
   check(`${label}: chỉ nam`, c.players.every((p) => p.gender !== 1));
   console.log(`      ${c.club?.name} · ${c.lineup?.formationName} · đội ${c.squad.length} · học viện ${c.youthIds.length} · mượn ${c.loans.length} · ${c.players.length} cầu thủ`);
+}
+
+console.log("\n=== tên cầu thủ học viện (đọc từ chữ trong save) ===");
+{
+  const expected = new Map<number, string>([
+    [460003, "Lee Dawson"], [460004, "Adrian Gantner"], [460005, "Dylan Brook"], [460006, "Arlo Stacey"],
+    [460007, "Albie Payne"], [460008, "Elliott Storey"], [460009, "Ben Newman"], [460010, "Álvaro Rivas"],
+    [460011, "Julen Pinto"], [460012, "Anton Rainer"],
+  ]);
+  const got = new Map(career.newgenNames);
+  for (const [id, name] of expected) check(`học viện ${id} = ${name}`, got.get(id) === name, String(got.get(id)));
+  const viewNames = Fc27Names.fromRef(ref, fc26Names, career.players, got);
+  const brunoName = viewNames.nameOf(byId.get(212198)!);
+  check("tên học viện không còn dấu ≈ / ?", [...expected.keys()].every((id) => {
+    const n = viewNames.nameOf(byId.get(id)!); return n.source === "newgen" && !n.name.includes("?");
+  }));
+  check("cầu thủ thường vẫn tên chính xác", brunoName.name === "Bruno Fernandes" && brunoName.source === "exact");
+  check("bản ghi tên không có mã và không suy được thì bỏ, không gán bừa",
+    ![...got.keys()].some((id) => id < 1 || id > 2_000_000));
 }
 
 console.log("\n=== phiên bản kết quả ===");

@@ -58,7 +58,7 @@ export function Fc27Table({ players, jerseyOf, extra = [], starterIds, empty, ma
                 <td className="px-2 py-1.5 text-center font-mono text-xs text-mist">{jerseyOf.get(p.playerId) ?? "–"}</td>
               ) : null}
               <td className="px-2 py-1.5">
-                <span className={`text-[13px] ${p.nameSource === "database" ? "text-ghost" : "text-mist"}`}>
+                <span className={`text-[13px] ${p.nameSource === "database" || p.nameSource === "newgen" ? "text-ghost" : "text-mist"}`}>
                   {p.name}
                 </span>
                 {starterIds?.has(p.playerId) ? (

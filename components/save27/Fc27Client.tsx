@@ -200,7 +200,7 @@ function Fc27Result({
 }) {
   const [tab, setTab] = useState<Tab>("squad");
   const names = useMemo(
-    () => (refData !== undefined && fc26 !== undefined ? Fc27Names.fromRef(refData, fc26, career.players) : null),
+    () => (refData !== undefined && fc26 !== undefined ? Fc27Names.fromRef(refData, fc26, career.players, new Map(career.newgenNames)) : null),
     [career, refData, fc26],
   );
   const players = useMemo(
