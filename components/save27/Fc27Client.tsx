@@ -165,7 +165,7 @@ export function Fc27Client() {
           {error.notFc27 ? (
             <>
               {" "}Nếu đây là save FC 26, hãy dùng{" "}
-              <Link href="/save-reader" className="underline">
+              <Link href="/save-reader/fc26" className="underline">
                 Save Reader FC 26
               </Link>
               .

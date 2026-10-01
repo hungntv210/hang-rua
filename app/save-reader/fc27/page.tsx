@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { Fc27Client } from "@/components/save27/Fc27Client";
 
@@ -17,6 +18,11 @@ export default function SaveReaderFc27Page() {
         <h1 className="font-display text-3xl font-semibold tracking-tight text-ghost sm:text-4xl">Save Reader FC 27</h1>
         <p className="max-w-3xl text-mist">
           Đọc file save Career Mode của EA Sports FC 27 ngay trên máy bạn. Không byte nào được gửi lên server.
+        </p>
+        <p className="text-sm text-mist">
+          <Link href="/save-reader" className="underline">
+            ← Đổi phiên bản
+          </Link>
         </p>
       </header>
 

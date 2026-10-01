@@ -29,7 +29,9 @@ khong lien quan gi toi code va khong tu khoi phuc. Cach chua: dung dev server,
 /football/standings/[slug]
 /football/bracket          so do Champions League          (ISR 12h)
 /football/bracket/[slug]
-/save-reader               doc file save Career Mode FC 26 (tinh, parse o client)
+/save-reader               chon phien ban FC 26 / FC 27 (tinh)
+/save-reader/fc26          doc file save Career Mode FC 26 (tinh, parse o client)
+/save-reader/fc27          doc file save Career Mode FC 27 (tinh, parse o client)
 ```
 
 Them module moi: khai bao trong `lib/modules.ts`, doi `status` sang `"live"` va
