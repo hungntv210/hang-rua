@@ -31,8 +31,8 @@ export function LoansTab({ career, byId }: { career: Fc27Career; byId: Map<numbe
           {w}
         </Notice>
       ))}
-      <p className="text-sm text-mist">
-        Cầu thủ của <strong className="text-ghost">{career.club?.name}</strong> đang cho mượn ({players.length})
+      <p className="text-sm text-ink-soft">
+        Cầu thủ của <strong className="text-ink">{career.club?.name}</strong> đang cho mượn ({players.length})
       </p>
       <Fc27Table
         players={players}

@@ -31,13 +31,13 @@ interface Props {
  */
 export function Fc27Table({ players, jerseyOf, extra = [], starterIds, empty, maxHeight = "28rem" }: Props) {
   if (players.length === 0) {
-    return <p className="rounded-sm border border-dashed border-grid px-3 py-4 text-xs text-mist-dim">{empty}</p>;
+    return <p className="rounded-md border-2 border-dashed border-ink/40 px-3 py-4 text-xs text-ink-mute">{empty}</p>;
   }
   return (
-    <div className="overflow-auto rounded-sm border border-grid bg-abyss/60" style={{ maxHeight }}>
+    <div className="overflow-auto rounded-xl border-2 border-ink bg-white" style={{ maxHeight }}>
       <table className="w-full min-w-[560px] border-collapse text-left">
         <thead>
-          <tr className="sticky top-0 z-10 bg-abyss-200 text-mist-dim">
+          <tr className="sticky top-0 z-10 bg-sky text-ink">
             {jerseyOf ? <th scope="col" className="th-cell text-center">Số</th> : null}
             <th scope="col" className="th-cell w-full">Cầu thủ</th>
             <th scope="col" className="th-cell text-center">VT</th>
@@ -53,27 +53,27 @@ export function Fc27Table({ players, jerseyOf, extra = [], starterIds, empty, ma
         </thead>
         <tbody>
           {players.map((p) => (
-            <tr key={p.playerId} className="border-t border-grid/60 transition-colors hover:bg-abyss-300/60">
+            <tr key={p.playerId} className="border-t border-ink/15 hover:bg-sky-100">
               {jerseyOf ? (
-                <td className="px-2 py-1.5 text-center font-mono text-xs text-mist">{jerseyOf.get(p.playerId) ?? "–"}</td>
+                <td className="px-2 py-1.5 text-center tabular-nums text-xs text-ink-soft">{jerseyOf.get(p.playerId) ?? "–"}</td>
               ) : null}
               <td className="px-2 py-1.5">
-                <span className={`text-[13px] ${p.nameSource === "database" || p.nameSource === "newgen" ? "text-ghost" : "text-mist"}`}>
+                <span className={`text-[13px] ${p.nameSource === "database" || p.nameSource === "newgen" ? "text-ink" : "text-ink-soft"}`}>
                   {p.name}
                 </span>
                 {starterIds?.has(p.playerId) ? (
-                  <span className="ml-1.5 rounded-[2px] bg-electric-wash px-1 font-mono text-[9px] uppercase tracking-wide text-electric">
+                  <span className="ml-1.5 rounded-md bg-royal-100 px-1 tabular-nums text-[9px] uppercase tracking-wide text-royal">
                     XI
                   </span>
                 ) : null}
-                {p.nation ? <span className="ml-2 font-mono text-[10px] text-mist-dim">{p.nation}</span> : null}
+                {p.nation ? <span className="ml-2 tabular-nums text-[10px] text-ink-mute">{p.nation}</span> : null}
               </td>
-              <td className="px-2 py-1.5 text-center font-mono text-xs text-mist">{p.position}</td>
-              <td className="px-2 py-1.5 text-center font-mono text-xs text-mist">{p.age ?? "–"}</td>
-              <td className="px-2 py-1.5 text-center font-mono text-xs text-ghost">{p.overall ?? "–"}</td>
-              <td className="px-2 py-1.5 text-center font-mono text-xs text-ghost">{p.potential ?? "–"}</td>
+              <td className="px-2 py-1.5 text-center tabular-nums text-xs text-ink-soft">{p.position}</td>
+              <td className="px-2 py-1.5 text-center tabular-nums text-xs text-ink-soft">{p.age ?? "–"}</td>
+              <td className="px-2 py-1.5 text-center tabular-nums text-xs text-ink">{p.overall ?? "–"}</td>
+              <td className="px-2 py-1.5 text-center tabular-nums text-xs text-ink">{p.potential ?? "–"}</td>
               {extra.map((c) => (
-                <td key={c.label} className="whitespace-nowrap px-2 py-1.5 text-xs text-mist">
+                <td key={c.label} className="whitespace-nowrap px-2 py-1.5 text-xs text-ink-soft">
                   {c.render(p)}
                 </td>
               ))}
@@ -88,7 +88,7 @@ export function Fc27Table({ players, jerseyOf, extra = [], starterIds, empty, ma
 /** Chú thích cuối bảng — nói rõ POT, tuổi và dấu tên. */
 export function TableNotes() {
   return (
-    <p className="text-[11px] leading-relaxed text-mist-dim">
+    <p className="text-[11px] leading-relaxed text-ink-mute">
       * {POT_NOTE}. Tuổi là {AGE_NOTE} (save FC27 không lưu ngày hiện tại trong game). Tên có dấu ≈ là tên suy ra từ kho
       tên FC26, có thể chưa chính xác; #số là cầu thủ chưa tra được tên.
     </p>

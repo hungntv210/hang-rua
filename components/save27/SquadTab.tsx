@@ -51,20 +51,20 @@ export function SquadTab({ career, lineup, players, byId, jerseyOf }: Props) {
           {w}
         </Notice>
       ))}
-      <p className="text-sm text-mist">
-        <strong className="text-ghost">{career.club?.name}</strong>
+      <p className="text-sm text-ink-soft">
+        <strong className="text-ink">{career.club?.name}</strong>
         {lineup ? (
           <>
-            {" "}· sơ đồ <strong className="text-ghost">{lineup.formationName}</strong> · team sheet “{lineup.sheetName}”
+            {" "}· sơ đồ <strong className="text-ink">{lineup.formationName}</strong> · team sheet “{lineup.sheetName}”
           </>
         ) : null}
         {captain ? <> · đội trưởng {captain.name}</> : null}
-        <span className="text-mist-dim"> — đội hình thật người chơi đã xếp, đọc thẳng từ save.</span>
+        <span className="text-ink-mute"> — đội hình thật người chơi đã xếp, đọc thẳng từ save.</span>
       </p>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)]">
         {lineup ? <Pitch lineup={lineup} players={players} jerseyOf={jerseyOf} /> : null}
         <div className="space-y-2">
-          <h3 className="font-display text-sm font-semibold tracking-wide text-ghost">Cả đội ({squad.length})</h3>
+          <h3 className="font-display text-base font-extrabold text-ink">Cả đội ({squad.length})</h3>
           <Fc27Table players={squad} jerseyOf={jerseyOf} starterIds={starterIds} empty="Không có cầu thủ nào." />
           <TableNotes />
         </div>

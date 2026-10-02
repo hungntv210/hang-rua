@@ -141,12 +141,12 @@ export function Fc27Client() {
       <SaveDropZone onFile={handleFile} busy={busy} progress={null} folder="settings của EA SPORTS FC 27" />
 
       {saved ? (
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-mist">
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-soft">
           <span>
-            Đang giữ <strong className="text-ghost">{saved.name}</strong> · lưu lúc{" "}
+            Đang giữ <strong className="text-ink">{saved.name}</strong> · lưu lúc{" "}
             {new Date(saved.at).toLocaleString("vi-VN")}
           </span>
-          <span className="text-mist-dim">— nằm trên máy bạn, không gửi đi đâu.</span>
+          <span className="text-ink-mute">— nằm trên máy bạn, không gửi đi đâu.</span>
           <button
             type="button"
             className="tab"
@@ -157,7 +157,7 @@ export function Fc27Client() {
         </p>
       ) : null}
 
-      {busy ? <p className="text-xs text-mist-dim">Đang giải nén và đọc file…</p> : null}
+      {busy ? <p className="text-xs text-ink-mute">Đang giải nén và đọc file…</p> : null}
 
       {error ? (
         <Notice tone="error" title="Không đọc được file">
@@ -212,7 +212,7 @@ function Fc27Result({
   const scoutPlayers = useMemo(() => (players ? scoutPool(players, career) : []), [career, players]);
   const jerseyOf = useMemo(() => new Map(career.squad.map((l) => [l.playerId, l.jersey])), [career]);
 
-  if (!players) return <p className="text-xs text-mist-dim">Đang nạp kho tên…</p>;
+  if (!players) return <p className="text-xs text-ink-mute">Đang nạp kho tên…</p>;
 
   return (
     <div className="space-y-6">
@@ -222,11 +222,11 @@ function Fc27Result({
         </Notice>
       ) : null}
       <TabBar tabs={TABS} active={tab} onChange={setTab} group="save-reader-fc27" ariaLabel="Các phần của save FC27" />
-      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-mist-dim">
+      <p className="tabular-nums text-[10px] uppercase tracking-[0.18em] text-ink-mute">
         {players.length.toLocaleString("vi-VN")} cầu thủ · giải nén {career.timings.unzipMs}ms · đọc{" "}
         {career.timings.readMs}ms
       </p>
-      <p className="text-xs text-mist-dim">
+      <p className="text-xs text-ink-mute">
         Chỉ gồm cầu thủ nam dùng được trong career — đã bỏ {career.excluded.women.toLocaleString("vi-VN")} cầu thủ nữ,{" "}
         {career.excluded.icons.toLocaleString("vi-VN")} icon/hero (nội dung Ultimate Team, không dùng được trong
         career) và {career.excluded.junk.toLocaleString("vi-VN")} bản ghi giữ chỗ.

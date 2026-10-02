@@ -29,7 +29,7 @@ export class ResultBoundary extends Component<Props, { error: Error | null; key:
     if (!this.state.error) return this.props.children;
     return (
       <Notice tone="error" title="Không hiển thị được kết quả">
-        Đã đọc xong file nhưng giao diện gặp lỗi khi vẽ: <code className="font-mono">{this.state.error.message}</code>
+        Đã đọc xong file nhưng giao diện gặp lỗi khi vẽ: <code className="tabular-nums">{this.state.error.message}</code>
         . Nhấn Ctrl+Shift+R để tải lại sạch rồi thả file lại; nếu vẫn lỗi, hãy chép nguyên dòng trên gửi cho tôi.
       </Notice>
     );

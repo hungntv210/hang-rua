@@ -24,11 +24,11 @@ export function ScoutTab({ players, career }: { players: SavePlayer[]; career: F
   );
 
   const num = (key: "minAge" | "maxAge" | "minOverall" | "minPotential" | "minGrowth", label: string, title?: string) => (
-    <label className="flex flex-col gap-1 text-[11px] text-mist-dim" title={title}>
+    <label className="flex flex-col gap-1 text-[11px] text-ink-mute" title={title}>
       {label}
       <input
         inputMode="numeric"
-        className="w-20 rounded-sm border border-grid bg-abyss px-2 py-1 font-mono text-xs text-ghost"
+        className="w-20 rounded-xl border-2 border-ink bg-white px-2 py-1 tabular-nums text-xs text-ink"
         value={c[key] ?? ""}
         onChange={(e) => setC({ ...c, [key]: toNum(e.target.value) })}
       />
@@ -54,10 +54,10 @@ export function ScoutTab({ players, career }: { players: SavePlayer[]; career: F
         </Notice>
       ))}
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[11px] text-mist-dim">
+        <label className="flex flex-col gap-1 text-[11px] text-ink-mute">
           Tìm (tên, CLB, quốc tịch, vị trí, ID)
           <input
-            className="w-64 rounded-sm border border-grid bg-abyss px-2 py-1 text-xs text-ghost"
+            className="w-64 rounded-xl border-2 border-ink bg-white px-2 py-1 text-xs text-ink"
             value={c.query}
             onChange={(e) => setC({ ...c, query: e.target.value })}
           />
@@ -81,7 +81,7 @@ export function ScoutTab({ players, career }: { players: SavePlayer[]; career: F
           ))}
         </div>
       </div>
-      <p className="text-xs text-mist-dim">
+      <p className="text-xs text-ink-mute">
         {result.length.toLocaleString("vi-VN")} cầu thủ khớp{career.club ? " (không gồm đội một và học viện của bạn)" : ""}
         {result.length > SHOW ? ` · hiện ${SHOW} người POT cao nhất` : ""}. CLB là CLB hiện tại trong save.
       </p>
