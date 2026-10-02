@@ -44,6 +44,11 @@ export const FC27 = {
     teamId: f("mCXg", -1),
     name: f("TrVp"),
     captain: f("FVzk", -1),
+    /**
+     * Số thứ tự sheet trong đội: 0 là sheet mặc định "<CLB> Default", sheet người
+     * chơi tự tạo là 1, 2… Đã đối chiếu hai save: sheet Default luôn 0.
+     */
+    sheet: f("jfDM"),
     /** playerid0..10 theo thứ tự ô; 0 thô = ô trống. */
     slots: ["MVLC", "zWHI", "SfCW", "Ncmk", "Povf", "wjrR", "RaOP", "OhyJ", "WCfU", "FJbC", "qhEx"].map((c) => f(c, -1)),
   },
@@ -53,6 +58,8 @@ export const FC27 = {
     teamId: f("mCXg", -1),
     /** Mã tên đầy đủ của sơ đồ — cùng mã ở bảng `formations`. */
     fullNameId: f("nFPu"),
+    /** Cùng mã và cùng nghĩa với `teamsheets.sheet` — để ghép đúng sheet ở hai bảng. */
+    sheet: f("jfDM"),
     positions: ["ZzVx", "CEZz", "nNch", "cGsr", "aCho", "BBlW", "ksMI", "fvcy", "TMpL", "sPtx", "FuLD"].map((c) => f(c, -1)),
   },
   /** Toạ độ ô 0..10 — cùng mã ở bảng `formations` và `sheetShape`. */

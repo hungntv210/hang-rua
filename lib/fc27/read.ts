@@ -70,17 +70,29 @@ const now = (): number => (typeof performance !== "undefined" ? performance.now(
 const message = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
 /**
- * Chỉ số dòng team sheet của CLB người chơi; `null` khi không chắc — KHÔNG đoán.
+ * Chỉ số dòng team sheet CHÍNH của CLB người chơi; `null` khi không chắc — KHÔNG đoán.
  *
- * Một dòng duy nhất là của người chơi. Nhiều dòng (CLB + đội tuyển) thì bỏ dòng
- * mang tên quốc gia và phải còn đúng một; không có danh sách quốc gia thì không
- * phân biệt được, nên cũng trả `null`.
+ * Đếm theo ĐỘI, không theo dòng: một CLB có thể có nhiều sheet (sheet mặc định
+ * cộng sheet người chơi tự tạo). Mọi dòng cùng một đội thì đó là CLB, khỏi cần
+ * danh sách quốc gia. Nhiều đội (CLB + đội tuyển) thì bỏ đội mang tên quốc gia và
+ * phải còn đúng một đội; không có danh sách quốc gia thì không phân biệt được.
+ *
+ * Trong các sheet của CLB, sheet chính là sheet có số thứ tự nhỏ nhất (0 =
+ * "<CLB> Default"); dòng thiếu số thứ tự coi như 0.
  */
-export function pickClubRow(rows: { teamId: number; name: string }[], nationNames: Set<string>): number | null {
-  if (rows.length === 1) return rows[0].name !== "" ? 0 : null;
-  if (nationNames.size === 0) return null;
-  const clubs = rows.flatMap((r, i) => (r.name !== "" && !nationNames.has(r.name) ? [i] : []));
-  return clubs.length === 1 ? clubs[0] : null;
+export function pickClubRow(
+  rows: { teamId: number; name: string; sheet?: number }[],
+  nationNames: Set<string>,
+): number | null {
+  const named = rows.flatMap((r, i) => (r.name !== "" ? [i] : []));
+  if (named.length === 0) return null;
+  let candidates = named;
+  if (new Set(named.map((i) => rows[i].teamId)).size > 1) {
+    if (nationNames.size === 0) return null;
+    candidates = named.filter((i) => !nationNames.has(rows[i].name));
+    if (new Set(candidates.map((i) => rows[i].teamId)).size !== 1) return null;
+  }
+  return candidates.reduce((best, i) => ((rows[i].sheet ?? 0) < (rows[best].sheet ?? 0) ? i : best));
 }
 
 const shapeKey = (xs: number[], ys: number[]): string =>
@@ -184,25 +196,35 @@ function readClub(
   blob: Uint8Array, tables: DbTable[], s: Fc27Schema, teams: Map<number, string>, nations: Set<string>,
 ): { teamId: number; name: string } {
   const r = tableReader(blob, tables, s.teamsheets.table);
+  const hasSheet = r.has(s.teamsheets.sheet);
   const rows = Array.from({ length: r.table.nValid }, (_, i) => {
     const teamId = r.int(i, s.teamsheets.teamId);
-    return { teamId, name: teams.get(teamId) ?? "" };
+    return { teamId, name: teams.get(teamId) ?? "", sheet: hasSheet ? r.int(i, s.teamsheets.sheet) : 0 };
   });
   const i = pickClubRow(rows, nations);
-  if (i === null) throw new Error("Không xác định được CLB người chơi (save có nhiều team sheet mà không phân biệt được CLB với đội tuyển).");
-  return rows[i];
+  if (i === null) throw new Error("Không xác định được CLB người chơi (save có team sheet của nhiều đội mà không phân biệt được CLB với đội tuyển).");
+  return { teamId: rows[i].teamId, name: rows[i].name };
 }
 
 function readLineup(blob: Uint8Array, tables: DbTable[], s: Fc27Schema, teamId: number): LineupRead {
   const ts = tableReader(blob, tables, s.teamsheets.table);
-  const row = Array.from({ length: ts.table.nValid }, (_, i) => i).find((i) => ts.int(i, s.teamsheets.teamId) === teamId);
+  // Sheet chính của đội = số thứ tự nhỏ nhất (0 = "<CLB> Default"). Hai bảng
+  // (người ra sân, toạ độ) phải ghép cùng một sheet, nên số này dùng cho cả hai.
+  const sheetOf = (has: boolean, read: (i: number) => number) => (i: number) => (has ? read(i) : 0);
+  const tsSheet = sheetOf(ts.has(s.teamsheets.sheet), (i) => ts.int(i, s.teamsheets.sheet));
+  const row = Array.from({ length: ts.table.nValid }, (_, i) => i)
+    .filter((i) => ts.int(i, s.teamsheets.teamId) === teamId)
+    .reduce<number | undefined>((best, i) => (best === undefined || tsSheet(i) < tsSheet(best) ? i : best), undefined);
   if (row === undefined) throw new Error("Không tìm thấy team sheet của CLB.");
+  const sheet = tsSheet(row);
   const ids = s.teamsheets.slots.map((spec) => ts.int(row, spec));
   if (ids.some((id) => id < 0)) throw new Error("Team sheet thiếu cầu thủ ở đội hình ra sân.");
   const captain = ts.int(row, s.teamsheets.captain);
 
   const sh = tableReader(blob, tables, s.sheetShape.table);
-  const shapeRow = Array.from({ length: sh.table.nValid }, (_, i) => i).find((i) => sh.int(i, s.sheetShape.teamId) === teamId);
+  const shSheet = sheetOf(sh.has(s.sheetShape.sheet), (i) => sh.int(i, s.sheetShape.sheet));
+  const shapeRow = Array.from({ length: sh.table.nValid }, (_, i) => i)
+    .find((i) => sh.int(i, s.sheetShape.teamId) === teamId && shSheet(i) === sheet);
   if (shapeRow === undefined) throw new Error("Không tìm thấy sơ đồ của team sheet.");
   const coord = (codes: string[]): number[] => codes.map((c) => readFloat(blob, sh.table, shapeRow, sh.field(c)));
   const xs = coord(s.offsetX);

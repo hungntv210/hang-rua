@@ -172,6 +172,17 @@ check("hai CLB không phải đội tuyển → không chọn", pickClubRow([{ t
 check("nhiều dòng mà thiếu danh sách quốc gia → không chọn",
   pickClubRow([{ teamId: 1354, name: "Portugal" }, { teamId: 11, name: "Man Utd" }], new Set()) === null);
 check("chỉ một team sheet → chính là CLB", pickClubRow([{ teamId: 11, name: "Man Utd" }], new Set()) === 0);
+// Nhiều team sheet của CÙNG một CLB (sheet mặc định + sheet người chơi tự tạo):
+// vẫn là một CLB, và sheet chính là sheet số 0 (bản "<CLB> Default").
+const SUN = "Sunderland";
+check("hai sheet cùng CLB → sheet số 0",
+  pickClubRow([{ teamId: 106, name: SUN, sheet: 0 }, { teamId: 106, name: SUN, sheet: 1 }], new Set(["X"])) === 0);
+check("hai sheet cùng CLB, thứ tự đảo → vẫn sheet số 0",
+  pickClubRow([{ teamId: 106, name: SUN, sheet: 1 }, { teamId: 106, name: SUN, sheet: 0 }], new Set(["X"])) === 1);
+check("đội tuyển + hai sheet cùng CLB → sheet số 0 của CLB",
+  pickClubRow([{ teamId: 1354, name: "Portugal", sheet: 0 }, { teamId: 106, name: SUN, sheet: 1 }, { teamId: 106, name: SUN, sheet: 0 }], new Set(["Portugal"])) === 2);
+check("hai sheet cùng CLB mà thiếu danh sách quốc gia → vẫn chọn được",
+  pickClubRow([{ teamId: 106, name: SUN, sheet: 1 }, { teamId: 106, name: SUN, sheet: 0 }], new Set()) === 1);
 // I4: trường phụ của bảng cầu thủ thiếu → chỉ cảnh báo, không sập tab.
 const noGender = structuredClone(FC27);
 noGender.players.gender = { code: "ZZZZ", add: 0 };
