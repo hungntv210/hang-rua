@@ -208,6 +208,16 @@ const config: Config = {
           "100%": { clipPath: "inset(0 0 0 0)" },
         },
         /** Nhấp nháy nhẹ của chỉ báo đang hoạt động. */
+        /** Mascot lắc nhẹ khi đang chờ. */
+        wobble: {
+          "0%, 100%": { transform: "rotate(-4deg)" },
+          "50%": { transform: "rotate(4deg)" },
+        },
+        /** Chuyển trang kiểu nảy: dịch nhẹ + phóng nhỏ, có overshoot ở easing. */
+        "pop-in": {
+          "0%": { opacity: "0", transform: "translateY(8px) scale(0.99)" },
+          "100%": { opacity: "1", transform: "translateY(0) scale(1)" },
+        },
         flicker: {
           "0%, 100%": { opacity: "0.85" },
           "45%": { opacity: "0.35" },
@@ -222,6 +232,8 @@ const config: Config = {
         "draw-corner": "draw-corner 700ms cubic-bezier(0.16, 1, 0.3, 1) both",
         "tooltip-in": "tooltip-in 150ms cubic-bezier(0.16, 1, 0.3, 1) both",
         flicker: "flicker 4s ease-in-out infinite",
+        wobble: "wobble 1.6s ease-in-out infinite",
+        "pop-in": "pop-in 240ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
       },
     },
   },

@@ -1,3 +1,5 @@
+import { MascotState } from "@/components/ui/MascotState";
+
 interface NoticeProps {
   title: string;
   children?: React.ReactNode;
@@ -16,38 +18,27 @@ function InfoIcon() {
   );
 }
 
-function ErrorIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5 shrink-0">
-      <path
-        fillRule="evenodd"
-        d="M9.401 3.003c.868-1.5 3.03-1.5 3.898 0l7.148 12.373c.868 1.5-.217 3.374-1.949 3.374H4.202c-1.732 0-2.817-1.874-1.949-3.374L9.4 3.003ZM11 6.75a1 1 0 1 0-2 0v4.5a1 1 0 1 0 2 0v-4.5Zm-1 8.25a1.125 1.125 0 1 0 0-2.25 1.125 1.125 0 0 0 0 2.25Z"
-        clipRule="evenodd"
-      />
-    </svg>
-  );
-}
-
 export function Notice({ title, children, tone = "info" }: NoticeProps) {
-  const toneClass =
-    tone === "error"
-      ? "border-crimson/40 bg-crimson-wash text-crimson"
-      : "border-grid bg-abyss text-electric";
+  // Lỗi: mascot nghiêng + nền đỏ nhạt — đọc được tông trước cả khi đọc chữ.
+  if (tone === "error") {
+    return (
+      <div className="rounded-xl border-2 border-ink bg-lose-wash p-4 shadow-pop-sm">
+        <MascotState kind="error" inline title={title}>
+          {children}
+        </MascotState>
+      </div>
+    );
+  }
 
   return (
-    <div className={`relative flex gap-3 overflow-hidden rounded-sm border p-4 ${toneClass}`}>
-      {/* Vạch màu ở cạnh trái: đọc được tông của thông báo trước cả khi đọc chữ. */}
-      <span
-        aria-hidden
-        className={`absolute inset-y-0 left-0 w-0.5 ${
-          tone === "error" ? "bg-crimson" : "bg-electric"
-        }`}
-      />
-      {tone === "error" ? <ErrorIcon /> : <InfoIcon />}
+    <div className="flex gap-3 rounded-xl border-2 border-ink bg-sky-100 p-4 shadow-pop-sm">
+      <span className="text-royal">
+        <InfoIcon />
+      </span>
       <div className="min-w-0">
-        <p className="font-medium text-ghost">{title}</p>
+        <p className="font-display font-extrabold text-ink">{title}</p>
         {children ? (
-          <div className="mt-1 text-sm leading-relaxed text-mist">{children}</div>
+          <div className="mt-1 text-sm leading-relaxed text-ink-soft">{children}</div>
         ) : null}
       </div>
     </div>

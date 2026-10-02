@@ -66,7 +66,7 @@ export function TabBar<T extends string>({
             role="tab"
             aria-selected={selected}
             onClick={() => onChange(tab.id)}
-            className={`tab relative ${selected ? "tab-active" : ""}`}
+            className={`tab relative isolate ${selected ? "tab-active !bg-transparent" : ""}`}
           >
             {/* Nền trượt nằm DƯỚI chữ. Cùng `layoutId` ở mọi nút nên Framer
                 hiểu đây là một phần tử di chuyển, không phải nhiều phần tử
@@ -74,13 +74,13 @@ export function TabBar<T extends string>({
             {selected ? (
               <m.span
                 layoutId={`tab-indicator-${group}`}
-                className="absolute inset-0 -z-10 rounded-sm bg-electric-wash"
+                className="absolute inset-0 -z-10 rounded-full bg-royal"
                 transition={springFor(reduce)}
               />
             ) : null}
             <span className="relative">{tab.label}</span>
             {tab.labelJp ? (
-              <span className="brand-jp relative ml-2 text-[9px] text-mist-dim">
+              <span className="relative ml-2 font-sans text-[11px]">
                 {tab.labelJp}
               </span>
             ) : null}

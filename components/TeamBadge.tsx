@@ -34,7 +34,7 @@ export function TeamBadge({ team, align = "left", size = 22 }: Props) {
       {/* Đội được đánh dấu chỉ đổi ĐỘ ĐẬM, không đổi màu: hàng của nó đã có nền
           xanh riêng, tô chữ xanh lên nền xanh vừa thừa tín hiệu vừa tụt tương
           phản xuống 4,27:1 — dưới ngưỡng đọc được. */}
-      <span className={`truncate text-ghost ${highlight ? "font-semibold" : ""}`}>
+      <span className={`truncate text-ink ${highlight ? "font-semibold" : ""}`}>
         {team.name}
       </span>
     </span>

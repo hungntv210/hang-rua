@@ -1,6 +1,6 @@
 /** Khối skeleton dùng chung cho các màn hình loading.tsx — chỉ để trình bày. */
 function Bar({ className = "" }: { className?: string }) {
-  return <div className={`skeleton rounded-sm ${className}`} />;
+  return <div className={`skeleton rounded-md ${className}`} />;
 }
 
 export function TabsSkeleton({ count = 3 }: { count?: number }) {
@@ -25,14 +25,14 @@ export function RoundAccordionSkeleton({
     <div className="relative pl-9">
       <span
         aria-hidden
-        className="absolute bottom-5 left-4 top-5 w-px bg-abyss-400"
+        className="absolute bottom-5 left-4 top-5 w-px bg-ink/20"
       />
       <div className="space-y-2">
         {Array.from({ length: rounds }).map((_, roundIndex) => (
           <div key={roundIndex} className="relative">
             <span
               aria-hidden
-              className="absolute -left-7 top-3.5 flex w-[17px] justify-center bg-void py-0.5"
+              className="absolute -left-7 top-3.5 flex w-[17px] justify-center bg-ice py-0.5"
             >
               <Bar className="h-[18px] w-[17px]" />
             </span>
@@ -42,7 +42,7 @@ export function RoundAccordionSkeleton({
                 <Bar className="h-3 w-40" />
               </div>
               {roundIndex === 0 ? (
-                <ul className="divide-y divide-grid border-t border-grid">
+                <ul className="divide-y divide-ink/20 border-t border-ink/20">
                   {Array.from({ length: rows }).map((_, rowIndex) => (
                     <li key={rowIndex} className="px-3 py-3 sm:px-4">
                       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
@@ -74,10 +74,10 @@ export function FixtureListSkeleton({
     <div className="space-y-3">
       {Array.from({ length: days }).map((_, dayIndex) => (
         <section key={dayIndex} className="plate">
-          <div className="border-b border-grid px-3 py-2 sm:px-4">
+          <div className="border-b border-ink/20 px-3 py-2 sm:px-4">
             <Bar className="h-3 w-32" />
           </div>
-          <ul className="divide-y divide-grid">
+          <ul className="divide-y divide-ink/20">
             {Array.from({ length: rows }).map((_, rowIndex) => (
               <li key={rowIndex} className="px-3 py-3 sm:px-4">
                 <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">

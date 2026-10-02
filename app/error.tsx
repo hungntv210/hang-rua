@@ -2,6 +2,9 @@
 
 import { useEffect } from "react";
 
+import { Button } from "@/components/ui/Button";
+import { MascotState } from "@/components/ui/MascotState";
+
 export default function Error({
   error,
   reset,
@@ -15,19 +18,14 @@ export default function Error({
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-16">
-      <div className="space-y-3 rounded border border-crimson/40 bg-crimson-wash p-6">
-        <h1 className="font-display text-2xl font-semibold tracking-tight text-ghost">
-          Có lỗi xảy ra
-        </h1>
-        <p className="text-sm text-mist">
-          {error.message || "Lỗi không xác định khi hiển thị trang."}
-        </p>
-        {error.digest ? (
-          <p className="text-xs text-mist">Mã lỗi: {error.digest}</p>
-        ) : null}
-        <button type="button" onClick={reset} className="tab">
-          Thử lại
-        </button>
+      <div className="space-y-5 rounded-2xl border-2 border-ink bg-lose-wash p-6 shadow-pop">
+        <MascotState kind="error" title="Rùa vấp rồi, có lỗi xảy ra">
+          <p>{error.message || "Lỗi không xác định khi hiển thị trang."}</p>
+          {error.digest ? <p className="mt-1 text-xs">Mã lỗi: {error.digest}</p> : null}
+        </MascotState>
+        <div className="flex justify-center">
+          <Button onClick={reset}>Thử lại</Button>
+        </div>
       </div>
     </div>
   );
