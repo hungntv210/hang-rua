@@ -200,6 +200,10 @@ export function Pitch({ lineup, players, jerseyOf }: Props) {
               onClick={() => setOpen((cur) => (cur === i ? null : i))}
               onFocus={() => setOpen(i)}
               onBlur={() => setOpen((cur) => (cur === i ? null : cur))}
+              // Esc đóng bảng (WCAG 1.4.13: nội dung hiện khi focus phải tắt được bằng phím).
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setOpen(null);
+              }}
               /* Bề ngang ô: đặt ở lớp bọc ngoài, 22% bề ngang SÂN (tối đa 104px)
                  — tức 75px trên sân 343px của màn hình 375px, 104px trên desktop.
                  Trước đây là 20vw: cùng con số trên điện thoại thật, nhưng `vw`

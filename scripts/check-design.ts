@@ -128,6 +128,25 @@ export function missingCustomClasses(): string[] {
   return [...used].filter((name) => !new RegExp(`\\.${name}(?![\\w-])\\s*[{:,]`).test(css));
 }
 
+/**
+ * Luật nguồn rút ra từ lỗi đã gặp:
+ *  - sticky với `top-<số>` cứng: menu trên cùng cao --header-h, phần tử dính ở
+ *    24px sẽ chui xuống dưới nó. Dùng `top-[calc(var(--header-h)+...)]`.
+ *  - Pitch phải xử lý Escape: nội dung hiện khi focus phải tắt được bằng phím.
+ */
+export function sourceRuleViolations(): string[] {
+  const out: string[] = [];
+  for (const file of walk("components").concat(walk("app")).filter((f) => f.endsWith(".tsx"))) {
+    readFileSync(file, "utf8").split(/\r?\n/).forEach((line, i) => {
+      if (/\bsticky\b[^"`]*\btop-[1-9]\d*\b/.test(line)) out.push(`${file}:${i + 1}: sticky với top cứng, dùng var(--header-h)`);
+    });
+  }
+  if (!readFileSync("components/save/Pitch.tsx", "utf8").includes('"Escape"')) {
+    out.push("components/save/Pitch.tsx: thiếu xử lý phím Escape đóng tooltip");
+  }
+  return out;
+}
+
 function main() {
   // Đối chứng: hàm đo phải phân biệt được cặp tệ với cặp tốt.
   if (contrast("#777777", "#808080") >= MIN_RATIO) throw new Error("đối chứng hỏng: cặp xám-xám lại đạt");
@@ -153,6 +172,9 @@ function main() {
   const missing = missingCustomClasses();
   missing.forEach((m) => console.log("  MISSING CSS", m));
   failed += missing.length;
+  const rules = sourceRuleViolations();
+  rules.forEach((r) => console.log("  RULE", r));
+  failed += rules.length;
   if (failed > 0) {
     console.error(`\n${failed}/${TOKEN_PAIRS.length} cặp dưới ${MIN_RATIO}:1`);
     process.exit(1);

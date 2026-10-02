@@ -206,7 +206,7 @@ export function SquadList({ squad, starterIds, jerseyOf, wageOf }: Props) {
                                 <span className="mt-0.5 flex items-center gap-1.5 tabular-nums text-[10px] leading-none text-ink-mute">
                                   <span
                                     title={p.nation ?? undefined}
-                                    className="rounded-md bg-ink/20 px-1 py-[1px] tracking-wide"
+                                    className="rounded-md bg-ink/10 px-1 py-[1px] tracking-wide"
                                   >
                                     {nationCode(p.nation)}
                                   </span>

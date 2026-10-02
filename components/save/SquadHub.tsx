@@ -101,7 +101,7 @@ export function SquadHub({ lineup, players, jerseyOf, wageOf, clubName }: Props)
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,480px)_minmax(0,1fr)] xl:gap-8">
         {/* KHỐI TRÁI ───────────────────────────────────────────────────── */}
-        <div className="space-y-4 xl:sticky xl:top-6 xl:self-start">
+        <div className="space-y-4 xl:sticky xl:top-[calc(var(--header-h)+1.5rem)] xl:self-start">
           <Pitch lineup={lineup} players={players} jerseyOf={jerseyOf} />
 
           <section>
