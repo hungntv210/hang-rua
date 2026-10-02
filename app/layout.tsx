@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import {
+  Baloo_2,
   Be_Vietnam_Pro,
   Chakra_Petch,
   Charmonman,
@@ -11,6 +12,18 @@ import { HudFrame } from "@/components/HudFrame";
 import { MotionProvider } from "@/components/MotionProvider";
 import { RouteTransition } from "@/components/RouteTransition";
 import { Sidebar } from "@/components/Sidebar";
+
+/**
+ * Tiêu đề, nút, menu: Baloo 2 — nét tròn thân thiện, có subset vietnamese. Dấu
+ * tiếng Việt phải được đo thật trên trình duyệt chứ không tin API (xem Task 1
+ * của kế hoạch redesign).
+ */
+const baloo2 = Baloo_2({
+  subsets: ["latin", "vietnamese"],
+  weight: ["600", "800"],
+  variable: "--font-baloo",
+  display: "swap",
+});
 
 /**
  * Thân và số liệu. Chọn Be Vietnam Pro vì nó được thiết kế riêng cho dấu tiếng
@@ -82,7 +95,7 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className={`${beVietnamPro.variable} ${chakraPetch.variable} ${jetbrainsMono.variable} ${charmonman.variable}`}
+      className={`${baloo2.variable} ${beVietnamPro.variable} ${chakraPetch.variable} ${jetbrainsMono.variable} ${charmonman.variable}`}
     >
       <body>
         {/* MotionProvider bọc ngoài cùng nhưng KHÔNG biến `children` thành client

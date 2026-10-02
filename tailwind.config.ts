@@ -25,6 +25,21 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        /* ===== BẢNG MÀU MỚI (pop-art kawaii, giao diện sáng) =====
+           Lấy mẫu từ logo huy hiệu. Token cũ bên dưới còn giữ tạm cho tới khi
+           mọi trang chuyển xong (kế hoạch Task 11 sẽ xoá). */
+        ink: { DEFAULT: "#0A1428", soft: "#3A4A6B", mute: "#51607F" },
+        navy: "#36538B",
+        royal: { DEFAULT: "#2563C9", 100: "#DCE6F8" },
+        aqua: { DEFAULT: "#4FC3D9", 100: "#D3F1F7" },
+        sky: { DEFAULT: "#A6D4E3", 100: "#DCEFF6" },
+        /** Màu ấm duy nhất: NEW, sticker, khối menu Save Reader. */
+        salmon: { DEFAULT: "#E89796", 100: "#FBE3E2" },
+        ice: "#F6FBFE",
+        /** Màu chức năng: CHỈ cho thang chỉ số cầu thủ và vùng xếp hạng. */
+        win: { DEFAULT: "#17794B", wash: "#D9F2E4" },
+        warn: { DEFAULT: "#8A5B00", wash: "#FBEBC4" },
+        lose: { DEFAULT: "#B4361E", wash: "#FADBD3" },
         /** Nền: trời đêm. Xanh đen, cố ý không phải xám trung tính. */
         void: {
           DEFAULT: "#04070F",
@@ -136,7 +151,7 @@ const config: Config = {
          * nó vừa có nét cắt vát của chữ HUD vừa hỗ trợ đầy đủ dấu tiếng Việt —
          * phần lớn font "techno" không có, và giao diện này toàn tiếng Việt.
          */
-        display: ["var(--font-display)", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["var(--font-baloo)", "var(--font-display)", "ui-sans-serif", "system-ui", "sans-serif"],
         /** Nhãn HUD, toạ độ, số liệu dạng bảng. */
         mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
         /** Thư pháp bút lông — CHỈ cho wordmark trang chủ, không dùng chỗ khác. */
@@ -145,6 +160,10 @@ const config: Config = {
         jp: ['"Hiragino Sans"', '"Yu Gothic"', "Meiryo", '"Noto Sans JP"', "sans-serif"],
       },
       boxShadow: {
+        /** Bóng cứng lệch kiểu pop-art: không blur. */
+        pop: "4px 4px 0 #0A1428",
+        "pop-sm": "2px 2px 0 #0A1428",
+        "pop-press": "0 0 0 #0A1428",
         /** Mặt phẳng nổi: viền sáng mảnh làm việc chính, bóng chỉ để tách nền. */
         panel: "0 1px 0 rgba(34, 211, 238, 0.06), 0 18px 40px -28px rgba(0, 0, 0, 0.9)",
         "panel-lift":

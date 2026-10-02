@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
   /* CÁC MỐC STICKY
      Dưới lg có HAI thanh dính chồng lên nhau: thanh hamburger (Sidebar.tsx) ở
@@ -31,14 +31,7 @@
 }
 
 body {
-  @apply bg-void text-ghost antialiased;
-  /* Lưới toạ độ rất mờ trên nền — cùng ngôn ngữ với khung HUD, nhưng nhạt tới
-     mức không bao giờ cạnh tranh với chữ. */
-  background-image:
-    linear-gradient(to right, rgba(46, 107, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(46, 107, 255, 0.035) 1px, transparent 1px);
-  background-size: 72px 72px;
-  background-attachment: fixed;
+  @apply bg-ice text-ink antialiased;
 }
 
 @layer components {
