@@ -104,6 +104,30 @@ export function scanLegacy(roots: string[]): { hits: string[]; scanned: number }
   return { hits, scanned };
 }
 
+/**
+ * Lớp CSS tự định nghĩa trong globals.css mà component dùng bằng tên. Thiếu định
+ * nghĩa thì KHÔNG có lỗi nào cả — Tailwind bỏ qua tên lạ — nên phần tử chỉ lặng
+ * lẽ mất kiểu (đã xảy ra: dọn token cũ xoá nhầm `.skeleton` và `.pop-halftone`).
+ */
+export const CUSTOM_CLASSES = [
+  "plate", "plate-interactive", "focus-ring", "tab", "tab-active", "btn-primary",
+  "section-title", "th-cell", "eyebrow", "skeleton", "pop-halftone",
+];
+
+/** Trả về các lớp tự định nghĩa đang được dùng nhưng không có trong globals.css. */
+export function missingCustomClasses(): string[] {
+  const css = readFileSync("app/globals.css", "utf8");
+  const sources = ["app", "components"].flatMap((r) => walk(r)).filter((f) => f.endsWith(".tsx"));
+  const used = new Set<string>(CUSTOM_CLASSES.filter((c) => c !== "plate-interactive" || true));
+  // Mọi tên bắt đầu bằng `pop-` trong mã nguồn cũng phải có định nghĩa.
+  for (const file of sources) {
+    for (const m of readFileSync(file, "utf8").matchAll(/\bpop-[a-z][a-z-]*\b/g)) {
+      if (!/^pop-(in|sm|press|art)$/.test(m[0]) && m[0] !== "pop") used.add(m[0]);
+    }
+  }
+  return [...used].filter((name) => !new RegExp(`\\.${name}(?![\\w-])\\s*[{:,]`).test(css));
+}
+
 function main() {
   // Đối chứng: hàm đo phải phân biệt được cặp tệ với cặp tốt.
   if (contrast("#777777", "#808080") >= MIN_RATIO) throw new Error("đối chứng hỏng: cặp xám-xám lại đạt");
@@ -126,6 +150,9 @@ function main() {
   console.log(`\nquét ${scanned} file tìm lớp giao diện cũ: ${hits.length} chỗ`);
   hits.forEach((h) => console.log("  LEGACY", h));
   if (hits.length > 0) failed += hits.length;
+  const missing = missingCustomClasses();
+  missing.forEach((m) => console.log("  MISSING CSS", m));
+  failed += missing.length;
   if (failed > 0) {
     console.error(`\n${failed}/${TOKEN_PAIRS.length} cặp dưới ${MIN_RATIO}:1`);
     process.exit(1);

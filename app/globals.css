@@ -65,6 +65,24 @@ body {
   .eyebrow {
     @apply font-display text-xs font-extrabold uppercase tracking-[0.14em] text-ink-mute;
   }
+
+  /* Khối chờ dữ liệu: nền pastel phẳng, một vệt trắng xiên quét ngang. */
+  .skeleton {
+    @apply relative overflow-hidden bg-sky-100;
+  }
+
+  .skeleton::after {
+    content: "";
+    @apply absolute inset-y-0 left-0 w-2/5 -skew-x-12 bg-white/70;
+    transform: translateX(-120%) skewX(-12deg);
+    animation: skeleton-sweep 1.4s ease-in-out infinite;
+  }
+
+  /* Họa tiết chấm bi (halftone) cho đầu thẻ và banner. */
+  .pop-halftone {
+    background-image: radial-gradient(rgba(10, 20, 40, 0.16) 1.5px, transparent 1.6px);
+    background-size: 10px 10px;
+  }
 }
 
 @keyframes skeleton-sweep {
