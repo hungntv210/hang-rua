@@ -385,12 +385,12 @@ export function SaveReaderClient() {
       <SaveDropZone onFile={handleFile} busy={progress !== null} progress={progress} />
 
       {savedName ? (
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-mist">
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-soft">
           <span>
-            Đang giữ <strong className="text-ghost">{savedName}</strong>
+            Đang giữ <strong className="text-ink">{savedName}</strong>
             {savedAt ? ` · lưu lúc ${new Date(savedAt).toLocaleString("vi-VN")}` : ""}
           </span>
-          <span className="text-mist-dim">— nằm trên máy bạn, không gửi đi đâu.</span>
+          <span className="text-ink-mute">— nằm trên máy bạn, không gửi đi đâu.</span>
           <button
             type="button"
             className="tab"
@@ -405,7 +405,7 @@ export function SaveReaderClient() {
           </button>
         </p>
       ) : restoring ? (
-        <p className="text-xs text-mist-dim">Đang tìm file của lần trước…</p>
+        <p className="text-xs text-ink-mute">Đang tìm file của lần trước…</p>
       ) : null}
 
       {largeFileNotice && progress !== null ? (
@@ -497,7 +497,7 @@ function SaveResult({
       </div>
 
       {/* Giữ phản hồi tốc độ, bỏ bốn thẻ lớn. */}
-      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-mist-dim">
+      <p className="tabular-nums text-[10px] uppercase tracking-[0.18em] text-ink-mute">
         {formatCount(players?.length ?? 0)} cầu thủ · đọc trong {Math.round(doc.meta.parseMs)}ms
       </p>
 

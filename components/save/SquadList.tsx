@@ -75,6 +75,14 @@ interface Props {
   wageOf?: Map<number, number>;
 }
 
+/** Mỗi nhóm vị trí một màu khối — thủ môn salmon theo quy ước "thủ môn khác màu". */
+const GROUP_TONE: Record<(typeof GROUP_ORDER)[number], string> = {
+  GK: "bg-salmon text-ink",
+  DF: "bg-sky text-ink",
+  MF: "bg-aqua text-ink",
+  FW: "bg-royal text-ice",
+};
+
 export function SquadList({ squad, starterIds, jerseyOf, wageOf }: Props) {
   /*
    * Cột lương ẩn HẲN khi không có dữ liệu, không hiện một cột toàn dấu gạch.
@@ -100,29 +108,31 @@ export function SquadList({ squad, starterIds, jerseyOf, wageOf }: Props) {
         const list = groups.get(g)!;
         return (
           <section key={g}>
-            <div className="mb-2 flex items-baseline gap-2">
-              <h3 className="font-display text-sm font-semibold tracking-wide text-ghost">
+            <div className="mb-2 flex items-center gap-2">
+              <h3
+                className={`rounded-full border-2 border-ink px-3 py-0.5 font-display text-sm font-extrabold shadow-pop-sm ${GROUP_TONE[g]}`}
+              >
                 {GROUP_LABEL[g].vi}
               </h3>
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-mist-dim">
+              <span className="tabular-nums text-[10px] uppercase tracking-[0.14em] text-ink-mute">
                 {GROUP_LABEL[g].en} · {list.length}
               </span>
             </div>
 
             {list.length === 0 ? (
-              <p className="rounded-sm border border-dashed border-grid px-3 py-4 text-xs text-mist-dim">
+              <p className="rounded-md border-2 border-dashed border-ink/40 px-3 py-4 text-xs text-ink-mute">
                 Không có cầu thủ nào thuộc nhóm này trong đội.
               </p>
             ) : (
               /* Cuộn riêng từng nhóm. `max-h` chọn theo 6 hàng: đủ để phần lớn
                  nhóm hiện trọn, và khi tràn thì hàng thứ bảy bị cắt một nửa —
                  dấu hiệu "còn nữa" rõ hơn bất kỳ mũi tên nào. */
-              <div className="max-h-[17rem] overflow-y-auto overflow-x-auto rounded-sm border border-grid bg-abyss/60">
+              <div className="max-h-[17rem] overflow-y-auto overflow-x-auto rounded-xl border-2 border-ink bg-white">
                 <table
                   className={`w-full border-collapse text-left ${showWage ? "min-w-[600px]" : "min-w-[520px]"}`}
                 >
                   <thead>
-                    <tr className="sticky top-0 z-10 bg-abyss-200 text-mist-dim">
+                    <tr className="sticky top-0 z-10 bg-sky text-ink">
                       <th scope="col" className="th-cell w-full">
                         Cầu thủ
                       </th>
@@ -162,7 +172,7 @@ export function SquadList({ squad, starterIds, jerseyOf, wageOf }: Props) {
                       return (
                         <tr
                           key={p.playerId}
-                          className="border-t border-grid/60 transition-colors hover:bg-abyss-300/60"
+                          className="border-t border-ink/15 hover:bg-sky-100"
                         >
                           <td className="px-2 py-1.5">
                             <div className="flex items-center gap-2">
@@ -176,7 +186,7 @@ export function SquadList({ squad, starterIds, jerseyOf, wageOf }: Props) {
                                 <span className="flex items-center gap-1.5">
                                   <span
                                     className={`truncate text-[13px] leading-tight ${
-                                      p.name ? "text-ghost" : "text-mist-dim"
+                                      p.name ? "text-ink" : "text-ink-mute"
                                     }`}
                                   >
                                     {displayName(p)}
@@ -187,20 +197,20 @@ export function SquadList({ squad, starterIds, jerseyOf, wageOf }: Props) {
                                   {starter ? (
                                     <span
                                       title="Được xếp đá chính trong đội hình gợi ý"
-                                      className="shrink-0 rounded-[2px] bg-electric-wash px-1 font-mono text-[9px] uppercase tracking-wide text-electric"
+                                      className="shrink-0 rounded-md bg-royal-100 px-1 tabular-nums text-[9px] uppercase tracking-wide text-royal"
                                     >
                                       XP
                                     </span>
                                   ) : null}
                                 </span>
-                                <span className="mt-0.5 flex items-center gap-1.5 font-mono text-[10px] leading-none text-mist-dim">
+                                <span className="mt-0.5 flex items-center gap-1.5 tabular-nums text-[10px] leading-none text-ink-mute">
                                   <span
                                     title={p.nation ?? undefined}
-                                    className="rounded-[2px] bg-abyss-400 px-1 py-[1px] tracking-wide"
+                                    className="rounded-md bg-ink/20 px-1 py-[1px] tracking-wide"
                                   >
                                     {nationCode(p.nation)}
                                   </span>
-                                  <span className="text-orchid">{p.position}</span>
+                                  <span className="text-navy">{p.position}</span>
                                 </span>
                               </span>
                             </div>
@@ -211,17 +221,17 @@ export function SquadList({ squad, starterIds, jerseyOf, wageOf }: Props) {
                           <td className="px-2 py-1.5 text-center">
                             <StatBadge value={p.potential} />
                           </td>
-                          <td className="px-2 py-1.5 text-center font-mono text-xs tabular-nums text-mist">
+                          <td className="px-2 py-1.5 text-center tabular-nums text-xs tabular-nums text-ink-soft">
                             {p.age ?? "—"}
                           </td>
-                          <td className="whitespace-nowrap px-2 py-1.5 font-mono text-xs tabular-nums text-mist">
+                          <td className="whitespace-nowrap px-2 py-1.5 tabular-nums text-xs tabular-nums text-ink-soft">
                             {contractLabel(p.contractUntil)}
                           </td>
-                          <td className="whitespace-nowrap px-2 py-1.5 text-right font-mono text-xs tabular-nums text-mist">
+                          <td className="whitespace-nowrap px-2 py-1.5 text-right tabular-nums text-xs tabular-nums text-ink-soft">
                             {formatMoney(p.valueEstimate)}
                           </td>
                           {showWage ? (
-                            <td className="whitespace-nowrap px-2 py-1.5 text-right font-mono text-xs tabular-nums text-ghost">
+                            <td className="whitespace-nowrap px-2 py-1.5 text-right tabular-nums text-xs tabular-nums text-ink">
                               {formatMoney(wageOf!.get(p.playerId) ?? null)}
                             </td>
                           ) : null}

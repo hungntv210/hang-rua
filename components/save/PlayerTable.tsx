@@ -21,10 +21,10 @@ const ATTR_INDEX = new Map(ATTRIBUTE_ORDER.map((name, i) => [name, i]));
  * được bằng mắt mà không mượn nghĩa của màu khác.
  */
 function attrColor(value: number): string {
-  if (value >= 85) return "text-electric-bright";
-  if (value >= 70) return "text-electric";
-  if (value >= 55) return "text-ghost";
-  return "text-mist-dim";
+  if (value >= 85) return "text-royal";
+  if (value >= 70) return "text-royal";
+  if (value >= 55) return "text-ink";
+  return "text-ink-mute";
 }
 
 /** Bảng 31 chỉ số chi tiết của một cầu thủ — đọc thẳng từ save, không suy đoán. */
@@ -36,7 +36,7 @@ function PlayerDetail({ player }: { player: SavePlayer }) {
   );
 
   return (
-    <td colSpan={11} className="border-l-2 border-electric/50 bg-void-soft px-4 py-4">
+    <td colSpan={11} className="border-l-2 border-royal bg-ice px-4 py-4">
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {groups.map((g) => (
           <div key={g.group}>
@@ -107,7 +107,7 @@ function NumberFilter({
 }) {
   return (
     <label className="flex items-center gap-1.5">
-      <span className="text-mist-dim">{label}</span>
+      <span className="text-ink-mute">{label}</span>
       <input
         type="number"
         inputMode="numeric"
@@ -117,7 +117,7 @@ function NumberFilter({
           const n = Number(raw);
           onChange(raw === "" || !Number.isFinite(n) ? null : n);
         }}
-        className="focus-ring w-16 rounded-sm border border-grid bg-void-soft px-2 py-1 text-sm tabular-nums text-ghost"
+        className="focus-ring w-16 rounded-md border border-ink/15 bg-ice px-2 py-1 text-sm tabular-nums text-ink"
       />
     </label>
   );
@@ -223,7 +223,7 @@ export function PlayerTable({
           value={criteria.query}
           onChange={(e) => set("query", e.target.value)}
           placeholder="Tìm theo tên, CLB gốc, quốc tịch, vị trí hoặc ID…"
-          className="focus-ring min-w-[16rem] flex-1 rounded-sm border border-grid bg-void-soft px-3 py-2 text-sm text-ghost placeholder:text-mist-dim"
+          className="focus-ring min-w-[16rem] flex-1 rounded-md border border-ink/15 bg-ice px-3 py-2 text-sm text-ink placeholder:text-ink-mute"
         />
         <div className="flex flex-wrap gap-2">
           {SORTS.map((s) => (
@@ -259,7 +259,7 @@ export function PlayerTable({
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-mist-dim">Tuyến</span>
+          <span className="text-ink-mute">Tuyến</span>
           {GROUP_ORDER.map((g) => {
             const on = criteria.groups.includes(g);
             return (
@@ -335,7 +335,7 @@ export function PlayerTable({
                     {p.nameSource === "newgen" ? (
                       <span
                         title="Cầu thủ do Career Mode sinh ra — tên lấy từ chính file save"
-                        className="ml-2 rounded-sm border border-orchid/40 bg-orchid-wash px-1.5 py-0.5 font-mono text-[0.65rem] uppercase tracking-wider text-orchid"
+                        className="ml-2 rounded-md border border-aqua bg-aqua-100 px-1.5 py-0.5 tabular-nums text-[0.65rem] uppercase tracking-wider text-navy"
                       >
                         newgen
                       </span>
@@ -343,7 +343,7 @@ export function PlayerTable({
                     {p.name === null ? (
                       <span
                         title="Không có trong DB nhúng và cũng không phải cầu thủ do career sinh ra"
-                        className="ml-2 rounded border border-crimson/30 bg-crimson-wash px-1.5 py-0.5 font-mono text-[0.65rem] uppercase tracking-wider text-crimson"
+                        className="ml-2 rounded border border-lose bg-lose-wash px-1.5 py-0.5 tabular-nums text-[0.65rem] uppercase tracking-wider text-lose"
                       >
                         chưa có tên
                       </span>

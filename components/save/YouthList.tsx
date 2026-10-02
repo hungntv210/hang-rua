@@ -46,10 +46,10 @@ export function YouthList({ players, stats, jerseyOf, source }: Props) {
   if (players.length === 0) {
     return (
       <div className="space-y-3">
-        <p className="rounded-sm border border-dashed border-grid px-4 py-6 text-center text-sm leading-relaxed text-mist">
+        <p className="rounded-md border-2 border-dashed border-ink/40 px-4 py-6 text-center text-sm leading-relaxed text-ink-soft">
           Không tìm thấy cầu thủ trẻ nào do career sinh ra trong file save này.
           <br />
-          <span className="text-xs text-mist-dim">
+          <span className="text-xs text-ink-mute">
             Career mới thường chưa có lứa nào — game sinh cầu thủ học viện sau vài
             tháng trong game.
           </span>
@@ -61,20 +61,20 @@ export function YouthList({ players, stats, jerseyOf, source }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 className="font-display text-2xl font-semibold tracking-tight text-ghost">
+        <h2 className="font-display text-3xl font-extrabold text-ink">
           {players.length} cầu thủ trẻ
         </h2>
-        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-mist-dim">
+        <span className="tabular-nums text-[10px] uppercase tracking-[0.18em] text-ink-mute">
           {source === "bang"
             ? "học viện + đang scout · đọc từ save · sắp theo tiềm năng"
             : "suy luận · mọi CLB · sắp theo tiềm năng"}
         </span>
       </div>
 
-      <div className="overflow-x-auto rounded-sm border border-grid bg-abyss/60">
+      <div className="overflow-x-auto rounded-xl border-2 border-ink bg-white">
         <table className="w-full min-w-[560px] border-collapse text-left">
           <thead>
-            <tr className="sticky top-0 z-10 bg-abyss-200 text-mist-dim">
+            <tr className="sticky top-0 z-10 bg-sky text-ink">
               <th scope="col" className="th-cell w-full">
                 Cầu thủ
               </th>
@@ -106,7 +106,7 @@ export function YouthList({ players, stats, jerseyOf, source }: Props) {
               return (
                 <tr
                   key={p.playerId}
-                  className="border-t border-grid/60 transition-colors hover:bg-abyss-300/60"
+                  className="border-t border-ink/15 hover:bg-sky-100"
                 >
                   <td className="px-2 py-1.5">
                     <div className="flex items-center gap-2">
@@ -119,20 +119,20 @@ export function YouthList({ players, stats, jerseyOf, source }: Props) {
                       <span className="min-w-0">
                         <span
                           className={`block truncate text-[13px] leading-tight ${
-                            p.name ? "text-ghost" : "text-mist-dim"
+                            p.name ? "text-ink" : "text-ink-mute"
                           }`}
                         >
                           {displayName(p)}
                         </span>
-                        <span className="mt-0.5 flex items-center gap-1.5 font-mono text-[10px] leading-none text-mist-dim">
-                          <span className="text-orchid">{p.position}</span>
+                        <span className="mt-0.5 flex items-center gap-1.5 tabular-nums text-[10px] leading-none text-ink-mute">
+                          <span className="text-navy">{p.position}</span>
                           {p.nation ? <span>{p.nation}</span> : null}
                           {p.heightCm ? <span>{p.heightCm}cm</span> : null}
                         </span>
                       </span>
                     </div>
                   </td>
-                  <td className="px-2 py-1.5 text-center font-mono text-xs tabular-nums text-mist">
+                  <td className="px-2 py-1.5 text-center tabular-nums text-xs tabular-nums text-ink-soft">
                     {p.age ?? "—"}
                   </td>
                   <td className="px-2 py-1.5 text-center">
@@ -151,7 +151,7 @@ export function YouthList({ players, stats, jerseyOf, source }: Props) {
                       title="Tiềm năng trừ chỉ số hiện tại"
                     />
                   </td>
-                  <td className="whitespace-nowrap px-2 py-1.5 font-mono text-xs tabular-nums text-mist">
+                  <td className="whitespace-nowrap px-2 py-1.5 tabular-nums text-xs tabular-nums text-ink-soft">
                     {contractLabel(p.contractUntil)}
                   </td>
                 </tr>
@@ -162,7 +162,7 @@ export function YouthList({ players, stats, jerseyOf, source }: Props) {
       </div>
 
       {source === "bang" ? (
-        <p className="text-xs leading-relaxed text-mist">
+        <p className="text-xs leading-relaxed text-ink-soft">
           <strong>
             Danh sách này gồm cả cầu thủ bạn đã ký lẫn cầu thủ trưởng đoàn scout
             mới tìm thấy, và trang chưa tách được hai nhóm.
@@ -193,7 +193,7 @@ export function YouthList({ players, stats, jerseyOf, source }: Props) {
           hợp đồng thì đọc thẳng từ save.
         </p>
       ) : (
-        <p className="text-xs leading-relaxed text-mist">
+        <p className="text-xs leading-relaxed text-ink-soft">
           <strong>Danh sách này là suy luận, không phải đọc thẳng.</strong> Không tìm
           thấy bảng học viện trong file save này, nên trang phải lọc theo dấu hiệu — và
           cách đó <strong>gom cả cầu thủ trẻ của câu lạc bộ khác</strong>, vì save chứa

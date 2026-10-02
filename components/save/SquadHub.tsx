@@ -79,18 +79,18 @@ export function SquadHub({ lineup, players, jerseyOf, wageOf, clubName }: Props)
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 className="font-display text-2xl font-semibold tracking-tight text-ghost">
+        <h2 className="font-display text-3xl font-extrabold text-ink">
           {clubName ? `${clubName} · ${lineup.formationName}` : lineup.formationName}
         </h2>
-        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-mist-dim">
+        <span className="tabular-nums text-[10px] uppercase tracking-[0.18em] text-ink-mute">
           {squad.length} cầu thủ đọc từ save ·{" "}
           {lineup.source === "export" ? (
-            <span className="text-jade">
+            <span className="text-win">
               đội hình thật{lineup.sheetName ? ` · ${lineup.sheetName}` : ""}
             </span>
           ) : lineup.formationIsReal ? (
             <>
-              <span className="text-jade">sơ đồ thật</span>
+              <span className="text-win">sơ đồ thật</span>
               {" · xếp người là gợi ý"}
             </>
           ) : (
@@ -106,10 +106,10 @@ export function SquadHub({ lineup, players, jerseyOf, wageOf, clubName }: Props)
 
           <section>
             <div className="mb-2 flex items-baseline gap-2">
-              <h3 className="font-display text-sm font-semibold tracking-wide text-ghost">
+              <h3 className="font-display text-base font-extrabold text-ink">
                 Còn lại trong đội
               </h3>
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-mist-dim">
+              <span className="tabular-nums text-[10px] uppercase tracking-[0.14em] text-ink-mute">
                 Rest of squad · {bench.length}
               </span>
             </div>
@@ -118,7 +118,7 @@ export function SquadHub({ lineup, players, jerseyOf, wageOf, clubName }: Props)
               /* Ô trống có LỜI GIẢI THÍCH, không phải một khung rỗng.
                  Khung rỗng trong ảnh mẫu không nói được vì sao nó rỗng, và người
                  xem sẽ đọc nó thành lỗi của trang. */
-              <p className="rounded-sm border border-dashed border-grid px-3 py-5 text-center text-xs leading-relaxed text-mist-dim">
+              <p className="rounded-md border-2 border-dashed border-ink/40 px-3 py-5 text-center text-xs leading-relaxed text-ink-mute">
                 Đội chỉ có đúng 11 cầu thủ trong save, không còn ai ngoài đội hình.
               </p>
             ) : (
@@ -126,7 +126,7 @@ export function SquadHub({ lineup, players, jerseyOf, wageOf, clubName }: Props)
                 {bench.map((p) => (
                   <li
                     key={p.playerId}
-                    className="flex items-center gap-2 rounded-sm border border-grid bg-abyss/60 px-2 py-1.5"
+                    className="flex items-center gap-2 rounded-xl border-2 border-ink bg-white px-2 py-1.5"
                   >
                     <PlayerAvatar
                       initials={initialsOf(p.name)}
@@ -134,10 +134,10 @@ export function SquadHub({ lineup, players, jerseyOf, wageOf, clubName }: Props)
                       gk={p.position === "GK"}
                       size={24}
                     />
-                    <span className="min-w-0 flex-1 truncate text-[12px] text-ghost">
+                    <span className="min-w-0 flex-1 truncate text-[12px] text-ink">
                       {displayName(p)}
                     </span>
-                    <span className="shrink-0 font-mono text-[10px] text-orchid">{p.position}</span>
+                    <span className="shrink-0 tabular-nums text-[10px] text-navy">{p.position}</span>
                     <StatBadge value={p.overall} />
                   </li>
                 ))}
@@ -155,7 +155,7 @@ export function SquadHub({ lineup, players, jerseyOf, wageOf, clubName }: Props)
             wageOf={wageOf}
           />
 
-          <p className="text-xs leading-relaxed text-mist">
+          <p className="text-xs leading-relaxed text-ink-soft">
             <strong>Danh sách đội, tuổi, vị trí sở trường và hạn hợp đồng đọc thẳng
             từ file save của bạn</strong> — đổi save thì chúng đổi theo.{" "}
             {lineup.source === "export" ? (
