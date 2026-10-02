@@ -7,6 +7,9 @@
  * Có phép đối chứng ở đầu: một cặp cố tình tệ phải bị đánh trượt và một cặp
  * cố tình tốt phải qua — nếu không, "tất cả đạt" có thể chỉ là hàm đo hỏng.
  */
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
+
 import config from "../tailwind.config";
 
 export interface TokenPair {
@@ -67,6 +70,40 @@ export function contrast(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
+/**
+ * Lớp/token của giao diện tối cũ. Còn sót ở `app/` hay `components/` nghĩa là có
+ * nơi chưa chuyển sang giao diện sáng — chữ sáng trên nền sáng, đọc không ra.
+ */
+const LEGACY = [
+  /\b(?:bg|text|border|divide|ring|fill|stroke|from|via|to|decoration)-(?:void|abyss|electric|orchid|sakura|crimson|ghost|mist|grid|jade|amber)\b/,
+  /\bglass(?:-strong)?\b/, /\bneon-edge\b/, /\bhud-corner\b/, /\bbrand-jp(?:-vertical)?\b/, /\brule-ticks\b/,
+  /\bbrush-(?:ink|stroke)\b/, /\bfont-(?:mono|brush|jp)\b/, /\bshadow-(?:glow|panel(?:-lift)?)\b/,
+  /\banimate-(?:sweep|fade-in-up|slide-in-left)\b/, /\btransition-(?:colors|all)\b/,
+];
+
+function walk(dir: string, out: string[] = []): string[] {
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name);
+    if (statSync(full).isDirectory()) walk(full, out);
+    else if (/\.(tsx|ts|css)$/.test(name)) out.push(full);
+  }
+  return out;
+}
+
+/** Trả về danh sách "file:dòng: chuỗi" còn dùng lớp cũ, và số file đã quét. */
+export function scanLegacy(roots: string[]): { hits: string[]; scanned: number } {
+  const hits: string[] = [];
+  let scanned = 0;
+  for (const file of roots.flatMap((r) => walk(r))) {
+    // globals.css/tailwind.config tự khai báo các lớp mới; chỉ quét nơi DÙNG.
+    scanned++;
+    readFileSync(file, "utf8").split(/\r?\n/).forEach((line, i) => {
+      if (LEGACY.some((re) => re.test(line))) hits.push(`${file}:${i + 1}: ${line.trim().slice(0, 90)}`);
+    });
+  }
+  return { hits, scanned };
+}
+
 function main() {
   // Đối chứng: hàm đo phải phân biệt được cặp tệ với cặp tốt.
   if (contrast("#777777", "#808080") >= MIN_RATIO) throw new Error("đối chứng hỏng: cặp xám-xám lại đạt");
@@ -80,6 +117,15 @@ function main() {
     console.log(`  ${ok ? "ok  " : "FAIL"} ${ratio.toFixed(2).padStart(5)}  ${pair.fg} / ${pair.bg}  — ${pair.label}`);
   }
   if (TOKEN_PAIRS.length === 0) throw new Error("không có cặp nào để kiểm");
+
+  // Đối chứng cho phép quét: một dòng cũ phải bị bắt, một dòng mới phải qua.
+  if (!LEGACY.some((re) => re.test('className="bg-abyss text-ghost"'))) throw new Error("đối chứng hỏng: lớp cũ lọt");
+  if (LEGACY.some((re) => re.test('className="bg-white text-ink"'))) throw new Error("đối chứng hỏng: lớp mới bị bắt");
+  const { hits, scanned } = scanLegacy(["app", "components"]);
+  if (scanned < 20) throw new Error(`chỉ quét được ${scanned} file — đường dẫn sai?`);
+  console.log(`\nquét ${scanned} file tìm lớp giao diện cũ: ${hits.length} chỗ`);
+  hits.forEach((h) => console.log("  LEGACY", h));
+  if (hits.length > 0) failed += hits.length;
   if (failed > 0) {
     console.error(`\n${failed}/${TOKEN_PAIRS.length} cặp dưới ${MIN_RATIO}:1`);
     process.exit(1);

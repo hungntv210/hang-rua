@@ -22,7 +22,7 @@ khong lien quan gi toi code va khong tu khoi phuc. Cach chua: dung dev server,
 ## Cau truc route
 
 ```
-/                          dashboard Hang Rua, danh sach module
+/                          trang chu: banner slider + luoi the (lib/home-cards.ts)
 /football                  lich + ket qua Arsenal          (ISR 1h)
 /football/league/[slug]    lich theo giai + loc CLB
 /football/standings        BXH Premier League              (ISR 6h)
@@ -34,8 +34,9 @@ khong lien quan gi toi code va khong tu khoi phuc. Cach chua: dung dev server,
 /save-reader/fc27          doc file save Career Mode FC 27 (tinh, parse o client)
 ```
 
-Them module moi: khai bao trong `lib/modules.ts`, doi `status` sang `"live"` va
-dien `href`. Sidebar va dashboard deu doc tu day, khong phai sua rieng.
+Them muc moi: menu tren cung doc tu `lib/nav.ts` (dung 5 khoi, them `match` de
+`isActive` biet khi nao sang), the trang chu tu `lib/home-cards.ts`. Chay
+`npm run check:ui` de kiem tra khong co hai muc cung sang.
 
 ## Module Save Reader
 
@@ -235,32 +236,41 @@ se ra tieu de nhan doi.
 - Cap dau 2 luot duoc gop; ty so luot ve xoay lai theo thu tu 2 dong ten doi
   phia tren, neu khong nguoi doc se hieu nguoc ket qua.
 
-## Huong thiet ke: 夜のカメ (Tokyo dem)
+## Huong thiet ke: pop-art kawaii (giao dien sang, xanh duong)
 
-Bang mau lay TRUC TIEP tu `public/brand/tokyo-night.webp` — troi dem xanh den,
-mat trang xanh dien, cua so cao oc tim, canh anh dao hong. Khong mau nao duoc
-nghi ra ngoai tam anh do.
+Spec: `docs/superpowers/specs/2026-10-02-pop-kawaii-redesign-design.md`.
+Ke hoach da thuc hien: `docs/superpowers/plans/2026-10-02-pop-kawaii-redesign.md`.
 
-**Rang buoc khong duoc pha:** neon chi song o phan KHUNG — vien HUD, dieu huong,
-chuyen canh. Phia sau bang so lieu luon la mat phang phang, tuong phan cao,
-khong quang sang. Ban thiet ke giay do truoc day ghi dung ly do: trang nay de do
-bang so, nen toi cong quang sang gay moi mat.
+Bang mau lay mau tu logo huy hieu: `navy #36538B`, `royal #2563C9`, `aqua #4FC3D9`,
+`sky #A6D4E3`, nen giay `ice #F6FBFE`, muc `ink #0A1428`, va MOT mau am duy nhat
+la `salmon #E89796` (NEW, sticker, khoi menu Save Reader). Pastel la ban nhat cua
+chinh cac mau do (`sky.100`, `aqua.100`, `royal.100`, `salmon.100`).
 
-Hai mau tin hieu chi mang NGHIA, khong bao gio de trang tri:
-`sakura` = "dang dien ra", `crimson` = "xuong hang".
+Ngoai le chuc nang: `win` / `warn` / `lose` (xanh la, vang nau, do gach) CHI cho
+thang chi so cau thu va vung xep hang — nguoi choi FC doc xanh-vang-do bang phan xa.
 
-Chu: Chakra Petch (tieu de — mat chu HUD, co dau tieng Viet) + Be Vietnam Pro
-(than — giu nguyen vi duoc thiet ke rieng cho dau tieng Viet) + JetBrains Mono
-(nhan HUD, so lieu).
+Vien den 2-3px + bong cung lech (`shadow-pop`, khong blur). Nut va the nhan xuong
+nhu nut that (`translate` bang dung do lech bong). Sticker xoay 1-3 do.
+Phia sau bang so lieu luon la mat phang trang dac: khong hoa tiet, khong
+`backdrop-filter`.
 
-Chi tiet ky danh nam o `components/HudFrame.tsx`: ngoac goc tu ve khi tai trang,
-nhan tieng Nhat xep doc theo module dang mo, va dai ma vach o goc duoi la **tong
-kiem cua duong dan hien tai** — cung mot trang luon cho cung mot vach. Do la
-thong tin that ve vi tri, khong phai hoa tiet.
+Chu: Baloo 2 (tieu de, nut, menu — co subset vietnamese) + Be Vietnam Pro (than va
+bang so lieu — duoc thiet ke rieng cho dau tieng Viet).
 
-Chuyen canh o `components/RouteTransition.tsx`: mot vet quet chay doc man hinh,
-lay tu chinh cac vet scanline tren mat trang trong banner. Doi `key` theo duong
-dan la du de chay lai animation CSS — khong them thu vien.
+Chuyen canh o `components/RouteTransition.tsx`: noi dung moi nay len nhe (240ms,
+chi `transform` va `opacity`). Fill-mode la `backwards` chu khong phai `both`: mot
+`transform` con sot lai tao stacking context cho ca trang.
+
+### Kiem tra giao dien
+
+- `npm run check:design` — do tuong phan WCAG cua moi cap chu/nen trong
+  `TOKEN_PAIRS` (>= 4.5:1) VA quet `app/`, `components/` tim lop cua giao dien
+  toi cu. Them mau moi thi them cap vao `scripts/check-design.ts`.
+- `npm run check:ui` — logic thuan: menu (`lib/nav.ts`), slider, the trang chu.
+- `scripts/dom-audit.js` — dan vao console/`javascript_tool`: do tran ngang, chu
+  bi cat (`[data-audit-label]`), o chong nhau (`[data-audit-box]`), so tooltip
+  con trong DOM. Anh chup man hinh KHONG thay duoc nhung loi nay.
+- `/styleguide` (chi o dev) liet ke moi thanh phan o moi bien the.
 
 ### Motion: Framer Motion chi dung trong trang
 
@@ -276,8 +286,7 @@ se bao loi neu lam sai.
 **Khong dung Framer Motion cho chuyen route.** App Router unmount trang cu truoc
 khi `AnimatePresence` kip chay exit — day la gioi han cua Next, khong phai cua
 thu vien. Chuyen route van la CSS (`RouteTransition.tsx`). Framer chi dung o noi
-no that su hon CSS: `layoutId` cho thanh chi bao tab truot (`TabBar.tsx`,
-`FootballNav.tsx`) va `AnimatePresence` cho noi dung tab vao/ra.
+no that su hon CSS: `layoutId` cho thanh chi bao tab truot (`TabBar.tsx`) va `AnimatePresence` cho noi dung tab vao/ra.
 
 ### KHONG duoc re nhanh render theo useReducedMotion()
 
@@ -289,59 +298,43 @@ may da bat tuy chon do, khong test thi khong thay.
 Cach dung dung: luon render cung mot cay, chi doi THOI LUONG (`duration: 0`).
 Rieng glitch thi giao han cho CSS xu ly.
 
-### Wordmark thu phap: font but long deu khong co dau tieng Viet
+### Tuong phan
 
-`Ma Shan Zheng`, `Zhi Mang Xing`, `Liu Jian Mao Cao` la font but long that
-nhung **khong co glyph dau tieng Viet**. Google Fonts VAN tra ve khoi
-unicode-range `vietnamese` cho chung, nen chi nhin API la mac bay — phai do
-be rong chu "u" so voi fallback moi biet.
-
-Font duy nhat vua co net but vua co dau Viet: **Charmonman** (but long Thai).
-Dancing Script, Pacifico, Lobster deu la chu viet tay monoline, khong phai but long.
-
-Da bo hieu ung glitch o wordmark: net but va nhieu so hoa danh nhau ve ngon ngu.
-Thay bang muc phat sang — mo ta lai cach chu カメ xuat hien trong banner.
-
-**Trang thai nghi cua net but phai la DA VE XONG** (`stroke-dashoffset: 0`),
-animation chay tu 320 ve 0. Lam nguoc lai thi bat cu ly do gi khien animation
-khong chay deu lam net but bien mat vinh vien.
-
-### Tuong phan: cho de truot nhat tren nen toi
-
-Da do bang script trong trinh duyet, khong doan bang mat. Ba loi that da bat duoc:
-
-- `mist-dim` cu (#5F6E9C) chi dat **4,03:1** ma lai dung cho nhan 10px.
-- `electric` lay dung tu mat trang (#2E6BFF) dat **4,47:1** — thieu 0,03.
-- Doi duoc danh dau dung chu xanh tren nen xanh: **4,27:1**. Sua bang cach chi
-  doi do dam, vi nen da mang tin hieu roi.
-
-Khi them mau moi, chay lai phep do nay truoc khi tin vao mat.
+Do bang `npm run check:design`, khong doan bang mat. Quy tac cu van dung: chu
+tren khoi navy/royal la chu sang, tren aqua/sky/salmon la chu toi; "tin hieu" doc
+bang mau + gach chan (vd. tran dang da dung gach chan salmon day, vi salmon lam
+chu tren nen trang chi dat 2,2:1).
 
 ## Sticky va bien CSS
 
-`globals.css` dinh nghia `--topbar-h` va `--nav-h`. Cac phan tu sticky bam theo
-hai bien nay thay vi so cung.
+`globals.css` dinh nghia `--header-h` (60px = menu `h-14` + vien 4px). Cac phan tu
+sticky bam theo bien nay thay vi so cung.
 
 Luu y da tra gia: `overflow-x-auto` va `overflow-hidden` bien phan tu thanh
 scroll container o **ca hai truc**, khien `position: sticky` ben trong bam vao
 no thay vi viewport va khong bao gio kich hoat. Khong co canh bao nao, build van
-xanh. Neu them sticky moi, kiem tra chuoi ancestor truoc.
+xanh. Neu them sticky moi, kiem tra chuoi ancestor truoc. Vi du that: dau bang xep hang chi
+`sm:sticky` — trong khung `overflow-x-auto` tren dien thoai, `top` van duoc ap trong
+khung do nen dau bang bi day xuong de len cac hang dau.
 
 ## Cau truc thu muc
 
 ```
 app/
   page.tsx                 # dashboard Hang Rua
-  layout.tsx               # font, metadata goc, Sidebar
+  layout.tsx               # font, metadata goc, SiteMenu
   football/                # module Football, co layout + nav rieng
 components/
-  Sidebar.tsx              # dieu huong cap ung dung
-  ModuleCard.tsx           # the module tren dashboard
+  SiteMenu.tsx             # menu 5 khoi mau (lib/nav.ts)
+  HeroSlider.tsx           # banner trang chu
+  ui/                      # Button, Badge, Sticker, Card, Tooltip, MascotState
   views/                   # async server component: fetch + render
   ...                      # component thuan trinh bay
   save/                    # module Save Reader (client-side, Web Worker)
 lib/
-  modules.ts               # danh sach module cua Hang Rua
+  nav.ts                   # 5 muc menu + isActive
+  home-cards.ts            # the tren trang chu
+  slider.ts                # stepIndex cho banner
   save/                    # engine doc save FC 26, khong cham DOM
   config.ts                # giai, revalidate
   football-data.ts         # client football-data.org + adapter
