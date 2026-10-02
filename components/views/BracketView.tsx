@@ -35,11 +35,11 @@ export async function BracketView({
     <section className="space-y-3">
       <div className="flex items-baseline gap-3">
         <h2 className="section-title">{competition.name}</h2>
-        <span aria-hidden className="h-px flex-1 bg-abyss-400" />
+        <span aria-hidden className="h-1 flex-1 rounded-full bg-ink" />
         <span className="eyebrow">Sơ đồ loại trực tiếp</span>
       </div>
 
-      <p className="text-sm text-mist">
+      <p className="text-sm text-ink-soft">
         Kéo ngang để xem các vòng. Cặp đấu hai lượt được gộp, con số bên phải là
         tổng tỷ số.
         {omittedRounds > 0

@@ -84,12 +84,12 @@ export function ClubFilter({ competitionSlug, clubs, onChange }: Props) {
           <button
             type="button"
             onClick={clearAll}
-            className="focus-ring rounded px-2 py-1 text-xs font-medium text-electric transition-colors hover:text-electric"
+            className="focus-ring rounded px-2 py-1 text-xs font-medium text-royal hover:text-royal"
           >
             Bỏ chọn tất cả ({selected.length})
           </button>
         ) : (
-          <span className="text-xs text-mist">
+          <span className="text-xs text-ink-soft">
             Chưa chọn — đang hiện tất cả
           </span>
         )}
@@ -104,10 +104,10 @@ export function ClubFilter({ competitionSlug, clubs, onChange }: Props) {
               type="button"
               onClick={() => toggle(club.id)}
               aria-pressed={active}
-              className={`focus-ring inline-flex min-h-[36px] items-center gap-1.5 rounded border px-2.5 py-1 text-xs transition-colors duration-150 ${
+              className={`focus-ring inline-flex min-h-[36px] items-center gap-1.5 rounded-full border-2 px-2.5 py-1 text-xs ${
                 active
-                  ? "border-electric bg-electric font-semibold text-ghost"
-                  : "border-grid bg-abyss text-mist hover:border-electric/50 hover:bg-abyss-200 hover:text-ghost"
+                  ? "border-ink bg-royal font-bold text-ice"
+                  : "border-ink bg-white text-ink hover:bg-sky-100"
               }`}
             >
               {club.logo ? (

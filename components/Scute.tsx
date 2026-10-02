@@ -16,7 +16,7 @@ export function Scute({ state }: { state: ScuteState }) {
   if (state === "played") {
     return (
       <svg viewBox="0 0 24 26" className="h-[18px] w-[17px]" aria-hidden>
-        <polygon points={points} className="fill-electric" />
+        <polygon points={points} className="fill-royal" />
       </svg>
     );
   }
@@ -26,7 +26,7 @@ export function Scute({ state }: { state: ScuteState }) {
       <svg viewBox="0 0 24 26" className="h-[18px] w-[17px]" aria-hidden>
         <polygon
           points={points}
-          className="fill-void stroke-sakura"
+          className="fill-ice stroke-salmon"
           strokeWidth="3"
         />
       </svg>
@@ -37,7 +37,7 @@ export function Scute({ state }: { state: ScuteState }) {
     <svg viewBox="0 0 24 26" className="h-[18px] w-[17px]" aria-hidden>
       <polygon
         points={points}
-        className="fill-none stroke-grid-bright"
+        className="fill-none stroke-ink/40"
         strokeWidth="1.6"
       />
     </svg>

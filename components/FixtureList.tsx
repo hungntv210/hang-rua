@@ -26,7 +26,7 @@ export function FixtureList({
 }: Props) {
   if (fixtures.length === 0) {
     return (
-      <p className="plate px-4 py-6 text-center text-sm text-mist">
+      <p className="plate px-4 py-6 text-center text-sm text-ink-soft">
         {emptyMessage}
       </p>
     );
@@ -41,11 +41,11 @@ export function FixtureList({
         const items =
           order === "desc" ? [...day.fixtures].reverse() : day.fixtures;
         return (
-          <section key={day.key} className="plate">
-            <h3 className="border-b border-grid px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-mist sm:px-4">
+          <section key={day.key} className="plate overflow-hidden">
+            <h3 className="border-b-2 border-ink bg-sky-100 px-3 py-2 font-display text-sm font-extrabold uppercase tracking-[0.08em] text-ink sm:px-4">
               {day.label}
             </h3>
-            <ul className="divide-y divide-grid">
+            <ul className="divide-y divide-ink/15">
               {items.map((fixture) => (
                 <FixtureRow
                   key={fixture.fixture.id}

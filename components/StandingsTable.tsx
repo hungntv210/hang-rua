@@ -15,12 +15,12 @@ function FormBadges({ form }: { form: string | null }) {
             title={
               result === "W" ? "Thắng" : result === "D" ? "Hoà" : "Thua"
             }
-            className={`inline-flex h-4 w-4 items-center justify-center rounded-sm text-[10px] font-bold ${
+            className={`inline-flex h-4 w-4 items-center justify-center rounded-md text-[10px] font-bold ${
               result === "W"
-                ? "bg-electric text-ghost"
+                ? "bg-royal text-ice"
                 : result === "D"
-                  ? "bg-abyss-400 text-mist"
-                  : "bg-crimson-wash text-crimson"
+                  ? "bg-sky-100 text-ink-soft"
+                  : "bg-lose-wash text-lose"
             }`}
           >
             {result}
@@ -39,9 +39,9 @@ function FormBadges({ form }: { form: string | null }) {
 function zoneAccent(description: string | null): string {
   if (!description) return "border-transparent";
   const text = description.toLowerCase();
-  if (text.includes("relegation")) return "border-crimson";
-  if (text.includes("champions league")) return "border-electric";
-  if (text.includes("europa") || text.includes("conference")) return "border-electric/50";
+  if (text.includes("relegation")) return "border-lose";
+  if (text.includes("champions league")) return "border-royal";
+  if (text.includes("europa") || text.includes("conference")) return "border-aqua";
   return "border-transparent";
 }
 
@@ -54,7 +54,7 @@ export function StandingsTable({ rows }: { rows: StandingRow[] }) {
     <div className="plate overflow-x-auto sm:overflow-visible">
       <table className="w-full min-w-[560px] text-sm">
         <thead className="z-[1] bg-sky sm:sticky sm:top-[var(--header-h)]">
-          <tr className="border-b border-grid text-[11px] uppercase tracking-[0.1em] text-mist">
+          <tr className="border-b border-ink/15 text-[11px] uppercase tracking-[0.1em] text-ink">
             <th className="px-3 py-2.5 text-left font-semibold">#</th>
             <th className="px-3 py-2.5 text-left font-semibold">Đội</th>
             <th className="px-2 py-2.5 text-center font-semibold" title="Số trận">
@@ -84,41 +84,41 @@ export function StandingsTable({ rows }: { rows: StandingRow[] }) {
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-grid">
+        <tbody className="divide-y divide-ink/15">
           {rows.map((row) => {
             const isArsenal = row.team.id === ARSENAL_TEAM_ID;
             return (
               <tr
                 key={row.team.id}
-                className={`border-l-2 transition-colors duration-150 hover:bg-abyss-200 ${zoneAccent(row.description)} ${
-                  isArsenal ? "bg-electric-wash" : ""
+                className={`border-l-2 hover:bg-sky-100 ${zoneAccent(row.description)} ${
+                  isArsenal ? "bg-royal-100" : ""
                 }`}
               >
-                <td className="px-3 py-2.5 tabular-nums text-mist">
+                <td className="px-3 py-2.5 tabular-nums text-ink-soft">
                   {row.rank}
                 </td>
                 <td className="max-w-[220px] px-3 py-2.5">
                   <TeamBadge team={row.team} size={20} />
                 </td>
-                <td className="px-2 py-2.5 text-center tabular-nums text-mist">
+                <td className="px-2 py-2.5 text-center tabular-nums text-ink-soft">
                   {row.all.played}
                 </td>
-                <td className="px-2 py-2.5 text-center tabular-nums text-mist">
+                <td className="px-2 py-2.5 text-center tabular-nums text-ink-soft">
                   {row.all.win}
                 </td>
-                <td className="px-2 py-2.5 text-center tabular-nums text-mist">
+                <td className="px-2 py-2.5 text-center tabular-nums text-ink-soft">
                   {row.all.draw}
                 </td>
-                <td className="px-2 py-2.5 text-center tabular-nums text-mist">
+                <td className="px-2 py-2.5 text-center tabular-nums text-ink-soft">
                   {row.all.lose}
                 </td>
-                <td className="px-2 py-2.5 text-center tabular-nums text-mist">
+                <td className="px-2 py-2.5 text-center tabular-nums text-ink-soft">
                   {row.all.goals.for}:{row.all.goals.against}
                 </td>
-                <td className="px-2 py-2.5 text-center tabular-nums text-mist">
+                <td className="px-2 py-2.5 text-center tabular-nums text-ink-soft">
                   {row.goalsDiff > 0 ? `+${row.goalsDiff}` : row.goalsDiff}
                 </td>
-                <td className="px-3 py-2.5 text-center font-display text-base font-semibold tabular-nums text-ghost">
+                <td className="px-3 py-2.5 text-center font-display text-base font-extrabold tabular-nums text-ink">
                   {row.points}
                 </td>
                 <td className="hidden px-3 py-2.5 lg:table-cell">

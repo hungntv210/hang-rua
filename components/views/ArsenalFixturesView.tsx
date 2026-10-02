@@ -38,7 +38,7 @@ export async function ArsenalFixturesView() {
       <section className="space-y-3">
         <div className="flex items-baseline gap-3">
           <h2 className="section-title">Arsenal</h2>
-          <span aria-hidden className="h-px flex-1 bg-abyss-400" />
+          <span aria-hidden className="h-1 flex-1 rounded-full bg-ink" />
           <span className="eyebrow">Trận sắp tới</span>
         </div>
 
@@ -54,7 +54,7 @@ export async function ArsenalFixturesView() {
       <section className="space-y-3">
         <div className="flex items-baseline gap-3">
           <h2 className="section-title">Arsenal</h2>
-          <span aria-hidden className="h-px flex-1 bg-abyss-400" />
+          <span aria-hidden className="h-1 flex-1 rounded-full bg-ink" />
           <span className="eyebrow">Kết quả gần nhất</span>
         </div>
 

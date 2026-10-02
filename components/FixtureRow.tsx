@@ -34,17 +34,17 @@ export function FixtureRow({
   if (showRound) meta.push(fixture.league.round);
 
   return (
-    <li className="px-3 py-3 transition-colors duration-150 hover:bg-abyss-200 sm:px-4">
+    <li className="px-3 py-3 hover:bg-sky-100 sm:px-4">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
         <TeamBadge team={fixture.teams.home} />
 
         <span
-          className={`min-w-[3.75rem] rounded px-2 py-1 text-center text-sm font-semibold tabular-nums ${
+          className={`min-w-[3.75rem] rounded-full border-2 border-ink px-2.5 py-0.5 text-center text-sm font-bold tabular-nums ${
             live
-              ? "animate-pulse-live bg-sakura-wash text-sakura"
+              ? "animate-pulse-live bg-salmon text-ink"
               : finished
-                ? "bg-electric-wash text-ghost"
-                : "bg-abyss-300 font-medium text-mist"
+                ? "bg-royal-100 text-ink"
+                : "bg-white text-ink"
           }`}
         >
           {scoreOrKickoff(fixture)}
@@ -53,15 +53,15 @@ export function FixtureRow({
         <TeamBadge team={fixture.teams.away} align="right" />
       </div>
 
-      <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-mist">
+      <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-soft">
         {meta.map((item, index) => (
           <span key={`${index}-${item}`} className="flex items-center gap-2">
             {index > 0 ? (
-              <span aria-hidden className="text-mist-dim">
+              <span aria-hidden className="text-ink-mute">
                 ·
               </span>
             ) : null}
-            <span className={index === 0 && live ? "font-semibold text-sakura" : ""}>
+            <span className={index === 0 && live ? "font-semibold text-ink underline decoration-salmon decoration-[3px] underline-offset-2" : ""}>
               {item}
             </span>
           </span>

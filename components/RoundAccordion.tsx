@@ -12,28 +12,28 @@ function RoundSummary({ round }: { round: RoundGroup }) {
   const total = round.fixtures.length;
 
   return (
-    <summary className="focus-ring flex cursor-pointer list-none items-center gap-3 rounded px-3 py-3 transition-colors duration-150 hover:bg-abyss-200 sm:px-4 [&::-webkit-details-marker]:hidden">
+    <summary className="focus-ring flex cursor-pointer list-none items-center gap-3 rounded px-3 py-3 hover:bg-sky-100 sm:px-4 [&::-webkit-details-marker]:hidden">
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-          <span className="font-display text-lg font-semibold tracking-tight text-ghost">
+          <span className="font-display text-lg font-extrabold tracking-tight text-ink">
             {round.label}
           </span>
           {round.current ? (
-            <span className="rounded-sm bg-sakura-wash px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-sakura">
+            <span className="rounded-md border-2 border-ink bg-salmon px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-ink">
               {round.live ? "Đang diễn ra" : "Vòng hiện tại"}
             </span>
           ) : null}
         </span>
 
-        <span className="mt-0.5 block text-xs text-mist">
+        <span className="mt-0.5 block text-xs text-ink-soft">
           {total} trận
-          <span aria-hidden className="mx-1.5 text-mist-dim">
+          <span aria-hidden className="mx-1.5 text-ink-mute">
             ·
           </span>
           {formatRoundRange(round)}
           {round.playedCount > 0 && !round.complete ? (
             <>
-              <span aria-hidden className="mx-1.5 text-mist-dim">
+              <span aria-hidden className="mx-1.5 text-ink-mute">
                 ·
               </span>
               đã đá {round.playedCount}/{total}
@@ -48,7 +48,7 @@ function RoundSummary({ round }: { round: RoundGroup }) {
         viewBox="0 0 24 24"
         fill="none"
         aria-hidden
-        className="h-4 w-4 shrink-0 text-mist-dim transition-transform duration-200 group-open:rotate-90"
+        className="h-4 w-4 shrink-0 text-ink-mute transition-transform duration-200 group-open:rotate-90"
       >
         <path
           d="M9 5l7 7-7 7"
@@ -90,7 +90,7 @@ export function RoundAccordion({ rounds, showLeague = false }: Props) {
           đầu và cuối. */}
       <span
         aria-hidden
-        className="absolute bottom-5 left-4 top-5 w-px bg-abyss-400"
+        className="absolute bottom-5 left-4 top-5 w-px bg-ink"
       />
 
       <ol className="space-y-2">
@@ -99,18 +99,18 @@ export function RoundAccordion({ rounds, showLeague = false }: Props) {
             {/* Nền trùng màu trang để che đoạn gờ chạy phía sau đốt vảy. */}
             <span
               aria-hidden
-              className="absolute -left-7 top-3.5 flex w-[17px] justify-center bg-void py-0.5"
+              className="absolute -left-7 top-3.5 flex w-[17px] justify-center bg-ice py-0.5"
             >
               <Scute state={scuteState(round)} />
             </span>
 
             <details
               open={round.current}
-              className={`group plate ${round.current ? "border-sakura/50" : ""}`}
+              className={`group plate ${round.current ? "ring-4 ring-salmon" : ""}`}
             >
               <RoundSummary round={round} />
 
-              <ul className="divide-y divide-grid border-t border-grid">
+              <ul className="divide-y divide-ink/15 border-t border-ink/15">
                 {round.fixtures.map((fixture) => (
                   <FixtureRow
                     key={fixture.fixture.id}

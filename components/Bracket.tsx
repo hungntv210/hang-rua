@@ -37,13 +37,13 @@ function TieCard({ tie }: { tie: BracketTie }) {
             <div
               key={team.id}
               className={`flex items-center justify-between gap-2 rounded px-1.5 py-1 ${
-                advancing ? "bg-electric-wash" : ""
+                advancing ? "bg-royal-100" : ""
               }`}
             >
               <TeamBadge team={team} size={20} />
               <span
                 className={`shrink-0 font-display text-base tabular-nums ${
-                  advancing ? "font-bold text-electric" : "font-semibold text-mist"
+                  advancing ? "font-bold text-royal" : "font-semibold text-ink-soft"
                 }`}
               >
                 {total ?? "–"}
@@ -53,7 +53,7 @@ function TieCard({ tie }: { tie: BracketTie }) {
         })}
       </div>
 
-      <div className="mt-2 space-y-0.5 border-t border-grid pt-2 text-xs text-mist">
+      <div className="mt-2 space-y-0.5 border-t border-ink/15 pt-2 text-xs text-ink-soft">
         {tie.legs.map((leg, index) => {
           // Ở lượt về, đội chủ nhà đổi chỗ. Xoay tỷ số về đúng thứ tự 2 dòng
           // tên đội phía trên, nếu không người đọc sẽ hiểu ngược kết quả.
@@ -85,7 +85,7 @@ export function Bracket({ rounds }: { rounds: BracketRound[] }) {
           {/* Không dùng sticky ở đây: bracket bắt buộc phải cuộn ngang nên div
               cha luôn là scroll container, sticky dọc sẽ không bao giờ kích
               hoạt — chỉ tốn thêm một lớp stacking context vô ích. */}
-          <h3 className="rounded border border-grid bg-abyss-300 px-3 py-2 font-display text-sm font-semibold tracking-tight text-ghost">
+          <h3 className="rounded-full border-2 border-ink bg-sky px-4 py-2 font-display text-sm font-extrabold text-ink shadow-pop-sm">
             {round.name}
           </h3>
           <ul className="space-y-3">

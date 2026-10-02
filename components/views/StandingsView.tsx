@@ -34,14 +34,14 @@ export async function StandingsView({
     <section className="space-y-4">
       <div className="flex items-baseline gap-3">
         <h2 className="section-title">{competition.name}</h2>
-        <span aria-hidden className="h-px flex-1 bg-abyss-400" />
+        <span aria-hidden className="h-1 flex-1 rounded-full bg-ink" />
         <span className="eyebrow">Bảng xếp hạng</span>
       </div>
 
       {groups.map((rows, index) => (
         <div key={rows[0]?.group ?? index} className="space-y-2">
           {multipleGroups ? (
-            <h3 className="text-sm font-semibold text-mist">
+            <h3 className="text-sm font-semibold text-ink-soft">
               {rows[0]?.group ?? `Bảng ${index + 1}`}
             </h3>
           ) : null}
