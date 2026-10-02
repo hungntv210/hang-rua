@@ -26,7 +26,7 @@ export function Card({ tone, title, href, size = "sm", children, corner }: CardP
           size === "lg" ? "min-h-[9rem]" : "min-h-[6rem]"
         }`}
       >
-        <h3 className="font-display text-xl font-extrabold leading-tight text-ink sm:text-2xl">
+        <h3 data-audit-label className="font-display text-xl font-extrabold leading-tight text-ink sm:text-2xl">
           {title}
         </h3>
         {corner ? <span className="absolute right-3 top-3">{corner}</span> : null}
@@ -39,9 +39,10 @@ export function Card({ tone, title, href, size = "sm", children, corner }: CardP
     </>
   );
 
-  if (!href) return <div className={base}>{body}</div>;
+  if (!href) return <div data-audit-box className={base}>{body}</div>;
   return (
     <Link
+      data-audit-box
       href={href}
       className={`${base} focus-ring transition-transform duration-150 hover:-translate-y-1 active:translate-x-1 active:translate-y-1 active:shadow-pop-press`}
     >

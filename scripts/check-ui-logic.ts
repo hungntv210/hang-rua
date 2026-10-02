@@ -6,7 +6,9 @@
  * Mỗi phép kiểm có CẢ phía đúng lẫn phía sai: một `isActive` luôn trả `true`
  * hay luôn trả `false` đều phải bị bắt.
  */
+import { HOME_CARDS } from "../lib/home-cards";
 import { NAV_ITEMS, isActive, type NavItem } from "../lib/nav";
+import { stepIndex } from "../lib/slider";
 
 let failed = 0;
 function check(name: string, ok: boolean) {
@@ -50,6 +52,23 @@ for (const path of ["/", "/football", "/football/league/serie-a", "/football/sta
   const lit = NAV_ITEMS.filter((i) => isActive(path, i)).length;
   check(`${path} sáng đúng 1 mục (đang ${lit})`, lit === 1);
 }
+
+// --- Slider ------------------------------------------------------------
+check("stepIndex lùi từ đầu vòng về cuối", stepIndex(0, 3, -1) === 2);
+check("stepIndex tiến từ cuối vòng về đầu", stepIndex(2, 3, 1) === 0);
+check("stepIndex tiến bình thường", stepIndex(1, 3, 1) === 2);
+check("stepIndex với 0 slide trả 0", stepIndex(0, 0, 1) === 0);
+
+// --- Thẻ trang chủ -----------------------------------------------------
+const hrefs = HOME_CARDS.flatMap((c) => (c.href ? [c.href] : []));
+check("có 7 thẻ", HOME_CARDS.length === 7);
+check("mọi href bắt đầu bằng /", hrefs.every((h) => h.startsWith("/")));
+check("không trùng href", new Set(hrefs).size === hrefs.length);
+check(
+  "không có hai thẻ liền kề cùng tone",
+  HOME_CARDS.every((c, i) => i === 0 || HOME_CARDS[i - 1].tone !== c.tone),
+);
+check("đúng một thẻ không có href (Sắp có)", HOME_CARDS.filter((c) => !c.href).length === 1);
 
 if (failed > 0) {
   console.error(`\n${failed} phép kiểm trượt.`);
