@@ -5,7 +5,7 @@ import {
   StatBadge,
   contractLabel,
   displayName,
-  initialsOf,
+  JerseyTag,
   toneOf,
 } from "@/components/save/squad-shared";
 import type { YouthFilterStats } from "@/lib/fc26/youth";
@@ -110,22 +110,17 @@ export function YouthList({ players, stats, jerseyOf, source }: Props) {
                 >
                   <td className="px-2 py-1.5">
                     <div className="flex items-center gap-2">
-                      <PlayerAvatar
-                        initials={initialsOf(p.name)}
-                        jersey={jerseyOf?.get(p.playerId) ?? null}
-                        gk={p.position === "GK"}
-                        size={26}
-                      />
+                      <PlayerAvatar position={p.position} size={32} />
                       <span className="min-w-0">
                         <span
                           className={`block truncate text-[13px] leading-tight ${
                             p.name ? "text-ink" : "text-ink-mute"
                           }`}
                         >
+                          <JerseyTag jersey={jerseyOf?.get(p.playerId)} />
                           {displayName(p)}
                         </span>
                         <span className="mt-0.5 flex items-center gap-1.5 tabular-nums text-[10px] leading-none text-ink-mute">
-                          <span className="text-navy">{p.position}</span>
                           {p.nation ? <span>{p.nation}</span> : null}
                           {p.heightCm ? <span>{p.heightCm}cm</span> : null}
                         </span>

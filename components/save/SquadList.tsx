@@ -10,7 +10,7 @@ import {
   contractLabel,
   displayName,
   groupOf,
-  initialsOf,
+  JerseyTag,
   type PositionGroup,
 } from "@/components/save/squad-shared";
 import { formatMoney } from "@/lib/fc26/value";
@@ -75,12 +75,12 @@ interface Props {
   wageOf?: Map<number, number>;
 }
 
-/** Mỗi nhóm vị trí một màu khối — thủ môn salmon theo quy ước "thủ môn khác màu". */
+/** Tiêu đề nhóm cùng màu với avatar của tuyến đó: GK vàng, DF xanh dương, MF xanh lá, FW đỏ. */
 const GROUP_TONE: Record<(typeof GROUP_ORDER)[number], string> = {
-  GK: "bg-salmon text-ink",
-  DF: "bg-sky text-ink",
-  MF: "bg-aqua text-ink",
-  FW: "bg-royal text-ice",
+  GK: "bg-pos-gk text-ink",
+  DF: "bg-pos-df text-ice",
+  MF: "bg-pos-mf text-ink",
+  FW: "bg-pos-fw text-ice",
 };
 
 export function SquadList({ squad, starterIds, jerseyOf, wageOf }: Props) {
@@ -176,12 +176,7 @@ export function SquadList({ squad, starterIds, jerseyOf, wageOf }: Props) {
                         >
                           <td className="px-2 py-1.5">
                             <div className="flex items-center gap-2">
-                              <PlayerAvatar
-                                initials={initialsOf(p.name)}
-                                jersey={jerseyOf?.get(p.playerId) ?? null}
-                                gk={p.position === "GK"}
-                                size={26}
-                              />
+                              <PlayerAvatar position={p.position} size={32} />
                               <span className="min-w-0">
                                 <span className="flex items-center gap-1.5">
                                   <span
@@ -189,6 +184,7 @@ export function SquadList({ squad, starterIds, jerseyOf, wageOf }: Props) {
                                       p.name ? "text-ink" : "text-ink-mute"
                                     }`}
                                   >
+                                    <JerseyTag jersey={jerseyOf?.get(p.playerId)} />
                                     {displayName(p)}
                                   </span>
                                   {/* Dấu đá chính thay cho việc lặp lại cả đội hình
@@ -210,7 +206,6 @@ export function SquadList({ squad, starterIds, jerseyOf, wageOf }: Props) {
                                   >
                                     {nationCode(p.nation)}
                                   </span>
-                                  <span className="text-navy">{p.position}</span>
                                 </span>
                               </span>
                             </div>

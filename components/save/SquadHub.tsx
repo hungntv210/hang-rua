@@ -4,7 +4,7 @@ import { useMemo } from "react";
 
 import { Pitch } from "@/components/save/Pitch";
 import { SquadList } from "@/components/save/SquadList";
-import { PlayerAvatar, StatBadge, displayName, initialsOf } from "@/components/save/squad-shared";
+import { JerseyTag, PlayerAvatar, StatBadge, displayName } from "@/components/save/squad-shared";
 import type { Lineup } from "@/lib/fc26/lineup";
 import type { SavePlayer } from "@/lib/save/types";
 
@@ -99,7 +99,7 @@ export function SquadHub({ lineup, players, jerseyOf, wageOf, clubName }: Props)
         </span>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,480px)_minmax(0,1fr)] xl:gap-8">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,480px)_minmax(0,1fr)] xl:gap-8">
         {/* KHỐI TRÁI ───────────────────────────────────────────────────── */}
         <div className="space-y-4 xl:sticky xl:top-[calc(var(--header-h)+1.5rem)] xl:self-start">
           <Pitch lineup={lineup} players={players} jerseyOf={jerseyOf} />
@@ -128,16 +128,11 @@ export function SquadHub({ lineup, players, jerseyOf, wageOf, clubName }: Props)
                     key={p.playerId}
                     className="flex items-center gap-2 rounded-xl border-2 border-ink bg-white px-2 py-1.5"
                   >
-                    <PlayerAvatar
-                      initials={initialsOf(p.name)}
-                      jersey={jerseyOf?.get(p.playerId) ?? null}
-                      gk={p.position === "GK"}
-                      size={24}
-                    />
-                    <span className="min-w-0 flex-1 truncate text-[12px] text-ink">
+                    <PlayerAvatar position={p.position} size={30} />
+                    <span className="min-w-0 flex-1 truncate text-[12px] text-ink" title={displayName(p)}>
+                      <JerseyTag jersey={jerseyOf?.get(p.playerId)} />
                       {displayName(p)}
                     </span>
-                    <span className="shrink-0 tabular-nums text-[10px] text-navy">{p.position}</span>
                     <StatBadge value={p.overall} />
                   </li>
                 ))}

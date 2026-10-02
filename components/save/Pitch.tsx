@@ -7,7 +7,6 @@ import {
   StatBadge,
   displayName,
   familyOf,
-  initialsOf,
   shortName,
   surnameOf,
 } from "@/components/save/squad-shared";
@@ -156,7 +155,6 @@ export function Pitch({ lineup, players, jerseyOf }: Props) {
       {lineup.slots.map((slot, i) => {
         const p = byId.get(slot.playerId);
         const position = positionName(slot.positionCode);
-        const gk = position === "GK";
         const alts = alternativesFor(i);
         const isOpen = open === i;
         /*
@@ -232,7 +230,7 @@ export function Pitch({ lineup, players, jerseyOf }: Props) {
                   như một lựa chọn chiến thuật có chủ đích. */}
               <span
                 title={FIT_LABEL[slot.fit]}
-                className={`rounded-full ${
+                className={`relative rounded-full ${
                   missing
                     ? "opacity-30 grayscale"
                     : slot.fit === "out"
@@ -242,21 +240,18 @@ export function Pitch({ lineup, players, jerseyOf }: Props) {
                         : ""
                 }`}
               >
+                {!missing && jerseyOf?.get(slot.playerId) ? (
+                  /* Số áo ở góc huy hiệu: nhãn tên bên dưới chỉ rộng 75px trên
+                     điện thoại, chèn "#11" vào đó thì tên bị cắt (đo được 3 tên). */
+                  <span className="absolute -right-2 -top-1 z-10 rounded-full border-2 border-ink bg-white px-1 font-display text-[9px] font-extrabold leading-tight text-ink sm:text-[10px]">
+                    {jerseyOf.get(slot.playerId)}
+                  </span>
+                ) : null}
                 <span className="sm:hidden">
-                  <PlayerAvatar
-                    initials={missing ? null : initialsOf(p.name)}
-                    jersey={jerseyOf?.get(slot.playerId) ?? null}
-                    gk={gk}
-                    size={28}
-                  />
+                  <PlayerAvatar position={missing ? null : position} size={30} />
                 </span>
                 <span className="hidden sm:block">
-                  <PlayerAvatar
-                    initials={missing ? null : initialsOf(p.name)}
-                    jersey={jerseyOf?.get(slot.playerId) ?? null}
-                    gk={gk}
-                    size={34}
-                  />
+                  <PlayerAvatar position={missing ? null : position} size={38} />
                 </span>
               </span>
 
@@ -278,16 +273,14 @@ export function Pitch({ lineup, players, jerseyOf }: Props) {
                     không có trong save
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 tabular-nums text-[9px] leading-none tabular-nums sm:text-[10px]">
-                    <span className="font-bold text-royal">{p.overall ?? "—"}</span>
-                    <span
-                      className={`rounded-md px-1 py-[1px] text-[8px] font-semibold sm:text-[9px] ${
-                        gk ? "bg-salmon text-ink" : "bg-sky text-ink"
-                      }`}
-                    >
-                      {position}
+                  <span className="flex items-baseline gap-1 font-display font-extrabold leading-none tabular-nums">
+                    <span className="text-[13px] text-royal sm:text-[16px]" title="Chỉ số tổng (OVR)">
+                      {p.overall ?? "—"}
                     </span>
-                    <span className="font-bold text-win">{p.potential ?? "—"}</span>
+                    <span aria-hidden className="text-[9px] text-ink-mute sm:text-[10px]">↗</span>
+                    <span className="text-[13px] text-win sm:text-[16px]" title="Tiềm năng (POT)">
+                      {p.potential ?? "—"}
+                    </span>
                   </span>
                 )}
               </span>
@@ -347,11 +340,7 @@ export function Pitch({ lineup, players, jerseyOf }: Props) {
                   <ul className="space-y-1">
                     {alts.slice(0, 6).map((alt) => (
                       <li key={alt.playerId} className="flex items-center gap-1.5 text-[11px]">
-                        <PlayerAvatar
-                          initials={initialsOf(alt.name)}
-                          gk={alt.position === "GK"}
-                          size={18}
-                        />
+                        <PlayerAvatar position={alt.position} size={22} />
                         <span className="min-w-0 flex-1 truncate text-left text-ink">
                           {displayName(alt)}
                         </span>

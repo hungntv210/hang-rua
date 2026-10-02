@@ -33,6 +33,8 @@ const config: Config = {
         win: { DEFAULT: "#17794B", wash: "#D9F2E4" },
         warn: { DEFAULT: "#8A5B00", wash: "#FBEBC4" },
         lose: { DEFAULT: "#B4361E", wash: "#FADBD3" },
+        /** Màu theo tuyến trong avatar: thủ môn vàng, hậu vệ xanh dương, tiền vệ xanh lá, tiền đạo đỏ. */
+        pos: { gk: "#F7C948", df: "#2563C9", mf: "#34B36B", fw: "#C62F2F" },
       },
       fontFamily: {
         /** Thân và số liệu: font thiết kế riêng cho dấu tiếng Việt. */

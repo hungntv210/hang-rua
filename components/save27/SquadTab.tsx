@@ -61,7 +61,7 @@ export function SquadTab({ career, lineup, players, byId, jerseyOf }: Props) {
         {captain ? <> · đội trưởng {captain.name}</> : null}
         <span className="text-ink-mute"> — đội hình thật người chơi đã xếp, đọc thẳng từ save.</span>
       </p>
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)]">
         {lineup ? <Pitch lineup={lineup} players={players} jerseyOf={jerseyOf} /> : null}
         <div className="space-y-2">
           <h3 className="font-display text-base font-extrabold text-ink">Cả đội ({squad.length})</h3>

@@ -1,5 +1,6 @@
 "use client";
 
+import { groupOf, type PositionGroup } from "@/lib/fc26/positions";
 import type { SavePlayer } from "@/lib/save/types";
 
 /**
@@ -86,69 +87,40 @@ export function StatBadge({
 // Ảnh đại diện
 // ────────────────────────────────────────────────────────────────────────────
 
-/**
- * Hai chữ cái đầu của tên. `null` khi không có tên — KHÔNG bịa ra chữ từ ID.
- */
-export function initialsOf(name: string | null): string | null {
-  if (!name) return null;
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return null;
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-}
+/** Màu avatar theo tuyến; chữ sáng/tối chọn theo tương phản đo ở `check:design`. */
+const POSITION_CLASS: Record<PositionGroup, string> = {
+  GK: "bg-pos-gk text-ink",
+  DF: "bg-pos-df text-ice",
+  MF: "bg-pos-mf text-ink",
+  FW: "bg-pos-fw text-ice",
+};
 
 /**
- * Ảnh đại diện cầu thủ.
+ * Avatar cầu thủ = huy hiệu tròn mang VỊ TRÍ, tô màu theo tuyến: thủ môn vàng,
+ * hậu vệ xanh dương, tiền vệ xanh lá, tiền đạo đỏ.
  *
- * Trang KHÔNG có ảnh mặt cầu thủ và sẽ không có: save không chứa ảnh, còn kéo
- * ảnh từ nguồn ngoài thì vừa sai bản quyền vừa hỏng ngay khi nguồn đổi đường
- * dẫn. Nên đây là bóng người kèm chữ cái đầu tên.
- *
- * SỐ ÁO chỉ hiện khi người dùng nạp bản export career, vì nó không đọc được từ
- * save — nó thuộc về cặp (cầu thủ, đội) chứ không thuộc về cầu thủ, và dò trong
- * bản ghi 144 byte với 24 mẫu ở cổng 100% không ra trường nào. Không có export
- * thì hiện chữ cái đầu tên, chứ KHÔNG lấy số áo từ một bảng nướng sẵn: bảng đó
- * chỉ đúng với một career tại một thời điểm.
- *
- * Thủ môn đổi màu theo đúng quy ước của mọi sơ đồ đội hình.
+ * Trang không có ảnh mặt cầu thủ (save không chứa ảnh, kéo ảnh ngoài thì sai bản
+ * quyền), nên vòng tròn dành cho thông tin đọc được ngay: đứng ở đâu. Trên sân là
+ * vị trí của Ô; trong danh sách là vị trí sở trường. `null` = ô trống.
  */
-export function PlayerAvatar({
-  initials,
-  jersey = null,
-  gk = false,
-  size = 28,
-}: {
-  initials: string | null;
-  /** Số áo nếu có bản export career. Ưu tiên hơn chữ cái đầu tên. */
-  jersey?: number | null;
-  gk?: boolean;
-  size?: number;
-}) {
-  // Số áo thắng chữ cái đầu khi có: nó là thứ người chơi dùng để nhận ra cầu
-  // thủ trong game, và nó ngắn hơn nên đọc được ở cỡ nhỏ hơn.
-  const label = jersey && jersey > 0 ? String(jersey) : initials;
+export function PlayerAvatar({ position, size = 28 }: { position: string | null; size?: number }) {
+  const tone = position ? POSITION_CLASS[groupOf(position)] : "bg-ink/10 text-ink-mute";
+  const label = position ?? "—";
   return (
     <span
-      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-ink ${
-        gk ? "bg-salmon" : "bg-sky"
-      }`}
-      style={{ width: size, height: size }}
+      className={`inline-flex shrink-0 items-center justify-center rounded-full border-2 border-ink font-display font-extrabold leading-none ${tone}`}
+      style={{ width: size, height: size, fontSize: Math.max(8, Math.round(size * (label.length >= 3 ? 0.3 : 0.38))) }}
       aria-hidden
     >
-      <svg viewBox="0 0 24 24" className="absolute inset-0 h-full w-full opacity-20">
-        <circle cx="12" cy="8.5" r="4" className="fill-ink" />
-        <path d="M3.5 24c0-5 3.8-8.5 8.5-8.5s8.5 3.5 8.5 8.5z" className="fill-ink" />
-      </svg>
-      {label ? (
-        <span
-          className={`relative font-display font-extrabold leading-none tracking-tight text-ink`}
-          style={{ fontSize: Math.max(8, Math.round(size * (jersey ? 0.42 : 0.36))) }}
-        >
-          {label}
-        </span>
-      ) : null}
+      {label}
     </span>
   );
+}
+
+/** Số áo cạnh tên — chỉ có khi người dùng nạp bản export career. */
+export function JerseyTag({ jersey }: { jersey: number | null | undefined }) {
+  if (!jersey || jersey <= 0) return null;
+  return <span className="mr-1 font-display font-extrabold text-royal">#{jersey}</span>;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
