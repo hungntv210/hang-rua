@@ -50,6 +50,17 @@ interface Props {
   jerseyOf?: Map<number, number>;
 }
 
+/**
+ * Mặt cỏ vẽ kiểu hoạt hình: các dải xanh lá nhiều tông. Đây là màu MINH HOẠ của
+ * riêng sân (như quả bóng trên banner), không phải token giao diện — chữ không
+ * bao giờ nằm trực tiếp trên cỏ mà luôn trong nhãn trắng viền đen.
+ */
+const PITCH_GRASS =
+  "repeating-linear-gradient(180deg, #7FCB8C 0 8.33%, #6DBE7C 8.33% 16.66%, #8ED39A 16.66% 25%)";
+
+/** Nhãn cầu thủ nghiêng nhẹ 1° xen kẽ — sticker dán tay, không xếp thẳng hàng máy. */
+const TILT = ["-rotate-1", "rotate-0", "rotate-1"] as const;
+
 export function Pitch({ lineup, players, jerseyOf }: Props) {
   /**
    * Ô đang mở bảng cùng vị trí.
@@ -99,21 +110,21 @@ export function Pitch({ lineup, players, jerseyOf }: Props) {
        * thủ: ô tên của hậu vệ biên nhô ra khỏi đường biên vài pixel, và cắt nó
        * đi thì mất chữ. Nhô ra vẫn nằm trong lề trang nên không sinh cuộn ngang.
        */}
-      <div className="absolute inset-0 overflow-hidden rounded-sm border border-grid">
+      <div className="absolute inset-0 overflow-hidden rounded-2xl border-4 border-ink shadow-pop">
       {/* Mặt cỏ: sọc ngang đậm nhạt xen kẽ, cùng cách sân thật được cắt cỏ. */}
       <div
         aria-hidden
         className="absolute inset-0"
         style={{
-          background: "linear-gradient(180deg, #0d2b4a 0%, #103457 50%, #0d2b4a 100%)",
+          background: PITCH_GRASS,
         }}
       />
       <div
         aria-hidden
-        className="absolute inset-0 opacity-[0.28]"
+        className="pop-halftone absolute inset-0 opacity-40"
         style={{
           backgroundImage:
-            "repeating-linear-gradient(180deg, rgba(255,255,255,0.11) 0 8.33%, transparent 8.33% 16.66%)",
+            "repeating-linear-gradient(180deg, rgba(255,255,255,0.14) 0 8.33%, transparent 8.33% 16.66%)",
         }}
       />
 
@@ -123,14 +134,14 @@ export function Pitch({ lineup, players, jerseyOf }: Props) {
         viewBox="0 0 100 133"
         preserveAspectRatio="none"
         className="absolute inset-0 h-full w-full"
-        stroke="rgba(255,255,255,0.32)"
-        strokeWidth="0.45"
+        stroke="#ffffff"
+        strokeWidth="0.9"
         fill="none"
       >
         <rect x="3" y="3" width="94" height="127" />
         <line x1="3" y1="66.5" x2="97" y2="66.5" />
         <circle cx="50" cy="66.5" r="14" />
-        <circle cx="50" cy="66.5" r="0.9" fill="rgba(255,255,255,0.32)" stroke="none" />
+        <circle cx="50" cy="66.5" r="1.4" fill="#ffffff" stroke="none" />
         {/* Vòng cấm + khung nhà (dưới) và đối thủ (trên) */}
         <rect x="21" y="112" width="58" height="18" />
         <rect x="36" y="124" width="28" height="6" />
@@ -174,7 +185,7 @@ export function Pitch({ lineup, players, jerseyOf }: Props) {
         return (
           <div
             key={`${slot.playerId}-${i}`}
-            className={`absolute -translate-x-1/2 translate-y-1/2 ${isOpen ? "z-30" : "z-10"}`}
+            className={`absolute w-[22%] max-w-[104px] -translate-x-1/2 translate-y-1/2 ${isOpen ? "z-30" : "z-10"}`}
             /* `y` của game chạy khoảng 0,02..0,90; trải ra 4%..87% để cầu thủ
                dùng hết chiều dài sân thay vì dồn xuống nửa dưới.
                Hệ số 92 không tuỳ tiện: chỗ hẹp nhất là thủ môn với trung vệ, cách
@@ -189,7 +200,13 @@ export function Pitch({ lineup, players, jerseyOf }: Props) {
               onClick={() => setOpen((cur) => (cur === i ? null : i))}
               onFocus={() => setOpen(i)}
               onBlur={() => setOpen((cur) => (cur === i ? null : cur))}
-              /* Bề ngang ô: 104px ở desktop, 20vw ở điện thoại.
+              /* Bề ngang ô: đặt ở lớp bọc ngoài, 22% bề ngang SÂN (tối đa 104px)
+                 — tức 75px trên sân 343px của màn hình 375px, 104px trên desktop.
+                 Trước đây là 20vw: cùng con số trên điện thoại thật, nhưng `vw`
+                 bám cửa sổ chứ không bám sân, và đo được trong khung giả lập
+                 375px nó ra 103px làm 6 cặp ô chồng nhau. Phần trăm của sân thì
+                 không phụ thuộc cửa sổ.
+                 Lịch sử các con số:
                  Cả hai con số đều do khoảng cách giữa hai ô gần nhau nhất quyết
                  định, không phải do chọn cho vừa mắt. Cặp sát nhau nhất là hậu vệ
                  biên với trung vệ cùng bên, cách nhau 0,24 bề ngang sân: 115px ở
@@ -197,7 +214,8 @@ export function Pitch({ lineup, players, jerseyOf }: Props) {
                  điện thoại và đo được đúng hai cặp ô chồng nhau ở đúng chỗ đó;
                  còn 96px trên desktop thì "YAN DIOMANDE" vừa khít 88px, tức là
                  nằm đúng trên ngưỡng và bị cắt khi bề ngang sân lệch đi vài pixel. */
-              className="focus-ring flex w-[20vw] max-w-[104px] flex-col items-center gap-0.5 sm:w-[104px] sm:gap-1"
+              data-audit-box
+              className="focus-ring flex w-full flex-col items-center gap-0.5 rounded-lg sm:gap-1"
               aria-expanded={isOpen}
               aria-label={`${missing ? "Ô trống" : displayName(p)}, ${position}${
                 alts.length ? `, ${alts.length} cầu thủ cùng vị trí đang không đá chính` : ""
@@ -214,9 +232,9 @@ export function Pitch({ lineup, players, jerseyOf }: Props) {
                   missing
                     ? "opacity-30 grayscale"
                     : slot.fit === "out"
-                      ? "ring-2 ring-crimson/70"
+                      ? "ring-2 ring-lose"
                       : slot.fit === "group"
-                        ? "ring-2 ring-amber/60"
+                        ? "ring-2 ring-warn"
                         : ""
                 }`}
               >
@@ -238,10 +256,11 @@ export function Pitch({ lineup, players, jerseyOf }: Props) {
                 </span>
               </span>
 
-              <span className="flex w-full flex-col items-center gap-[2px] rounded-sm bg-void/[0.72] px-0.5 py-[2px] sm:px-1">
+              <span className={`flex w-full flex-col items-center gap-[2px] rounded-md border-2 border-ink bg-white px-0.5 py-[2px] shadow-pop-sm sm:px-1 ${TILT[i % 3]}`}>
                 <span
-                  className={`w-full truncate text-center text-[9px] font-bold uppercase leading-tight sm:text-[11px] ${
-                    missing ? "text-mist-dim" : "text-white"
+                  data-audit-label
+                  className={`w-full truncate text-center font-display text-[10px] font-extrabold uppercase leading-tight sm:text-[12px] ${
+                    missing ? "text-ink-mute" : "text-ink"
                   }`}
                 >
                   <span className="sm:hidden">{shortLabel}</span>
@@ -251,20 +270,20 @@ export function Pitch({ lineup, players, jerseyOf }: Props) {
                     9px là cỡ nhỏ nhất còn đọc được ở đây; đây là số để liếc, còn
                     bảng bên phải có bản đầy đủ cho ai muốn đọc kỹ. */}
                 {missing ? (
-                  <span className="text-[9px] leading-none text-mist-dim">
+                  <span className="text-[9px] leading-none text-ink-mute">
                     không có trong save
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 font-mono text-[9px] leading-none tabular-nums sm:text-[10px]">
-                    <span className="text-electric-bright">{p.overall ?? "—"}</span>
+                  <span className="flex items-center gap-1 tabular-nums text-[9px] leading-none tabular-nums sm:text-[10px]">
+                    <span className="font-bold text-royal">{p.overall ?? "—"}</span>
                     <span
-                      className={`rounded-[2px] px-1 py-[1px] text-[8px] font-semibold sm:text-[9px] ${
-                        gk ? "bg-ghost/20 text-ghost" : "bg-orchid-wash text-orchid-bright"
+                      className={`rounded-md px-1 py-[1px] text-[8px] font-semibold sm:text-[9px] ${
+                        gk ? "bg-salmon text-ink" : "bg-sky text-ink"
                       }`}
                     >
                       {position}
                     </span>
-                    <span className="text-jade">{p.potential ?? "—"}</span>
+                    <span className="font-bold text-win">{p.potential ?? "—"}</span>
                   </span>
                 )}
               </span>
@@ -311,13 +330,13 @@ export function Pitch({ lineup, players, jerseyOf }: Props) {
                    * animation này, không cần xử lý riêng.
                    */
                   style={{ transformOrigin: openDown ? "top center" : "bottom center" }}
-                  className="animate-tooltip-in rounded-sm border border-electric/25 bg-abyss-200/95 p-2 shadow-panel-lift"
+                  className="animate-tooltip-in rounded-xl border-2 border-ink bg-white p-2 shadow-pop-sm"
                 >
-                <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-electric">
+                <p className="mb-1.5 font-display text-[11px] font-extrabold uppercase tracking-[0.1em] text-royal">
                   {position} · cùng vị trí
                 </p>
                 {alts.length === 0 ? (
-                  <p className="text-[11px] leading-snug text-mist">
+                  <p className="text-[11px] leading-snug text-ink-soft">
                     Không còn ai trong đội đá được vị trí này.
                   </p>
                 ) : (
@@ -329,17 +348,17 @@ export function Pitch({ lineup, players, jerseyOf }: Props) {
                           gk={alt.position === "GK"}
                           size={18}
                         />
-                        <span className="min-w-0 flex-1 truncate text-left text-ghost">
+                        <span className="min-w-0 flex-1 truncate text-left text-ink">
                           {displayName(alt)}
                         </span>
-                        <span className="shrink-0 font-mono text-[10px] text-mist-dim">
+                        <span className="shrink-0 tabular-nums text-[10px] text-ink-mute">
                           {alt.position}
                         </span>
                         <StatBadge value={alt.overall} />
                       </li>
                     ))}
                     {alts.length > 6 ? (
-                      <li className="pt-0.5 text-[10px] text-mist-dim">
+                      <li className="pt-0.5 text-[10px] text-ink-mute">
                         và {alts.length - 6} người nữa
                       </li>
                     ) : null}

@@ -49,10 +49,10 @@ export function toneOf(value: number | null): StatTone {
 }
 
 const TONE_CLASS: Record<StatTone, string> = {
-  high: "bg-jade-wash text-jade",
-  good: "bg-electric-wash text-electric-bright",
-  fair: "bg-amber-wash text-amber",
-  low: "bg-crimson-wash text-crimson",
+  high: "bg-win-wash text-win",
+  good: "bg-royal-100 text-royal",
+  fair: "bg-warn-wash text-warn",
+  low: "bg-lose-wash text-lose",
 };
 
 /**
@@ -73,7 +73,7 @@ export function StatBadge({
   return (
     <span
       title={title}
-      className={`inline-flex min-w-[2.15rem] justify-center rounded-sm px-1.5 py-0.5 font-mono text-[11px] font-semibold tabular-nums leading-none ${
+      className={`inline-flex min-w-[2.15rem] justify-center rounded-md border-2 border-ink px-1.5 py-0.5 text-[11px] font-bold tabular-nums leading-none ${
         TONE_CLASS[tone ?? toneOf(value)]
       }`}
     >
@@ -129,21 +129,19 @@ export function PlayerAvatar({
   const label = jersey && jersey > 0 ? String(jersey) : initials;
   return (
     <span
-      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ${
-        gk ? "bg-abyss-400 ring-ghost/30" : "bg-abyss-300 ring-grid-bright"
+      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-ink ${
+        gk ? "bg-salmon" : "bg-sky"
       }`}
       style={{ width: size, height: size }}
       aria-hidden
     >
-      <svg viewBox="0 0 24 24" className="absolute inset-0 h-full w-full opacity-25">
-        <circle cx="12" cy="8.5" r="4" className="fill-mist" />
-        <path d="M3.5 24c0-5 3.8-8.5 8.5-8.5s8.5 3.5 8.5 8.5z" className="fill-mist" />
+      <svg viewBox="0 0 24 24" className="absolute inset-0 h-full w-full opacity-20">
+        <circle cx="12" cy="8.5" r="4" className="fill-ink" />
+        <path d="M3.5 24c0-5 3.8-8.5 8.5-8.5s8.5 3.5 8.5 8.5z" className="fill-ink" />
       </svg>
       {label ? (
         <span
-          className={`relative font-mono font-bold leading-none tracking-tight ${
-            gk ? "text-ghost" : "text-white"
-          }`}
+          className={`relative font-display font-extrabold leading-none tracking-tight text-ink`}
           style={{ fontSize: Math.max(8, Math.round(size * (jersey ? 0.42 : 0.36))) }}
         >
           {label}

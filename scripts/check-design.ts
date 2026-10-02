@@ -33,6 +33,7 @@ export const TOKEN_PAIRS: TokenPair[] = [
   { fg: "win", bg: "win.wash", label: "tín hiệu tốt trên nền nhạt" },
   { fg: "warn", bg: "warn.wash", label: "tín hiệu tạm trên nền nhạt" },
   { fg: "lose", bg: "lose.wash", label: "tín hiệu kém trên nền nhạt" },
+  { fg: "royal", bg: "royal.100", label: "chỉ số khá: chữ royal trên nền royal nhạt" },
   { fg: "win", bg: "ice", label: "chữ tín hiệu tốt trên nền giấy" },
   { fg: "warn", bg: "ice", label: "chữ tín hiệu tạm trên nền giấy" },
   { fg: "lose", bg: "ice", label: "chữ tín hiệu kém trên nền giấy" },
