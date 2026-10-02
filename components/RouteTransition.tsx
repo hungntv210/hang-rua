@@ -3,34 +3,24 @@
 import { usePathname } from "next/navigation";
 
 /**
- * Chuyển cảnh giữa các trang: một vệt quét chạy dọc màn hình, nội dung mới nổi
- * lên theo sau.
+ * Chuyển cảnh giữa các trang: nội dung mới nảy lên nhẹ (dịch 8px + phóng
+ * 0.99→1, easing có overshoot, 240ms). Chỉ `transform`/`opacity`.
  *
- * Hình ảnh lấy từ chính banner — những vệt scanline cắt ngang mặt trăng. Ở đây
- * nó còn đúng về nghĩa: trang này đọc file nhị phân và quét bảng số liệu, nên
- * chuyển cảnh kiểu "quét" nói đúng việc trang đang làm.
+ * Đổi `key` theo đường dẫn là đủ để React dựng lại nút và chạy lại animation
+ * CSS — không cần thư viện. `children` truyền vào dưới dạng prop nên vẫn là
+ * server component.
  *
- * KHÔNG dùng thư viện animation. Đổi `key` theo đường dẫn là đủ để React dựng
- * lại nút và chạy lại animation CSS — thêm framer-motion cho một hiệu ứng là
- * đánh đổi sai, dự án đang zero-dependency.
- *
- * `children` được truyền vào dưới dạng prop nên vẫn là server component: bọc
- * client component quanh chúng KHÔNG kéo cả cây sang phía client.
+ * Fill-mode là `backwards` chứ không phải `both`: animation xong thì KHÔNG giữ
+ * lại `transform`, vì một `transform` còn sót tạo ra stacking context cho cả
+ * trang và có thể làm hỏng phần tử `fixed`/`sticky` bên trong. Người bật giảm
+ * chuyển động nhận thời lượng ~0 từ quy tắc toàn cục trong globals.css.
  */
 export function RouteTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <>
-      {/* Vệt quét. `key` khiến nó chạy lại mỗi lần đổi đường dẫn. */}
-      <span
-        key={`sweep-${pathname}`}
-        aria-hidden
-        className="animate-sweep pointer-events-none fixed inset-x-0 top-0 z-30 h-px bg-gradient-to-r from-transparent via-electric-bright to-transparent shadow-glow"
-      />
-      <div key={pathname} className="animate-fade-in-up">
-        {children}
-      </div>
-    </>
+    <div key={pathname} className="animate-pop-in">
+      {children}
+    </div>
   );
 }

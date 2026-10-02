@@ -11,7 +11,8 @@
     "build:fc27": "npx tsx scripts/build-fc27-assets.ts",
     "check:fc26": "npx tsx scripts/check-fc26-all.ts",
     "check:fc27": "npx tsx scripts/check-fc27.ts",
-    "check:design": "npx tsx scripts/check-design.ts"
+    "check:design": "npx tsx scripts/check-design.ts",
+    "check:ui": "npx tsx scripts/check-ui-logic.ts"
   },
   "dependencies": {
     "framer-motion": "^13.3.0",

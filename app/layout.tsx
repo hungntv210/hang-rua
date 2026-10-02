@@ -8,10 +8,9 @@ import {
 } from "next/font/google";
 
 import "./globals.css";
-import { HudFrame } from "@/components/HudFrame";
 import { MotionProvider } from "@/components/MotionProvider";
 import { RouteTransition } from "@/components/RouteTransition";
-import { Sidebar } from "@/components/Sidebar";
+import { SiteMenu } from "@/components/SiteMenu";
 
 /**
  * Tiêu đề, nút, menu: Baloo 2 — nét tròn thân thiện, có subset vietnamese. Dấu
@@ -102,13 +101,8 @@ export default function RootLayout({
             component — chúng được truyền vào dưới dạng prop nên vẫn render ở
             server. Bốn view bóng đá fetch dữ liệu vẫn là server component. */}
         <MotionProvider>
-          <Sidebar />
-          <HudFrame />
-
-          {/* Chừa sẵn lề trái bằng bề rộng sidebar từ breakpoint lg trở lên. */}
-          <div className="min-h-screen lg:pl-64">
-            <RouteTransition>{children}</RouteTransition>
-          </div>
+          <SiteMenu />
+          <RouteTransition>{children}</RouteTransition>
         </MotionProvider>
       </body>
     </html>

@@ -233,7 +233,7 @@ const config: Config = {
         "tooltip-in": "tooltip-in 150ms cubic-bezier(0.16, 1, 0.3, 1) both",
         flicker: "flicker 4s ease-in-out infinite",
         wobble: "wobble 1.6s ease-in-out infinite",
-        "pop-in": "pop-in 240ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
+        "pop-in": "pop-in 240ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards",
       },
     },
   },

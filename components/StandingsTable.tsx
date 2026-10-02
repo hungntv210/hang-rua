@@ -48,11 +48,12 @@ function zoneAccent(description: string | null): string {
 export function StandingsTable({ rows }: { rows: StandingRow[] }) {
   return (
     // overflow-x-auto tạo scroll container ở CẢ HAI trục, khiến sticky của
-    // thead bám vào div này thay vì viewport -> không bao giờ dính. Từ sm trở
-    // lên bảng đủ chỗ nên bỏ overflow, sticky mới chạy thật.
+    // thead bám vào div này thay vì viewport. Tệ hơn "không dính": `top` vẫn
+    // được áp trong khung cuộn đó nên thead bị ĐẨY XUỐNG đúng bằng --header-h
+    // và đè lên các hàng đầu. Vì vậy sticky chỉ bật từ sm, khi đã bỏ overflow.
     <div className="plate overflow-x-auto sm:overflow-visible">
       <table className="w-full min-w-[560px] text-sm">
-        <thead className="sticky top-[var(--header-h)] z-[1] bg-abyss">
+        <thead className="z-[1] bg-sky sm:sticky sm:top-[var(--header-h)]">
           <tr className="border-b border-grid text-[11px] uppercase tracking-[0.1em] text-mist">
             <th className="px-3 py-2.5 text-left font-semibold">#</th>
             <th className="px-3 py-2.5 text-left font-semibold">Đội</th>

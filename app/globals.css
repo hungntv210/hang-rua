@@ -5,29 +5,11 @@
 :root {
   color-scheme: light;
 
-  /* CÁC MỐC STICKY
-     Dưới lg có HAI thanh dính chồng lên nhau: thanh hamburger (Sidebar.tsx) ở
-     trên, thanh điều hướng Football (app/football/layout.tsx) ở dưới. Nếu cả
-     hai cùng đặt top-0 thì thanh dưới chui xuống dưới thanh trên và bị che.
-
-     Để ba biến này luôn đúng mà không phải đo lại mỗi lần đổi nội dung, CẢ HAI
-     thanh đều được đặt chiều cao CỐ ĐỊNH `h-16` (64px) — đừng để chiều cao tự
-     giãn theo nội dung bên trong.
-
-     --topbar-h : thanh hamburger, CHỈ tồn tại dưới breakpoint lg
-     --nav-h    : thanh điều hướng của module Football
-     --header-h : tổng hai thanh — mốc cho các phần tử sticky bên trong */
-  --topbar-h: 64px;
-  --nav-h: 64px;
-  --header-h: calc(var(--topbar-h) + var(--nav-h));
-}
-
-@media (min-width: 1024px) {
-  :root {
-    /* Từ lg trở lên thanh hamburger bị ẩn, sidebar hiện cố định bên trái. */
-    --topbar-h: 0px;
-    --header-h: var(--nav-h);
-  }
+  /* MỐC STICKY
+     --header-h : chiều cao menu trên cùng (SiteMenu, h-14 = 56px + viền 4px).
+     Chiều cao là SỐ CỐ ĐỊNH, đừng để nó tự giãn theo nội dung: các phần tử
+     sticky bên trong (đầu bảng xếp hạng, đầu bảng cầu thủ) dựa vào nó. */
+  --header-h: 60px;
 }
 
 body {
