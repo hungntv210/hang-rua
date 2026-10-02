@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 
+import { MascotState } from "@/components/ui/MascotState";
 import { formatBytes } from "@/lib/save/format";
 import { FILE_LIMITS } from "@/lib/save/heuristics";
 
@@ -50,18 +51,18 @@ export function SaveDropZone({ onFile, busy, progress, folder = "Documents\\FC 2
           setDragging(false);
           if (!busy) accept(event.dataTransfer.files?.[0]);
         }}
-        className={`rounded border-2 border-dashed p-8 text-center transition-colors duration-200 sm:p-12 ${
+        className={`rounded-3xl border-[3px] border-dashed border-ink p-8 text-center sm:p-12 ${
           dragging
-            ? "border-electric bg-electric-wash"
-            : "border-grid bg-abyss hover:border-electric/50"
+            ? "bg-aqua-100"
+            : "pop-halftone bg-sky-100"
         }`}
       >
-        <p className="font-display text-xl font-semibold text-ghost">
+        <p className="font-display text-2xl font-extrabold text-ink">
           Thả file save Career Mode vào đây
         </p>
-        <p className="mt-2 text-sm text-mist">
-          Tên file thường có dạng <code className="font-mono">CmMgrC…</code>,
-          nằm trong thư mục <code className="font-mono">{folder}</code>.
+        <p className="mt-2 text-sm text-ink-soft">
+          Tên file thường có dạng <code className="rounded bg-white px-1 font-bold text-ink">CmMgrC…</code>,
+          nằm trong thư mục <code className="rounded bg-white px-1 font-bold text-ink">{folder}</code>.
         </p>
 
         <button
@@ -84,7 +85,7 @@ export function SaveDropZone({ onFile, busy, progress, folder = "Documents\\FC 2
           }}
         />
 
-        <p className="mt-4 text-xs text-mist">
+        <p className="mt-4 text-xs text-ink-soft">
           File được đọc hoàn toàn trên máy bạn, trong một Web Worker — không có
           byte nào được gửi lên server.
         </p>
@@ -98,21 +99,22 @@ export function SaveDropZone({ onFile, busy, progress, folder = "Documents\\FC 2
           aria-valuemax={100}
           aria-valuenow={Math.round(progress * 100)}
         >
-          <div className="mb-2 flex items-center justify-between text-xs text-mist">
+          <MascotState kind="loading" inline title="Rùa đang đọc file…" />
+          <div className="mb-2 mt-3 flex items-center justify-between text-xs text-ink-soft">
             <span>Đang quét cấu trúc file</span>
-            <span className="font-mono">{Math.round(progress * 100)}%</span>
+            <span className="tabular-nums">{Math.round(progress * 100)}%</span>
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded bg-abyss-300">
+          <div className="h-3 w-full overflow-hidden rounded-full border-2 border-ink bg-white">
             <div
-              className="h-full bg-electric transition-[width] duration-150"
-              style={{ width: `${Math.round(progress * 100)}%` }}
+              className="h-full origin-left bg-royal transition-transform duration-150"
+              style={{ transform: `scaleX(${progress})` }}
             />
           </div>
         </div>
       ) : null}
 
       {rejected ? (
-        <p className="rounded border border-crimson/40 bg-crimson-wash p-3 text-sm text-crimson">
+        <p role="alert" className="rounded-xl border-2 border-ink bg-lose-wash p-3 text-sm font-bold text-lose shadow-pop-sm">
           {rejected}
         </p>
       ) : null}

@@ -94,12 +94,12 @@ export function CareerExportDrop({ data, onLoad, gate, inUse }: Props) {
    * để người dùng tin rằng họ đang xem đội hình thật trong khi không phải.
    */
   const tone = error
-    ? "border-crimson/50 bg-crimson-wash/40"
+    ? "border-lose bg-lose-wash"
     : inUse
-      ? "border-jade/40 bg-jade-wash/40"
+      ? "border-win bg-win-wash"
       : loaded
-        ? "border-amber/40 bg-amber-wash/40"
-        : "border-grid bg-abyss/40";
+        ? "border-warn bg-warn-wash"
+        : "border-ink/15 bg-white";
 
   /*
    * Thu gọn thành một dòng mở được.
@@ -117,37 +117,37 @@ export function CareerExportDrop({ data, onLoad, gate, inUse }: Props) {
   return (
     <details
       open={notable}
-      className={`rounded-sm border border-dashed px-3 py-2 ${tone}`}
+      className={`rounded-xl border-2 border-dashed px-3 py-2 ${tone}`}
     >
-      <summary className="focus-ring flex cursor-pointer list-none items-center gap-2 text-[12px] text-mist marker:content-none">
-        <span className="font-mono text-[10px] text-mist-dim" aria-hidden>
+      <summary className="focus-ring flex cursor-pointer list-none items-center gap-2 text-[12px] text-ink-soft marker:content-none">
+        <span className="tabular-nums text-[10px] text-ink-mute" aria-hidden>
           ▸
         </span>
-        <span className="text-ghost">Đội hình thật, số áo và lương</span>
+        <span className="text-ink">Đội hình thật, số áo và lương</span>
         {inUse ? (
-          <span className="rounded-[2px] bg-jade-wash px-1 font-mono text-[9px] uppercase text-jade">
+          <span className="rounded-full border-2 border-ink bg-win-wash px-1.5 text-[10px] font-bold uppercase text-win">
             đang dùng
           </span>
         ) : loaded && gate && !gate.ok ? (
-          <span className="rounded-[2px] bg-amber-wash px-1 font-mono text-[9px] uppercase text-amber">
+          <span className="rounded-full border-2 border-ink bg-warn-wash px-1.5 text-[10px] font-bold uppercase text-warn">
             không khớp save
           </span>
         ) : (
-          <span className="text-mist-dim">— tuỳ chọn, cần chạy script Lua</span>
+          <span className="text-ink-mute">— tuỳ chọn, cần chạy script Lua</span>
         )}
       </summary>
 
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] leading-relaxed text-mist">
+          <p className="text-[11px] leading-relaxed text-ink-soft">
             {error ? (
-              <span className="text-crimson">{error}</span>
+              <span className="text-lose">{error}</span>
             ) : inUse && gate ? (
-              <span className="text-jade">Đang dùng đội hình thật — {gate.message}.</span>
+              <span className="text-win">Đang dùng đội hình thật — {gate.message}.</span>
             ) : loaded && gate && !gate.ok ? (
-              <span className="text-amber">Đã đọc được nhưng KHÔNG dùng: {gate.message}</span>
+              <span className="text-warn">Đã đọc được nhưng KHÔNG dùng: {gate.message}</span>
             ) : loaded ? (
-              <span className="text-amber">
+              <span className="text-warn">
                 Đã nạp {loaded.sheets} đội hình, {loaded.jerseys} số áo, {loaded.wages} mức lương —
                 chờ đối chiếu với file save.
               </span>

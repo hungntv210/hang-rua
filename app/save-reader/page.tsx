@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+
+import { Card } from "@/components/ui/Card";
+import { Sticker } from "@/components/ui/Sticker";
 
 export const metadata: Metadata = {
   title: "Save Reader",
@@ -9,43 +11,58 @@ export const metadata: Metadata = {
 
 const VERSIONS = [
   {
-    href: "/save-reader/fc26",
-    name: "FC 26",
-    note: "Đội hình gợi ý, cầu thủ trẻ, scout. Dò cấu trúc file save FC 26.",
-  },
-  {
     href: "/save-reader/fc27",
     name: "FC 27",
+    tone: "salmon",
+    isNew: true,
     note: "Đội hình thật, sơ đồ, cầu thủ trẻ, cho mượn, scout. Đọc thẳng cơ sở dữ liệu trong save.",
+  },
+  {
+    href: "/save-reader/fc26",
+    name: "FC 26",
+    tone: "sky",
+    isNew: false,
+    note: "Đội hình gợi ý, cầu thủ trẻ, scout. Dò cấu trúc file save FC 26.",
   },
 ] as const;
 
 /** Trang chọn phiên bản: tĩnh hoàn toàn, mỗi phiên bản có trình đọc riêng. */
 export default function SaveReaderChooserPage() {
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-8 px-4 pb-16 pt-10">
-      <header className="space-y-3">
-        <p className="eyebrow">Hang Rùa · công cụ</p>
-        <h1 className="font-display text-3xl font-semibold tracking-tight text-ghost sm:text-4xl">Save Reader</h1>
-        <p className="max-w-3xl text-mist">
-          Chọn phiên bản game của file save Career Mode. Mỗi phiên bản dùng một trình đọc riêng, chạy hoàn toàn trên
-          máy bạn — không byte nào được gửi lên server.
+    <div className="mx-auto w-full max-w-5xl px-4 pb-16 pt-10">
+      <header className="max-w-3xl">
+        <Sticker tone="salmon" tilt={-2}>
+          Save Reader
+        </Sticker>
+        <h1 className="mt-4 font-display text-4xl font-extrabold leading-[1.05] text-ink sm:text-5xl">
+          File save của bạn là game nào?
+        </h1>
+        <p className="mt-3 text-ink-soft">
+          Mỗi phiên bản có một trình đọc riêng. Chọn đúng bản để đọc được đội hình, tiềm năng và hợp đồng.
         </p>
       </header>
 
-      <ul className="grid gap-4 sm:grid-cols-2">
+      {/* Cam kết về dữ liệu: đặt ngay đầu trang, không giấu dưới chân. */}
+      <p className="mt-6 inline-flex -rotate-1 items-center gap-2 rounded-xl border-2 border-ink bg-win-wash px-4 py-2 text-sm font-bold text-win shadow-pop-sm">
+        <svg aria-hidden viewBox="0 0 20 20" className="h-5 w-5 shrink-0" fill="currentColor">
+          <path d="M10 1.5 3 4.5v5c0 4.2 2.9 8 7 9 4.1-1 7-4.8 7-9v-5l-7-3Zm-1 12.2L5.8 10.5l1.4-1.4L9 10.9l3.8-3.8 1.4 1.4L9 13.7Z" />
+        </svg>
+        Chạy hoàn toàn trên máy bạn — không byte nào gửi lên server.
+      </p>
+
+      <ul className="mt-8 grid gap-5 sm:grid-cols-[1.3fr_1fr]">
         {VERSIONS.map((v) => (
           <li key={v.href}>
-            <Link
+            <Card
+              tone={v.tone}
+              title={v.name}
               href={v.href}
-              className="block h-full rounded-sm border border-grid bg-abyss/60 p-6 transition-colors hover:border-electric hover:bg-abyss-300/60"
+              size="lg"
+              corner={v.isNew ? <Sticker>NEW!</Sticker> : undefined}
             >
-              <span className="font-display text-2xl font-semibold text-ghost">{v.name}</span>
-              <span className="mt-2 block text-sm text-mist">{v.note}</span>
-              <span className="mt-4 block font-mono text-[11px] uppercase tracking-[0.18em] text-electric">
-                Mở trình đọc →
-              </span>
-            </Link>
+              <span className="block">{v.note}</span>
+              <span className="mt-4 block font-display text-sm font-extrabold text-royal">Mở trình đọc →</span>
+            </Card>
           </li>
         ))}
       </ul>

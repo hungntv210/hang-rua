@@ -21,15 +21,15 @@ export default function SaveReaderPage() {
     <div className="mx-auto w-full max-w-6xl space-y-8 px-4 pb-16 pt-10">
       <header className="space-y-3">
         <p className="eyebrow">Hang Rùa · công cụ</p>
-        <h1 className="font-display text-3xl font-semibold tracking-tight text-ghost sm:text-4xl">
+        <h1 className="font-display text-4xl font-extrabold leading-[1.05] text-ink sm:text-5xl">
           Save Reader FC 26
         </h1>
-        <p className="max-w-3xl text-mist">
+        <p className="max-w-3xl text-ink-soft">
           Đọc file save Career Mode của EA Sports FC 26 ngay trên máy bạn. Không
           byte nào được gửi lên server.
         </p>
-        <p className="text-sm text-mist">
-          <Link href="/save-reader" className="underline">
+        <p className="text-sm text-ink-soft">
+          <Link href="/save-reader" className="focus-ring font-display font-extrabold text-royal underline decoration-2 underline-offset-4">
             ← Đổi phiên bản
           </Link>
         </p>
