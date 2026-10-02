@@ -1,0 +1,20 @@
+Mốc chuẩn trước redesign (commit 311dc38, branch redesign/pop-kawaii)
+
+npm run typecheck ............ PASS
+npm run build ................ PASS
+npm run check:fc26 ........... PASS ("TOÀN BỘ ĐẠT", 277 dòng ok)
+npm run check:fc27 ........... PASS ("TẤT CẢ ĐẠT", 79 dòng ok)
+  Lệnh cần 2 tham số: npm run check:fc27 -- temp_fc27_upload/CmMgrC20260926153118445 temp_fc26_upload/CmMgrC20260917112651768
+  (thư mục temp_* chưa commit; chạy lại cần có file save mẫu ở đúng đường dẫn)
+
+First Load JS (kB):
+  /                    101
+  /football            96.3
+  /football/bracket    96.3
+  /football/standings  96.3
+  /save-reader         96.3
+  /save-reader/fc26    141
+  /save-reader/fc27    132
+  shared               87.4
+
+Ngưỡng: mỗi route không tăng quá +15 kB; kết quả hai script check phải giống.
