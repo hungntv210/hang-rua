@@ -6,7 +6,7 @@ Ngày: 2026-10-02 · Branch: `redesign/pop-kawaii`
 Thay toàn bộ giao diện (kể cả Save Reader) bằng phong cách pop-art kawaii Nhật, có bản sắc riêng, không trông "do AI làm". **Chỉ đổi giao diện; không đổi logic.** Cảm hứng bố cục từ kitan.jp (menu khối màu, slider, thẻ pastel); không dùng hình, nhân vật hay nội dung của họ.
 
 ## Quyết định đã được người dùng chốt
-1. Mascot lấy **tinh thần** logo "huy hiệu tròn + chữ vòng quanh + rùa xanh đeo kính râm" làm hướng. Nhân vật Squirtle (Nintendo/The Pokémon Company) **không** được dùng hay vẽ lại: mascot là rùa ORIGINAL tự vẽ bằng SVG (mai, đầu, kính khác hẳn), đúng yêu cầu gốc.
+1. **Logo và mascot: giữ nguyên** `public/brand/logo.webp` và `kame-mascot.webp` của site hiện tại, chưa thay. Chỉ đổi màu toàn site theo bảng xanh lấy từ logo huy hiệu mới vẽ. (Logo "Squirtle Squad" gửi làm tham khảo là nhân vật của Nintendo/The Pokémon Company nên không dùng.)
 2. Menu và trang chỉ trên những gì có sẵn (12 route hiện có), không thêm trang mới.
 3. Chỉ giao diện **sáng**, dựa trên các sắc xanh dương của logo mẫu. Bỏ hẳn nền tối/HUD/neon.
 
@@ -34,8 +34,8 @@ Khác: viền `2–3px ink`; bóng cứng lệch `4px 4px 0 ink` (không blur); 
 
 Font: **Baloo 2** (subset vietnamese) cho tiêu đề/nút/menu; **Be Vietnam Pro** giữ cho số liệu và bảng dày. Bỏ Chakra Petch, Charmonman, JetBrains Mono. Kiểm thực tế dấu ư ơ ặ ỡ trên trình duyệt trước khi chốt.
 
-## Mascot
-Rùa SVG original, một nhóm `<symbol>` dùng chung: huy hiệu logo (tròn, chữ HANG RÙA chạy vòng), và các biểu cảm cho loading (đi chậm), trống (ngó trong mai), lỗi (ngã ngửa). Thay `public/brand/*.webp` và `app/icon.png`/`apple-icon.png`. Bản nháp trong `logo-rua/` (chưa commit) chỉ là tham khảo, không dùng nguyên.
+## Logo và mascot
+Giữ ảnh hiện có. Việc cần làm trong giai đoạn 2: đặt ảnh vào khung phù hợp nền sáng (huy hiệu tròn viền ink, bóng cứng) và dùng lại chính mascot cho trạng thái loading/trống/lỗi bằng chuyển động và nhãn, chưa vẽ biến thể mới. Thay logo/mascot bằng SVG là việc sau, làm khi bạn quyết. Bản nháp trong `logo-rua/` (chưa commit) chỉ là tham khảo bảng màu.
 
 ## Component
 Button (nhấn lún), Tab, Card (đầu pastel, thân trắng), Badge/Sticker, Table, Tooltip, Modal, Loading/Empty/Error. Viết lại `Notice`, `Skeletons`, `TabBar`, `TeamBadge`, `ModuleCard`. Xoá `Sidebar`, `HudFrame`, `BrushWordmark`, `Scute` khi không còn nơi dùng.
@@ -53,7 +53,7 @@ Banner slider lệch trục (3 slide: Save Reader, Football, mascot) có chấm 
 - Áp dụng cho cả FC26 và FC27, trang chọn phiên bản.
 
 ## Thứ tự và kiểm chứng
-1. Token + font + mascot + `/_styleguide` (dev) → 2. component → 3. khung/menu/motion → 4. trang chủ → 5. Football → 6. Save Reader → 7. rà soát.
+1. Token + font + `/_styleguide` (dev) → 2. component → 3. khung/menu/motion → 4. trang chủ → 5. Football → 6. Save Reader → 7. rà soát.
 Sau **mỗi** giai đoạn: `npm run typecheck`, `npm run build`, `check:fc26`, `check:fc27` (logic phải xanh như trước), duyệt thật trong trình duyệt. Kiểm giao diện bằng ảnh **và** đo DOM: tooltip còn sót sau mở/đóng, chữ bị cắt (`scrollWidth > clientWidth`), ô chồng nhau, tràn ngang ở 375px, tab bằng bàn phím, tương phản.
 
 ## Gợi ý chức năng (chỉ đề xuất, chưa làm)
